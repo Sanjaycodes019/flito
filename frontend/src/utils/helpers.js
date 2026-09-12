@@ -16,3 +16,10 @@ export const formatDate = (date) => {
 
 export const getErrorMessage = (error) =>
   error?.response?.data?.message || error?.message || 'Something went wrong';
+
+// Enum values are snake_case on the wire ('picked_up', 'in_transit');
+// render them as readable words.
+export const formatStatus = (status) => (status || '').replace(/_/g, ' ');
+
+export const pluralize = (count, singular, plural = `${singular}s`) =>
+  `${count} ${count === 1 ? singular : plural}`;

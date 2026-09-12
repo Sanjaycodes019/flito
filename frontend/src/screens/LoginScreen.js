@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, ScrollView, Alert, Text } from 'react-native';
+import { View, TextInput, StyleSheet, ScrollView, Text } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
@@ -7,6 +7,7 @@ import Card from '../components/common/Card';
 import { authService } from '../services/auth';
 import { FLITO_COLORS } from '../utils/colors';
 import { isValidPhone, getErrorMessage } from '../utils/helpers';
+import { notify } from '../utils/alert';
 
 const LoginScreen = ({ navigation }) => {
   const [phone, setPhone] = useState('+977');
@@ -17,23 +18,23 @@ const LoginScreen = ({ navigation }) => {
 
   const handleSendOtp = async () => {
     if (!isValidPhone(phone)) {
-      Alert.alert('Invalid phone', 'Enter a valid number as +977XXXXXXXXXX');
+      notify('Invalid phone', 'Enter a valid number as +977XXXXXXXXXX');
       return;
     }
     setLoading(true);
     try {
       const data = await authService.sendOtp(phone);
       setOtpSent(true);
-      Alert.alert('OTP sent', data.otp ? `Dev OTP: ${data.otp}` : 'Check your phone for the code');
+      notify('OTP sent', data.otp ? `Dev OTP: ${data.otp}` : 'Check your phone for the code');
     } catch (error) {
-      Alert.alert('Error', getErrorMessage(error));
+      notify('Error', getErrorMessage(error));
     }
     setLoading(false);
   };
 
   const handleLogin = async () => {
     if (!otp) {
-      Alert.alert('Missing OTP', 'Enter the OTP sent to your phone');
+      notify('Missing OTP', 'Enter the OTP sent to your phone');
       return;
     }
     setLoading(true);
@@ -43,7 +44,7 @@ const LoginScreen = ({ navigation }) => {
       dispatch(loginSuccess(data));
     } catch (error) {
       dispatch(loginError(getErrorMessage(error)));
-      Alert.alert('Login failed', getErrorMessage(error));
+      notify('Login failed', getErrorMessage(error));
     }
     setLoading(false);
   };

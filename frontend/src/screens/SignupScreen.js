@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, ScrollView, Alert, Text } from 'react-native';
+import { View, TextInput, StyleSheet, ScrollView, Text } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
@@ -8,6 +8,7 @@ import { authService } from '../services/auth';
 import { FLITO_COLORS } from '../utils/colors';
 import { ROLES } from '../utils/constants';
 import { isValidPhone, getErrorMessage } from '../utils/helpers';
+import { notify } from '../utils/alert';
 
 const ROLE_OPTIONS = [
   { label: 'Shipper', value: ROLES.SHIPPER, desc: 'I need to move goods' },
@@ -27,27 +28,27 @@ const SignupScreen = ({ navigation }) => {
 
   const handleSendOtp = async () => {
     if (!isValidPhone(phone)) {
-      Alert.alert('Invalid phone', 'Enter a valid number as +977XXXXXXXXXX');
+      notify('Invalid phone', 'Enter a valid number as +977XXXXXXXXXX');
       return;
     }
     if (!firstName) {
-      Alert.alert('Missing name', 'Enter your first name');
+      notify('Missing name', 'Enter your first name');
       return;
     }
     setLoading(true);
     try {
       const data = await authService.sendOtp(phone);
       setOtpSent(true);
-      Alert.alert('OTP sent', data.otp ? `Dev OTP: ${data.otp}` : 'Check your phone for the code');
+      notify('OTP sent', data.otp ? `Dev OTP: ${data.otp}` : 'Check your phone for the code');
     } catch (error) {
-      Alert.alert('Error', getErrorMessage(error));
+      notify('Error', getErrorMessage(error));
     }
     setLoading(false);
   };
 
   const handleSignup = async () => {
     if (!otp) {
-      Alert.alert('Missing OTP', 'Enter the OTP sent to your phone');
+      notify('Missing OTP', 'Enter the OTP sent to your phone');
       return;
     }
     setLoading(true);
@@ -57,7 +58,7 @@ const SignupScreen = ({ navigation }) => {
       dispatch(loginSuccess(data));
     } catch (error) {
       dispatch(loginError(getErrorMessage(error)));
-      Alert.alert('Signup failed', getErrorMessage(error));
+      notify('Signup failed', getErrorMessage(error));
     }
     setLoading(false);
   };

@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
@@ -35,9 +36,16 @@ const HomeScreen = ({ navigation }) => {
     }
   }, [dispatch, user?.role]);
 
-  useEffect(() => {
-    loadData();
+  // Home is the stack root, so it stays mounted while the user works in
+  // pushed screens. Refetch whenever it regains focus so the dashboard counts
+  // reflect loads posted, quotes accepted, and bookings updated elsewhere.
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
+  useEffect(() => {
     if (token) {
       socketService.connect(token);
       const onNewQuote = ({ load }) => dispatch(updateLoad(load));
@@ -54,7 +62,7 @@ const HomeScreen = ({ navigation }) => {
         socketService.off('quote-accepted', onQuoteAccepted);
       };
     }
-  }, [loadData, token, dispatch]);
+  }, [token, dispatch]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -91,6 +99,11 @@ const HomeScreen = ({ navigation }) => {
             </Text>
             <Button title="View My Loads" variant="secondary" onPress={() => navigation.navigate('LoadsList')} />
           </Card>
+          <Card>
+            <Text style={styles.cardTitle}>Active Bookings ({activeBookings.length})</Text>
+            <Text style={styles.cardDesc}>Track pickup, delivery, and driver location</Text>
+            <Button title="View Bookings" variant="secondary" onPress={() => navigation.navigate('Bookings')} />
+          </Card>
         </>
       )}
 
@@ -102,9 +115,14 @@ const HomeScreen = ({ navigation }) => {
             <Button title="Browse Loads" onPress={() => navigation.navigate('LoadsList')} />
           </Card>
           <Card>
-            <Text style={styles.cardTitle}>My Fleet</Text>
-            <Text style={styles.cardDesc}>Manage your trucks and drivers</Text>
-            <Button title="Fleet Management" variant="secondary" onPress={() => navigation.navigate('Fleet')} />
+            <Text style={styles.cardTitle}>My Bookings ({activeBookings.length} active)</Text>
+            <Text style={styles.cardDesc}>Assign drivers and track jobs you've won</Text>
+            <Button title="View Bookings" variant="secondary" onPress={() => navigation.navigate('Bookings')} />
+          </Card>
+          <Card>
+            <Text style={styles.cardTitle}>Driver Directory</Text>
+            <Text style={styles.cardDesc}>Look up a driver by phone before assigning them</Text>
+            <Button title="Find a Driver" variant="secondary" onPress={() => navigation.navigate('Fleet')} />
           </Card>
         </>
       )}

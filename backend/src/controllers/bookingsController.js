@@ -1,7 +1,11 @@
 const Booking = require('../models/Booking');
 
+// A ref may be a raw ObjectId or, on populated queries, a full user document —
+// normalize both to the id string before comparing.
+const idOf = (ref) => (ref ? String(ref._id || ref) : null);
+
 const isParty = (booking, userId) =>
-  [booking.shipperId, booking.ownerId, booking.driverId].some((id) => id && String(id) === userId);
+  [booking.shipperId, booking.ownerId, booking.driverId].some((ref) => idOf(ref) === userId);
 
 // List bookings the requesting user is part of (as shipper, owner, or driver)
 exports.listMyBookings = async (req, res, next) => {
@@ -50,7 +54,7 @@ exports.assignDriver = async (req, res, next) => {
     const { driverId } = req.body;
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    if (String(booking.ownerId) !== req.user.userId) {
+    if (idOf(booking.ownerId) !== req.user.userId) {
       return res.status(403).json({ success: false, message: 'Only the owner can assign a driver' });
     }
 
@@ -98,7 +102,7 @@ exports.updateLocation = async (req, res, next) => {
     const { lat, lng } = req.body;
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    if (String(booking.driverId) !== req.user.userId) {
+    if (idOf(booking.driverId) !== req.user.userId) {
       return res.status(403).json({ success: false, message: 'Only the assigned driver can update location' });
     }
 
@@ -124,9 +128,9 @@ exports.rateBooking = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Can only rate a completed booking' });
     }
 
-    if (String(booking.shipperId) === req.user.userId) {
+    if (idOf(booking.shipperId) === req.user.userId) {
       booking.ownerRating = { rating, review, ratedAt: new Date() };
-    } else if (String(booking.ownerId) === req.user.userId) {
+    } else if (idOf(booking.ownerId) === req.user.userId) {
       booking.shipperRating = { rating, review, ratedAt: new Date() };
     } else {
       return res.status(403).json({ success: false, message: 'Not part of this booking' });

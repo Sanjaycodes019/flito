@@ -43,6 +43,7 @@ app.use('/api/loads', require('./routes/loads'));
 app.use('/api/quotes', require('./routes/quotes'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/users', require('./routes/users'));
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 app.use(errorHandler);

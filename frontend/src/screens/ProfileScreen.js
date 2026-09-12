@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
@@ -7,24 +7,24 @@ import Card from '../components/common/Card';
 import { authService } from '../services/auth';
 import socketService from '../services/socket';
 import { FLITO_COLORS } from '../utils/colors';
+import { confirmAction } from '../utils/alert';
 
 const ProfileScreen = () => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
   const handleLogout = () => {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log out',
-        style: 'destructive',
-        onPress: async () => {
-          await authService.logout();
-          socketService.disconnect();
-          dispatch(logout());
-        },
+    confirmAction({
+      title: 'Log out',
+      message: 'Are you sure you want to log out?',
+      confirmLabel: 'Log out',
+      destructive: true,
+      onConfirm: async () => {
+        await authService.logout();
+        socketService.disconnect();
+        dispatch(logout());
       },
-    ]);
+    });
   };
 
   return (
