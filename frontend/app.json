@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "FLITO",
+    "slug": "flito",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#12161A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.flito.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#12161A"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": ["expo-secure-store"]
+  }
+}
