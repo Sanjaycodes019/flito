@@ -4,9 +4,12 @@ const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
 
+const validateEnv = require('./config/validateEnv');
 const connectDB = require('./config/database');
 const setupSocketHandlers = require('./socket/handlers');
 const errorHandler = require('./middleware/errorHandler');
+
+validateEnv();
 
 const app = express();
 const server = http.createServer(app);
