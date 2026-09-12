@@ -75,6 +75,15 @@ npm run web              # http://localhost:8081
 
 Check the backend is healthy: `curl http://localhost:5000/api/health` → `{"status":"ok"}`
 
+### Tests
+
+```bash
+cd backend
+npm test
+```
+
+46 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering auth and OTP handling, booking permissions, quote negotiation turn-taking, and fleet ownership scoping.
+
 ### Signing in during development
 
 Auth is phone + OTP. In development (`NODE_ENV !== production`) the OTP is always **`123456`** and is also returned in the `/api/auth/send-otp` response for convenience. In production a random 6-digit code is generated and never returned in the response — wiring it to an SMS gateway (e.g. Sparrow SMS) is a prerequisite for launch. See [Known gaps](#known-gaps).
@@ -93,6 +102,9 @@ Phone numbers must match `+977XXXXXXXXXX`.
 | `NODE_ENV` | backend `.env`, Render | `development` / `production` |
 | `PORT` | backend `.env` | `5000` (Render injects its own — don't hardcode) |
 | `FRONTEND_URL` | backend `.env`, Render | `https://flito.vercel.app` (required in production) |
+| `SPARROW_SMS_TOKEN` | backend `.env`, Render | Sparrow SMS API token (required in production) |
+| `SPARROW_SMS_FROM` | backend `.env`, Render | Approved sender identity (required in production) |
+| `REDIS_URL` | backend `.env`, Render | Optional — switches the OTP store to Redis |
 | `EXPO_PUBLIC_API_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com/api` |
 | `EXPO_PUBLIC_SOCKET_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com` |
 
@@ -135,7 +147,7 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 | PATCH | `/api/loads/:id/cancel` | shipper | Cancel own load |
 | POST | `/api/quotes` | owner | Submit a quote |
 | GET | `/api/quotes/mine` | owner | Own submitted quotes |
-| PATCH | `/api/quotes/:id/accept` | shipper | Accept → creates booking |
+| PATCH | `/api/quotes/:id/accept` | party without the standing offer | Accept → creates booking |
 | PATCH | `/api/quotes/:id/reject` | either party | Reject |
 | PATCH | `/api/quotes/:id/counter` | either party | Counter-offer |
 | GET | `/api/bookings` | any | Bookings for your role |
@@ -145,6 +157,11 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 | PATCH | `/api/bookings/:id/location` | driver | GPS ping |
 | POST | `/api/bookings/:id/rate` | party | Rate after completion |
 | GET | `/api/users/lookup?phone=` | owner/admin | Find a driver by phone |
+| POST | `/api/trucks` | owner | Add a truck to your fleet |
+| GET | `/api/trucks` | owner | Your fleet |
+| PATCH | `/api/trucks/:id` | owner | Update truck details/status |
+| PATCH | `/api/trucks/:id/driver` | owner | Assign/unassign the truck's driver |
+| DELETE | `/api/trucks/:id` | owner | Remove a truck |
 | GET | `/api/admin/stats` | admin | Platform metrics |
 | GET | `/api/admin/kyc/pending` | admin | KYC queue |
 | PATCH | `/api/admin/kyc/:userId` | admin | Approve/reject KYC |
@@ -215,13 +232,12 @@ Set the production `EXPO_PUBLIC_*` values per-profile in `eas.json` — EAS buil
 
 These are deliberate MVP scope cuts, not oversights:
 
-- **OTP delivery is not wired to SMS.** Production generates a real random code but has no gateway to send it, so nobody can actually log in. Integrating Sparrow SMS (or similar) is the single hard blocker for a public launch.
-- **OTPs live in an in-memory `Map`.** They reset on restart/redeploy and won't work across multiple instances. Move to Redis before scaling past one dyno.
-- **"Fleet" is a driver lookup, not fleet management.** There's no truck or driver-roster model; owners look drivers up by phone to assign them. Real fleet management needs a schema addition.
-- **No file uploads.** KYC documents and load photos are modelled as URL strings, but there's no upload endpoint yet (needs Multer + object storage, with size and type limits).
-- **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up.
-- **Booking status transitions aren't role-gated server-side.** Any party to a booking can set any status; the UI restricts this but the API doesn't.
-- **No automated tests.** Verification so far has been manual end-to-end runs.
+- **SMS needs an account.** The gateway integration is built (`src/services/sms.js`, Sparrow SMS), but until `SPARROW_SMS_TOKEN`/`SPARROW_SMS_FROM` are set, OTPs are only logged to the server console. Production refuses to boot without them, since undelivered codes mean nobody can log in. **This is the remaining hard blocker for a public launch.**
+- **No file uploads.** KYC documents and load photos are modelled as URL strings, but there's no upload endpoint yet (needs Multer + object storage such as Cloudinary or S3, with size and type limits).
+- **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up. Needs a merchant account.
+- **Redis is optional, not required.** OTPs default to an in-memory `Map`, which is fine on a single instance but resets on redeploy. Set `REDIS_URL` to switch to the Redis backend (`src/services/otpStore.js`) before running more than one instance — you'll need to `npm install redis`.
+- **Frontend has no automated tests.** The backend suite covers auth, permissions and negotiation; UI verification is still manual.
+- **Trucks aren't linked to bookings.** A truck carries a default driver, but per-booking driver assignment happens on the booking itself; the specific truck used isn't recorded.
 
 ---
 

@@ -85,22 +85,37 @@ exports.counterQuote = async (req, res, next) => {
   }
 };
 
-// Shipper accepts a quote -> creates a Booking
+// Accepting closes the negotiation and creates a Booking. Whoever did NOT make
+// the outstanding offer is the one who can accept it: the shipper accepts an
+// owner's original quote or counter, and the owner accepts a shipper's counter.
 exports.acceptQuote = async (req, res, next) => {
   try {
     const quote = await Quote.findById(req.params.id).populate('loadId');
     if (!quote) return res.status(404).json({ success: false, message: 'Quote not found' });
 
     const load = quote.loadId;
-    if (String(load.shipperId) !== req.user.userId) {
-      return res.status(403).json({ success: false, message: 'Only the shipper can accept a quote' });
+    const isShipper = String(load.shipperId) === req.user.userId;
+    const isOwner = String(quote.ownerId) === req.user.userId;
+    if (!isShipper && !isOwner) {
+      return res.status(403).json({ success: false, message: 'Not part of this negotiation' });
+    }
+
+    if (!['pending', 'countered'].includes(quote.status)) {
+      return res.status(400).json({ success: false, message: `Quote is already ${quote.status}` });
+    }
+
+    // The party who made the standing offer cannot accept their own offer.
+    const offerBy = quote.status === 'countered' ? quote.counterOfferBy : 'owner';
+    const acceptedBy = isShipper ? 'shipper' : 'owner';
+    if (offerBy === acceptedBy) {
+      return res.status(400).json({ success: false, message: 'Waiting on the other party to respond to your offer' });
     }
 
     const finalPrice = quote.counterOfferPrice ?? quote.quotedPrice;
 
     quote.status = 'accepted';
     quote.acceptedAt = new Date();
-    quote.acceptedBy = 'shipper';
+    quote.acceptedBy = acceptedBy;
     await quote.save();
 
     load.status = 'booked';
@@ -115,7 +130,9 @@ exports.acceptQuote = async (req, res, next) => {
       amountPending: finalPrice,
     });
 
-    req.io?.to(`user-${quote.ownerId}`).emit('quote-accepted', { quote, booking });
+    // Notify the other party, whichever side accepted.
+    req.io?.to(`user-${isShipper ? quote.ownerId : load.shipperId}`)
+      .emit('quote-accepted', { quote, booking });
 
     res.json({ success: true, quote, booking });
   } catch (error) {

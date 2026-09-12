@@ -13,6 +13,9 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many attempts, please try again later' },
+  // The suite drives many signups from one address; the limit stays active in
+  // development and production.
+  skip: () => process.env.NODE_ENV === 'test',
 });
 
 router.use(authLimiter);

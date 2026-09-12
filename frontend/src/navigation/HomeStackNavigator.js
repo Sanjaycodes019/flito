@@ -7,6 +7,7 @@ import LoadDetailScreen from '../screens/LoadDetailScreen';
 import BookingsListScreen from '../screens/BookingsListScreen';
 import BookingDetailScreen from '../screens/BookingDetailScreen';
 import ManageFleet from '../screens/owner/ManageFleet';
+import MyQuotesScreen from '../screens/owner/MyQuotesScreen';
 import EarningsScreen from '../screens/driver/EarningsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import { FLITO_COLORS } from '../utils/colors';
@@ -30,7 +31,8 @@ const HomeStackNavigator = () => (
     <Stack.Screen name="Bookings" component={BookingsListScreen} options={{ title: 'Bookings' }} />
     <Stack.Screen name="Jobs" component={BookingsListScreen} options={{ title: 'My Jobs' }} />
     <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
-    <Stack.Screen name="Fleet" component={ManageFleet} options={{ title: 'Driver Directory' }} />
+    <Stack.Screen name="MyQuotes" component={MyQuotesScreen} options={{ title: 'My Quotes' }} />
+    <Stack.Screen name="Fleet" component={ManageFleet} options={{ title: 'My Fleet' }} />
     <Stack.Screen name="Earnings" component={EarningsScreen} options={{ title: 'Earnings' }} />
     <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: 'Admin Dashboard' }} />
   </Stack.Navigator>

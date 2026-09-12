@@ -50,10 +50,31 @@ const validateCreateQuote = (req, res, next) => {
   next();
 };
 
+const validateCounterOffer = (req, res, next) => {
+  const { counterOfferPrice } = req.body;
+  if (typeof counterOfferPrice !== 'number' || counterOfferPrice <= 0) {
+    return res.status(400).json({ success: false, message: 'counterOfferPrice must be a positive number' });
+  }
+  next();
+};
+
+const validateCreateTruck = (req, res, next) => {
+  const { registrationNumber, truckType } = req.body;
+  if (!registrationNumber || !String(registrationNumber).trim()) {
+    return res.status(400).json({ success: false, message: 'registrationNumber is required' });
+  }
+  if (!truckType) {
+    return res.status(400).json({ success: false, message: 'truckType is required' });
+  }
+  next();
+};
+
 module.exports = {
   isValidPhone,
   validateSendOtp,
   validateSignup,
   validateCreateLoad,
   validateCreateQuote,
+  validateCounterOffer,
+  validateCreateTruck,
 };

@@ -1,14 +1,13 @@
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const otpStore = require('../services/otpStore');
+const sms = require('../services/sms');
 
-// In-memory OTP store keyed by phone. Fine for a single-instance MVP;
-// swap for Redis (or a real SMS+OTP provider like Sparrow SMS) before scaling
-// past one server instance, since this resets on every restart/deploy.
-const otpStore = new Map();
-const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
+// Math.random() is not suitable for a security credential — a 6-digit code is
+// small enough to brute-force offline if it is predictable.
 const generateOtp = () => (process.env.NODE_ENV === 'production'
-  ? String(Math.floor(100000 + Math.random() * 900000))
+  ? String(crypto.randomInt(100000, 1000000))
   : '123456'); // fixed OTP in dev/test for convenience
 
 const signToken = (user) =>
@@ -32,11 +31,13 @@ exports.sendOtp = async (req, res, next) => {
   try {
     const { phone } = req.body;
     const otp = generateOtp();
-    otpStore.set(phone, { otp, expiresAt: Date.now() + OTP_TTL_MS });
+    await otpStore.set(phone, otp);
+    await sms.sendOtpSms(phone, otp);
 
-    // TODO: integrate a real SMS gateway (e.g. Sparrow SMS) for production.
     const payload = { success: true, message: 'OTP sent' };
-    if (process.env.NODE_ENV !== 'production') payload.otp = otp; // dev convenience only
+    // Returning the code is a development convenience only — never in
+    // production, where it would hand any caller a valid credential.
+    if (process.env.NODE_ENV !== 'production') payload.otp = otp;
 
     res.json(payload);
   } catch (error) {
@@ -44,19 +45,13 @@ exports.sendOtp = async (req, res, next) => {
   }
 };
 
-const consumeOtp = (phone, otp) => {
-  const entry = otpStore.get(phone);
-  if (!entry) return false;
-  const valid = entry.otp === otp && entry.expiresAt > Date.now();
-  if (valid) otpStore.delete(phone);
-  return valid;
-};
+const consumeOtp = (phone, otp) => otpStore.consume(phone, otp);
 
 exports.signup = async (req, res, next) => {
   try {
     const { phone, otp, role, firstName, lastName } = req.body;
 
-    if (!consumeOtp(phone, otp)) {
+    if (!(await consumeOtp(phone, otp))) {
       return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
     }
 
@@ -83,7 +78,7 @@ exports.login = async (req, res, next) => {
   try {
     const { phone, otp } = req.body;
 
-    if (!consumeOtp(phone, otp)) {
+    if (!(await consumeOtp(phone, otp))) {
       return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
     }
 

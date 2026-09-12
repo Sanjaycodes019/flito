@@ -28,5 +28,14 @@ module.exports = function validateEnv() {
       console.error('FRONTEND_URL must be set in production so CORS allows your deployed frontend.');
       process.exit(1);
     }
+    if (!process.env.SPARROW_SMS_TOKEN || !process.env.SPARROW_SMS_FROM) {
+      // Without a gateway, production OTPs are generated but never delivered,
+      // so no real user can ever complete login.
+      console.error(
+        'SPARROW_SMS_TOKEN and SPARROW_SMS_FROM must be set in production — ' +
+        'without an SMS gateway no user can receive a login code.'
+      );
+      process.exit(1);
+    }
   }
 };

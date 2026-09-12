@@ -82,6 +82,17 @@ const LoadDetailScreen = ({ route, navigation }) => {
     setBusy(false);
   };
 
+  const handleCounter = async (quoteId, counterOfferPrice) => {
+    setBusy(true);
+    try {
+      await api.patch(`/quotes/${quoteId}/counter`, { counterOfferPrice });
+      await fetchAll();
+    } catch (error) {
+      notify('Error', getErrorMessage(error));
+    }
+    setBusy(false);
+  };
+
   const handleCancelLoad = async () => {
     setBusy(true);
     try {
@@ -126,20 +137,15 @@ const LoadDetailScreen = ({ route, navigation }) => {
           <Text style={styles.sectionTitle}>Quotes ({quotes.length})</Text>
           {quotes.length === 0 && <Text style={styles.empty}>No quotes yet</Text>}
           {quotes.map((q) => (
-            <Card key={q._id}>
-              <View style={styles.row}>
-                <Text style={styles.ownerName}>{q.ownerId?.firstName} {q.ownerId?.lastName}</Text>
-                <StatusBadge status={q.status} />
-              </View>
-              <Text style={styles.price}>{formatCurrency(q.counterOfferPrice ?? q.quotedPrice)}</Text>
-              {q.truckType ? <Detail label="Truck" value={q.truckType} /> : null}
-              {q.status === 'pending' && (
-                <View style={styles.actionsRow}>
-                  <Button title="Accept" onPress={() => handleAccept(q._id)} loading={busy} style={styles.actionButton} />
-                  <Button title="Reject" variant="outline" onPress={() => handleReject(q._id)} loading={busy} style={styles.actionButton} />
-                </View>
-              )}
-            </Card>
+            <QuoteCard
+              key={q._id}
+              quote={q}
+              viewerSide="shipper"
+              busy={busy}
+              onAccept={handleAccept}
+              onReject={handleReject}
+              onCounter={handleCounter}
+            />
           ))}
         </View>
       )}
@@ -148,10 +154,95 @@ const LoadDetailScreen = ({ route, navigation }) => {
         <OwnerQuoteSection
           load={load}
           myQuote={myQuote}
+          busy={busy}
           onSubmitted={fetchAll}
+          onAccept={handleAccept}
+          onReject={handleReject}
+          onCounter={handleCounter}
         />
       )}
     </ScrollView>
+  );
+};
+
+// One quote in a negotiation, from either side's point of view. Only the party
+// who did NOT make the standing offer can accept or counter it — the other side
+// is waiting for a response.
+const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, showOwner = true }) => {
+  const [countering, setCountering] = useState(false);
+  const [counterPrice, setCounterPrice] = useState('');
+
+  const standingPrice = quote.counterOfferPrice ?? quote.quotedPrice;
+  const offerBy = quote.status === 'countered' ? quote.counterOfferBy : 'owner';
+  const isOpen = ['pending', 'countered'].includes(quote.status);
+  const myTurn = isOpen && offerBy !== viewerSide;
+
+  const submitCounter = () => {
+    const value = Number(counterPrice);
+    if (!value || value <= 0) {
+      notify('Invalid price', 'Enter a counter-offer amount greater than zero');
+      return;
+    }
+    setCountering(false);
+    setCounterPrice('');
+    onCounter(quote._id, value);
+  };
+
+  return (
+    <Card>
+      <View style={styles.row}>
+        {showOwner ? (
+          <Text style={styles.ownerName}>
+            {quote.ownerId?.companyName || `${quote.ownerId?.firstName || ''} ${quote.ownerId?.lastName || ''}`}
+          </Text>
+        ) : (
+          <Text style={styles.ownerName}>Your Quote</Text>
+        )}
+        <StatusBadge status={quote.status} />
+      </View>
+
+      <Text style={styles.price}>{formatCurrency(standingPrice)}</Text>
+      {quote.counterOfferPrice != null && (
+        <Text style={styles.counterNote}>
+          Countered by the {quote.counterOfferBy} · originally {formatCurrency(quote.quotedPrice)}
+        </Text>
+      )}
+      {quote.truckType ? <Detail label="Truck" value={quote.truckType} /> : null}
+
+      {isOpen && !myTurn && (
+        <Text style={styles.waitingNote}>Waiting for the other party to respond to your offer.</Text>
+      )}
+
+      {myTurn && !countering && (
+        <View style={styles.actionsRow}>
+          <Button title="Accept" onPress={() => onAccept(quote._id)} loading={busy} style={styles.actionButton} />
+          <Button title="Counter" variant="secondary" onPress={() => setCountering(true)} style={styles.actionButton} />
+          <Button title="Reject" variant="outline" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
+        </View>
+      )}
+
+      {myTurn && countering && (
+        <View>
+          <Text style={styles.label}>Your Counter-Offer (Rs.)</Text>
+          <TextInput
+            style={styles.input}
+            value={counterPrice}
+            onChangeText={setCounterPrice}
+            keyboardType="numeric"
+            placeholder={String(standingPrice)}
+          />
+          <View style={styles.actionsRow}>
+            <Button title="Send" onPress={submitCounter} loading={busy} style={styles.actionButton} />
+            <Button
+              title="Cancel"
+              variant="outline"
+              onPress={() => { setCountering(false); setCounterPrice(''); }}
+              style={styles.actionButton}
+            />
+          </View>
+        </View>
+      )}
+    </Card>
   );
 };
 
@@ -162,7 +253,7 @@ const Detail = ({ label, value }) => (
   </View>
 );
 
-const OwnerQuoteSection = ({ load, myQuote, onSubmitted }) => {
+const OwnerQuoteSection = ({ load, myQuote, busy, onSubmitted, onAccept, onReject, onCounter }) => {
   const [price, setPrice] = useState('');
   const [truckType, setTruckType] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -186,13 +277,17 @@ const OwnerQuoteSection = ({ load, myQuote, onSubmitted }) => {
 
   if (myQuote) {
     return (
-      <Card>
-        <Text style={styles.sectionTitle}>Your Quote</Text>
-        <View style={styles.row}>
-          <Text style={styles.price}>{formatCurrency(myQuote.counterOfferPrice ?? myQuote.quotedPrice)}</Text>
-          <StatusBadge status={myQuote.status} />
-        </View>
-      </Card>
+      <View>
+        <QuoteCard
+          quote={myQuote}
+          viewerSide="owner"
+          busy={busy}
+          onAccept={onAccept}
+          onReject={onReject}
+          onCounter={onCounter}
+          showOwner={false}
+        />
+      </View>
     );
   }
 
@@ -222,6 +317,8 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary, marginTop: 16, marginBottom: 8 },
   ownerName: { fontSize: 15, fontWeight: '600', color: FLITO_COLORS.secondary },
   price: { fontSize: 18, fontWeight: '700', color: FLITO_COLORS.primary, marginVertical: 6 },
+  counterNote: { fontSize: 12, color: FLITO_COLORS.textMuted, marginBottom: 6 },
+  waitingNote: { fontSize: 12, color: FLITO_COLORS.textMuted, fontStyle: 'italic', marginTop: 8 },
   actionsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   actionButton: { flex: 1 },
   label: { fontSize: 14, fontWeight: '600', color: FLITO_COLORS.secondary, marginBottom: 8, marginTop: 8 },

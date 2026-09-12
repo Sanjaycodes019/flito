@@ -71,14 +71,57 @@ exports.assignDriver = async (req, res, next) => {
   }
 };
 
-// Driver/owner updates pickup or dropoff status, or overall booking status
+// Which party a user is on a given booking (a user can only be one of these).
+const partyOf = (booking, userId) => {
+  if (idOf(booking.shipperId) === userId) return 'shipper';
+  if (idOf(booking.ownerId) === userId) return 'owner';
+  if (idOf(booking.driverId) === userId) return 'driver';
+  return null;
+};
+
+// Only the assigned driver physically moves the load, so only they may report
+// pickup/dropoff progress. Cancellation is a commercial decision and belongs to
+// the shipper or owner, and only before the load is in transit.
+const CANCELLABLE_FROM = ['pending', 'confirmed'];
+
 exports.updateStatus = async (req, res, next) => {
   try {
     const { status, pickupStatus, dropoffStatus } = req.body;
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    if (!isParty(booking, req.user.userId)) {
+
+    const party = partyOf(booking, req.user.userId);
+    if (!party) {
       return res.status(403).json({ success: false, message: 'Not part of this booking' });
+    }
+
+    if ((pickupStatus || dropoffStatus) && party !== 'driver') {
+      return res.status(403).json({ success: false, message: 'Only the assigned driver can report pickup or delivery progress' });
+    }
+
+    if (status) {
+      if (status === 'cancelled') {
+        if (party === 'driver') {
+          return res.status(403).json({ success: false, message: 'Drivers cannot cancel a booking' });
+        }
+        if (!CANCELLABLE_FROM.includes(booking.status)) {
+          return res.status(400).json({ success: false, message: `Cannot cancel a booking that is ${booking.status}` });
+        }
+      } else if (['in_transit', 'completed'].includes(status)) {
+        if (party !== 'driver') {
+          return res.status(403).json({ success: false, message: 'Only the assigned driver can advance delivery status' });
+        }
+      } else if (status === 'confirmed') {
+        if (party !== 'owner') {
+          return res.status(403).json({ success: false, message: 'Only the owner can confirm a booking' });
+        }
+      } else {
+        return res.status(400).json({ success: false, message: `Unsupported status transition: ${status}` });
+      }
+
+      if (['completed', 'cancelled'].includes(booking.status)) {
+        return res.status(400).json({ success: false, message: `Booking is already ${booking.status}` });
+      }
     }
 
     if (status) booking.status = status;

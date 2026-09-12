@@ -18,23 +18,28 @@ const HomeScreen = ({ navigation }) => {
   const { items: loads, isLoading: loadsLoading } = useSelector((state) => state.loads);
   const { items: bookings, isLoading: bookingsLoading } = useSelector((state) => state.bookings);
   const [refreshing, setRefreshing] = useState(false);
+  const [myQuotes, setMyQuotes] = useState([]);
+
+  const isOwner = user?.role === ROLES.OWNER;
 
   const loadData = useCallback(async () => {
     dispatch(fetchLoadsStart());
     dispatch(fetchBookingsStart());
     try {
       const loadsQuery = user?.role === ROLES.SHIPPER ? '?mine=true' : '';
-      const [loadsRes, bookingsRes] = await Promise.all([
+      const [loadsRes, bookingsRes, quotesRes] = await Promise.all([
         api.get(`/loads${loadsQuery}`),
         api.get('/bookings'),
+        isOwner ? api.get('/quotes/mine') : Promise.resolve(null),
       ]);
       dispatch(fetchLoadsSuccess(loadsRes.data.loads));
       dispatch(fetchBookingsSuccess(bookingsRes.data.bookings));
+      if (quotesRes) setMyQuotes(quotesRes.data.quotes);
     } catch (error) {
       dispatch(fetchLoadsError(getErrorMessage(error)));
       dispatch(fetchBookingsError(getErrorMessage(error)));
     }
-  }, [dispatch, user?.role]);
+  }, [dispatch, user?.role, isOwner]);
 
   // Home is the stack root, so it stays mounted while the user works in
   // pushed screens. Refetch whenever it regains focus so the dashboard counts
@@ -71,6 +76,10 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const activeBookings = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status));
+  // Quotes where the shipper has countered are waiting on the owner to reply.
+  const awaitingMyResponse = myQuotes.filter(
+    (q) => q.status === 'countered' && q.counterOfferBy === 'shipper'
+  ).length;
   const todaysEarnings = bookings
     .filter((b) => b.status === 'completed')
     .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
@@ -115,14 +124,23 @@ const HomeScreen = ({ navigation }) => {
             <Button title="Browse Loads" onPress={() => navigation.navigate('LoadsList')} />
           </Card>
           <Card>
+            <Text style={styles.cardTitle}>My Quotes</Text>
+            <Text style={styles.cardDesc}>
+              {awaitingMyResponse > 0
+                ? `${awaitingMyResponse} awaiting your response`
+                : 'Track the loads you have bid on'}
+            </Text>
+            <Button title="View My Quotes" variant="secondary" onPress={() => navigation.navigate('MyQuotes')} />
+          </Card>
+          <Card>
             <Text style={styles.cardTitle}>My Bookings ({activeBookings.length} active)</Text>
             <Text style={styles.cardDesc}>Assign drivers and track jobs you've won</Text>
             <Button title="View Bookings" variant="secondary" onPress={() => navigation.navigate('Bookings')} />
           </Card>
           <Card>
-            <Text style={styles.cardTitle}>Driver Directory</Text>
-            <Text style={styles.cardDesc}>Look up a driver by phone before assigning them</Text>
-            <Button title="Find a Driver" variant="secondary" onPress={() => navigation.navigate('Fleet')} />
+            <Text style={styles.cardTitle}>My Fleet</Text>
+            <Text style={styles.cardDesc}>Manage your trucks and their assigned drivers</Text>
+            <Button title="Manage Fleet" variant="secondary" onPress={() => navigation.navigate('Fleet')} />
           </Card>
         </>
       )}
