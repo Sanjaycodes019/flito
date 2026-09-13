@@ -147,9 +147,9 @@ const AdminDashboardScreen = () => {
 const StatTile = ({ label, value, highlight }) => (
   <Card style={styles.statTile}>
     <View style={[styles.statIconWrap, highlight && styles.statIconWrapHighlight]}>
-      <Icon name={STAT_ICON[label]} size={iconSize.md} color={highlight ? colors.warning : colors.primary} />
+      <Icon name={STAT_ICON[label]} size={iconSize.md} color={highlight ? colors.warningText : colors.primaryText} />
     </View>
-    <Text style={[styles.statValue, highlight && { color: colors.warning }]}>{value ?? '-'}</Text>
+    <Text style={[styles.statValue, highlight && { color: colors.warningText }]}>{value ?? '-'}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </Card>
 );

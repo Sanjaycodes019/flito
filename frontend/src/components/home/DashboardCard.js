@@ -13,7 +13,7 @@ const DashboardCard = ({ icon, title, description, value, actionLabel, onAction,
   <Card style={styles.card}>
     <View style={styles.header}>
       <View style={styles.iconWrap}>
-        <Icon name={icon} size={iconSize.lg} color={colors.primary} />
+        <Icon name={icon} size={iconSize.lg} color={colors.primaryText} />
       </View>
       <Text style={styles.title}>{title}</Text>
     </View>
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   },
   title: { ...type.h3, color: colors.textPrimary, flex: 1 },
   description: { ...type.small, color: colors.textMuted, marginBottom: spacing.md },
-  value: { ...type.display, color: colors.primary, marginVertical: spacing.sm },
+  value: { ...type.display, color: colors.primaryText, marginVertical: spacing.sm },
 });
 
 export default DashboardCard;

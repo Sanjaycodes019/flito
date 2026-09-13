@@ -31,7 +31,7 @@ const Input = ({
   const borderColor = hasError
     ? colors.error
     : focused
-      ? colors.accent
+      ? colors.focusRing
       : colors.border;
 
   return (
@@ -69,7 +69,7 @@ const Input = ({
 
       {(hasError || helperText) && (
         <View style={styles.helperRow}>
-          {hasError && <Icon name="error" size={iconSize.xs} color={colors.error} style={styles.helperIcon} />}
+          {hasError && <Icon name="error" size={iconSize.xs} color={colors.errorText} style={styles.helperIcon} />}
           <Text style={[styles.helperText, hasError && styles.errorText]}>
             {hasError ? error : helperText}
           </Text>
@@ -90,7 +90,7 @@ export const InputAction = ({ icon, onPress, accessibilityLabel }) => (
 const styles = StyleSheet.create({
   container: { marginBottom: spacing.lg },
   label: { ...type.smallMedium, color: colors.textSecondary, marginBottom: spacing.xs },
-  required: { color: colors.error },
+  required: { color: colors.errorText },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   helperRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs },
   helperIcon: { marginRight: 4 },
   helperText: { ...type.small, color: colors.textMuted },
-  errorText: { color: colors.error },
+  errorText: { color: colors.errorText },
 });
 
 export default Input;

@@ -19,7 +19,7 @@ const TabNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: false, // each stack screen sets its own header
-      tabBarActiveTintColor: colors.primary,
+      tabBarActiveTintColor: colors.primaryText,
       tabBarInactiveTintColor: colors.textMuted,
       tabBarStyle: {
         backgroundColor: colors.surface,

@@ -27,10 +27,23 @@ export const colors = {
   // Text
   textPrimary: FLITO_COLORS.textDark,
   textSecondary: 'rgba(30, 36, 43, 0.68)', // tint of FLITO_COLORS.secondary
-  textMuted: FLITO_COLORS.textMuted,
-  textOnPrimary: '#FFFFFF',
+  // A darkened shade of FLITO_COLORS.textMuted (#95A5A6). The brand shade
+  // measures ~2.4:1 on both white and the app background, well under the
+  // 4.5:1 WCAG AA minimum for the small metadata/caption text it is used
+  // for everywhere. This keeps the same hue, just dark enough to read.
+  textMuted: '#5D6E6F',
+  // Text/icon color for on top of a solid FLITO_COLORS.primary (amber)
+  // surface: a Button's primary variant, the role badge pill. White on
+  // that amber measures ~2:1 (fails AA); this near-black brand tone
+  // (FLITO_COLORS.secondary) measures ~7.6:1.
+  textOnPrimary: FLITO_COLORS.secondary,
+  // Text/icon color for a solid dark surface (FLITO_COLORS.secondary or
+  // .dark): a Button's secondary variant, an avatar circle's icon.
+  textOnDark: '#FFFFFF',
   textInverse: FLITO_COLORS.textLight,
-  textLink: FLITO_COLORS.info,
+  // FLITO_COLORS.info itself measures ~3.15:1 as link text on white, under
+  // the 4.5:1 AA minimum; infoText (below) is the same hue, dark enough.
+  textLink: '#1D6CA1',
 
   // Structure
   border: 'rgba(30, 36, 43, 0.14)', // tint of FLITO_COLORS.secondary
@@ -41,19 +54,46 @@ export const colors = {
   primary: FLITO_COLORS.primary,
   primaryPressed: '#E08F00', // darkened primary for pressed state
   primaryMuted: 'rgba(255, 159, 0, 0.14)',
+  // FLITO_COLORS.primary itself measures ~2:1 as text on a light surface
+  // (fails AA), so anywhere the brand amber is the TEXT color (prices,
+  // section labels, the role chip, a tertiary button's label) uses this
+  // darkened tone of the same hue instead, at ~5:1. The wordmark is exempt
+  // (WCAG does not apply contrast minimums to logotype text) and keeps the
+  // true brand amber.
+  primaryText: '#995F00',
   secondary: FLITO_COLORS.secondary,
   accent: FLITO_COLORS.accent,
   accentMuted: 'rgba(0, 210, 162, 0.14)',
+  // FLITO_COLORS.accent (teal) as text/icon on a light surface, or white
+  // text on a solid accent surface, both fail AA; this darkened tone passes.
+  accentText: '#007E61',
+  // Keyboard-focus ring color, used as a border on whatever surface is
+  // focused. The raw brand accent teal measures ~2:1 against a white card,
+  // under the 3:1 WCAG minimum for a focus indicator; this darkened tone
+  // (the same one used for accent text) reaches ~5:1.
+  focusRing: '#007E61',
 
-  // Semantic state (kept as-is; already harmonize with the brand palette)
+  // Semantic state. The saturated brand hues below stay exactly as chosen
+  // (large surfaces: solid map markers, focus rings) but none of them are
+  // safe as small text or an icon on their own light "Muted" tint, or as
+  // white text on their own solid fill: several measure under 3:1. Each has
+  // a paired darkened "Strong"/"Text" tone, same hue, that actually passes.
   success: FLITO_COLORS.success,
   successMuted: 'rgba(39, 174, 96, 0.12)',
+  successText: '#1B7A43',
   warning: FLITO_COLORS.warning,
   warningMuted: 'rgba(243, 156, 18, 0.12)',
+  warningText: '#955E08',
   error: FLITO_COLORS.error,
   errorMuted: 'rgba(231, 76, 60, 0.12)',
+  errorText: '#C22818',
+  // A destructive Button's solid fill: FLITO_COLORS.error itself only
+  // reaches ~3.8:1 with white text (fails AA at normal text sizes).
+  errorStrong: '#C22818',
+  errorStrongPressed: '#9B2013',
   info: FLITO_COLORS.info,
   infoMuted: 'rgba(52, 152, 219, 0.12)',
+  infoText: '#1D6CA1',
 
   // Fixed
   white: '#FFFFFF',

@@ -11,7 +11,7 @@ import Button from './Button';
 const EmptyState = ({ icon = 'empty', title, message, actionLabel, onAction, tone = 'muted' }) => (
   <View style={styles.container}>
     <View style={[styles.iconWrap, tone === 'error' && styles.iconWrapError]}>
-      <Icon name={icon} size={iconSize.xl} color={tone === 'error' ? colors.error : colors.textMuted} />
+      <Icon name={icon} size={iconSize.xl} color={tone === 'error' ? colors.errorText : colors.textMuted} />
     </View>
     {!!title && <Text style={styles.title}>{title}</Text>}
     {!!message && <Text style={styles.message}>{message}</Text>}

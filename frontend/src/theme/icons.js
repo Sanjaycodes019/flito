@@ -112,6 +112,13 @@ const GLYPHS = {
   location: 'map-marker-radius-outline',
 };
 
+// Icons sit next to a text label almost everywhere in this app (a button's
+// title, a detail row's caption, a status badge's word). A screen reader
+// would otherwise announce the underlying icon-font glyph as a stray
+// character on top of that label, so every icon is hidden from the
+// accessibility tree by default. The rare icon-only control (SignaturePad's
+// close button) puts its own accessibilityLabel on the enclosing Pressable,
+// which is what actually needs to be announced.
 const Icon = ({ name, size = iconSize.md, color = colors.textPrimary, style, ...rest }) => {
   const glyph = GLYPHS[name];
   if (!glyph && __DEV__) {
@@ -124,6 +131,10 @@ const Icon = ({ name, size = iconSize.md, color = colors.textPrimary, style, ...
       size={size}
       color={color}
       style={style}
+      accessible={false}
+      importantForAccessibility="no"
+      focusable={false}
+      aria-hidden
       {...rest}
     />
   );

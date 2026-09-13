@@ -232,7 +232,7 @@ const BookingDetailScreen = ({ route }) => {
 
 const SectionTitle = ({ icon, title }) => (
   <View style={styles.sectionTitleRow}>
-    <Icon name={icon} size={iconSize.md} color={colors.primary} style={styles.sectionIcon} />
+    <Icon name={icon} size={iconSize.md} color={colors.primaryText} style={styles.sectionIcon} />
     <Text style={styles.sectionTitle}>{title}</Text>
   </View>
 );

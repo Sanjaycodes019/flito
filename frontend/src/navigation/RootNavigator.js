@@ -13,7 +13,7 @@ const navigationTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: colors.primary,
+    primary: colors.primaryText,
     background: colors.background,
     card: colors.surface,
     text: colors.textPrimary,

@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   focusRing: {
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: colors.focusRing,
   },
 });
 

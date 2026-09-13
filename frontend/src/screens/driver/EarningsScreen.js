@@ -51,7 +51,7 @@ const EarningsScreen = () => {
       ListHeaderComponent={
         <Card style={styles.summaryCard}>
           <View style={styles.summaryIconWrap}>
-            <Icon name="earnings" size={iconSize.lg} color={colors.primary} />
+            <Icon name="earnings" size={iconSize.lg} color={colors.primaryText} />
           </View>
           <Text style={styles.summaryLabel}>Total Earnings</Text>
           <Text style={styles.summaryValue}>{formatCurrency(total)}</Text>
@@ -91,12 +91,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   summaryLabel: { ...type.small, color: colors.textMuted },
-  summaryValue: { ...type.display, fontSize: 32, color: colors.primary, marginVertical: spacing.xs },
+  summaryValue: { ...type.display, fontSize: 32, color: colors.primaryText, marginVertical: spacing.xs },
   summaryMeta: { ...type.small, color: colors.textMuted },
   card: { marginVertical: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   goodsType: { ...type.bodyMedium, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
-  amount: { ...type.bodyMedium, color: colors.primary },
+  amount: { ...type.bodyMedium, color: colors.primaryText },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
   date: { ...type.small, color: colors.textMuted },
 });

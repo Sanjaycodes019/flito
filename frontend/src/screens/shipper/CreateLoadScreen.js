@@ -17,7 +17,7 @@ import { addLoad } from '../../redux/slices/loadsSlice';
 
 const SectionHeader = ({ icon, title }) => (
   <View style={styles.sectionHeader}>
-    <Icon name={icon} size={iconSize.sm} color={colors.primary} style={styles.sectionIcon} />
+    <Icon name={icon} size={iconSize.sm} color={colors.primaryText} style={styles.sectionIcon} />
     <Text style={styles.sectionTitle}>{title}</Text>
   </View>
 );
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.divider,
   },
   sectionIcon: { marginRight: spacing.xs },
-  sectionTitle: { ...type.smallMedium, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { ...type.smallMedium, color: colors.primaryText, textTransform: 'uppercase', letterSpacing: 0.5 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
   chip: { minWidth: 90 },
   submit: { marginTop: spacing.md },

@@ -18,14 +18,14 @@ const VARIANTS = {
   secondary: {
     background: colors.secondary,
     backgroundActive: '#141922',
-    text: colors.textOnPrimary,
+    text: colors.textOnDark,
     border: 'transparent',
   },
   tertiary: {
     background: 'transparent',
     backgroundActive: colors.primaryMuted,
-    text: colors.primary,
-    border: colors.primary,
+    text: colors.primaryText,
+    border: colors.primaryText,
   },
   ghost: {
     background: 'transparent',
@@ -34,9 +34,9 @@ const VARIANTS = {
     border: 'transparent',
   },
   destructive: {
-    background: colors.error,
-    backgroundActive: '#C0392B',
-    text: colors.textOnPrimary,
+    background: colors.errorStrong,
+    backgroundActive: colors.errorStrongPressed,
+    text: colors.textOnDark,
     border: 'transparent',
   },
 };
@@ -44,7 +44,10 @@ VARIANTS.outline = VARIANTS.tertiary; // legacy alias, resolved to the same styl
 
 const SIZES = {
   md: { height: 48, paddingHorizontal: spacing.xl, fontSize: textType.bodyMedium.fontSize, icon: iconSize.md, gap: spacing.sm },
-  sm: { height: 38, paddingHorizontal: spacing.lg, fontSize: textType.small.fontSize, icon: iconSize.sm, gap: spacing.xs },
+  // 40px plus the 8px hitSlop below reaches the 44-48px minimum touch target
+  // recommended on both iOS and Android, even though the drawn chip looks
+  // more compact than an "md" button.
+  sm: { height: 40, paddingHorizontal: spacing.lg, fontSize: textType.small.fontSize, icon: iconSize.sm, gap: spacing.xs },
 };
 
 const Button = ({
@@ -87,7 +90,7 @@ const Button = ({
         accessibilityRole="button"
         accessibilityState={{ disabled: isDisabled, busy: loading }}
         accessibilityLabel={accessibilityLabel || title}
-        hitSlop={4}
+        hitSlop={8}
         style={[
           styles.button,
           {
@@ -135,7 +138,7 @@ const styles = StyleSheet.create({
   // visible ring is drawn with a second border in the brand accent color.
   focusRing: {
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: colors.focusRing,
   },
 });
 

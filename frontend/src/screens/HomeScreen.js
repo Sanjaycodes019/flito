@@ -106,7 +106,7 @@ const HomeScreen = ({ navigation }) => {
     >
       <View style={styles.header}>
         <View style={styles.avatar}>
-          <Icon name={ROLE_ICON[user?.role] || 'person'} size={iconSize.lg} color={colors.textOnPrimary} />
+          <Icon name={ROLE_ICON[user?.role] || 'person'} size={iconSize.lg} color={colors.textOnDark} />
         </View>
         <View>
           <Text style={styles.greeting}>Hello, {user?.firstName}</Text>
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginTop: spacing.xxs,
   },
-  roleText: { ...type.caption, color: colors.primary, textTransform: 'capitalize' },
+  roleText: { ...type.caption, color: colors.primaryText, textTransform: 'capitalize' },
 });
 
 export default HomeScreen;

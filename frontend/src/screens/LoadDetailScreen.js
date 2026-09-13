@@ -263,7 +263,7 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, sho
       {myTurn && !canRespond && (
         <>
           <View style={styles.waitingRow}>
-            <Icon name="unverified" size={iconSize.xs} color={colors.warning} />
+            <Icon name="unverified" size={iconSize.xs} color={colors.warningText} />
             <Text style={styles.waitingNote}>
               Verify your identity to accept or counter this offer. You can still reject it.
             </Text>
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   detailValue: { ...type.smallMedium, color: colors.textPrimary },
   sectionTitle: { ...type.h3, color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.sm },
   ownerName: { ...type.bodyMedium, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
-  price: { ...type.h2, color: colors.primary, marginVertical: spacing.xs },
+  price: { ...type.h2, color: colors.primaryText, marginVertical: spacing.xs },
   counterNote: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },
   waitingRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: spacing.sm },
   waitingNote: { ...type.small, color: colors.textMuted, flex: 1 },

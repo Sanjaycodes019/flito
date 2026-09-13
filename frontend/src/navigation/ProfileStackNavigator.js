@@ -12,7 +12,7 @@ const Stack = createNativeStackNavigator();
 const ProfileStackNavigator = () => (
   <Stack.Navigator
     screenOptions={{
-      headerTintColor: colors.primary,
+      headerTintColor: colors.primaryText,
       headerStyle: { backgroundColor: colors.surface },
       headerTitleStyle: { color: colors.textPrimary, fontSize: type.h3.fontSize, fontWeight: type.h3.fontWeight },
       headerShadowVisible: false,

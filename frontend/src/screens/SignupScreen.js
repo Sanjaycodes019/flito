@@ -33,7 +33,7 @@ const RoleOption = ({ option, selected, onSelect }) => (
     <Text style={styles.roleDesc}>{option.desc}</Text>
     {selected && (
       <View style={styles.roleCheck}>
-        <Icon name="success" size={16} color={colors.primary} />
+        <Icon name="success" size={16} color={colors.primaryText} />
       </View>
     )}
   </Pressable>
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   roleCardSelected: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
   roleLabel: { ...type.smallMedium, color: colors.textPrimary, marginTop: spacing.xs, textAlign: 'center' },
-  roleLabelSelected: { color: colors.primary },
+  roleLabelSelected: { color: colors.primaryText },
   roleDesc: { ...type.small, fontSize: 10, lineHeight: 13, color: colors.textMuted, textAlign: 'center', marginTop: 2 },
   roleCheck: { position: 'absolute', top: 6, right: 6 },
   terms: { ...type.small, color: colors.textMuted, marginBottom: spacing.md, textAlign: 'center' },

@@ -83,7 +83,7 @@ const MyQuotesScreen = ({ navigation }) => {
             </View>
             {needsYou && (
               <View style={styles.actionNeededRow}>
-                <Icon name="warning" size={iconSize.xs} color={colors.warning} />
+                <Icon name="warning" size={iconSize.xs} color={colors.warningText} />
                 <Text style={styles.actionNeeded}>The shipper countered, your response is needed</Text>
               </View>
             )}
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
   goodsType: { ...type.h3, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
   route: { ...type.small, color: colors.textMuted },
-  price: { ...type.bodyMedium, color: colors.primary },
+  price: { ...type.bodyMedium, color: colors.primaryText },
   date: { ...type.small, color: colors.textMuted },
   actionNeededRow: {
     flexDirection: 'row',
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
-  actionNeeded: { ...type.small, color: colors.warning, fontWeight: '600' },
+  actionNeeded: { ...type.small, color: colors.warningText, fontWeight: '600' },
 });
 
 export default MyQuotesScreen;

@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     ...type.h2,
     color: colors.textPrimary,
   },
-  boxFilled: { borderColor: colors.accent },
+  boxFilled: { borderColor: colors.accentText },
   boxError: { borderColor: colors.error },
   boxDisabled: { backgroundColor: colors.surfaceMuted, color: colors.disabledText },
 });

@@ -34,7 +34,7 @@ const DeliverySignatureSection = ({ booking, canUpload, onChanged }) => {
   return (
     <Card>
       <View style={styles.titleRow}>
-        <Icon name="signature" size={iconSize.md} color={colors.primary} style={styles.titleIcon} />
+        <Icon name="signature" size={iconSize.md} color={colors.primaryText} style={styles.titleIcon} />
         <Text style={styles.title}>Delivery Signature</Text>
       </View>
 

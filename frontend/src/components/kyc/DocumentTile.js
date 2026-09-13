@@ -13,7 +13,7 @@ const DocumentTile = ({ doc, label, size = 72 }) => {
     <Pressable style={styles.tile} onPress={open} disabled={!doc.url} accessibilityRole="link" accessibilityLabel={`Open ${label}`}>
       {isPdf || !doc.url ? (
         <View style={[styles.badge, { width: size, height: size }]}>
-          <Icon name="document" size={iconSize.lg} color={colors.textOnPrimary} />
+          <Icon name="document" size={iconSize.lg} color={colors.textOnDark} />
           {isPdf && <Text style={styles.badgeText}>PDF</Text>}
         </View>
       ) : (
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { color: colors.textOnPrimary, fontWeight: '700', fontSize: 11, marginTop: 2 },
+  badgeText: { color: colors.textOnDark, fontWeight: '700', fontSize: 11, marginTop: 2 },
   labelRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   label: { flex: 1, ...type.small, color: colors.textLink },
 });

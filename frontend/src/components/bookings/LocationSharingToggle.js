@@ -62,7 +62,7 @@ const LocationSharingToggle = ({ bookingId }) => {
   return (
     <Card>
       <View style={styles.titleRow}>
-        <Icon name={sharing ? 'gps' : 'location'} size={iconSize.md} color={sharing ? colors.success : colors.primary} style={styles.titleIcon} />
+        <Icon name={sharing ? 'gps' : 'location'} size={iconSize.md} color={sharing ? colors.successText : colors.primaryText} style={styles.titleIcon} />
         <Text style={styles.title}>Live Location</Text>
         {sharing && <View style={styles.liveDot} />}
       </View>

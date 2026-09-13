@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   goodsType: { ...type.h3, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
   route: { ...type.small, color: colors.textMuted },
   meta: { ...type.small, color: colors.textMuted },
-  budget: { ...type.bodyMedium, color: colors.primary },
+  budget: { ...type.bodyMedium, color: colors.primaryText },
   date: { ...type.small, fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
 });
 

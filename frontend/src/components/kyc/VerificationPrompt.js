@@ -22,7 +22,7 @@ const VerificationPrompt = ({ kycStatus, message }) => {
     <Card style={styles.card}>
       <View style={styles.row}>
         <View style={styles.iconWrap}>
-          <Icon name={underReview ? 'pending' : 'unverified'} size={iconSize.md} color={colors.warning} />
+          <Icon name={underReview ? 'pending' : 'unverified'} size={iconSize.md} color={colors.warningText} />
         </View>
         <View style={styles.textCol}>
           <Text style={styles.title}>Identity verification required</Text>

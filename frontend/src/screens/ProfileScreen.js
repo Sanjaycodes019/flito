@@ -14,9 +14,9 @@ import { confirmAction } from '../utils/alert';
 
 const KYC_SUMMARY = {
   not_submitted: { label: 'Not verified', action: 'Verify Identity', color: colors.textMuted, icon: 'unverified' },
-  pending: { label: 'Under review', action: 'View Documents', color: colors.warning, icon: 'pending' },
-  approved: { label: 'Verified', action: 'View Documents', color: colors.success, icon: 'verified' },
-  rejected: { label: 'Changes needed', action: 'Fix Documents', color: colors.error, icon: 'unverified' },
+  pending: { label: 'Under review', action: 'View Documents', color: colors.warningText, icon: 'pending' },
+  approved: { label: 'Verified', action: 'View Documents', color: colors.successText, icon: 'verified' },
+  rejected: { label: 'Changes needed', action: 'Fix Documents', color: colors.errorText, icon: 'unverified' },
 };
 
 const ROLE_ICON = {
@@ -70,7 +70,7 @@ const ProfileScreen = ({ navigation }) => {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Card style={styles.headerCard}>
         <View style={styles.avatar}>
-          <Icon name={ROLE_ICON[user?.role] || 'person'} size={iconSize.xl} color={colors.textOnPrimary} />
+          <Icon name={ROLE_ICON[user?.role] || 'person'} size={iconSize.xl} color={colors.textOnDark} />
         </View>
         <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
         <Text style={styles.phone}>{user?.phone}</Text>
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   rowIcon: { marginRight: spacing.sm },
   rowLabel: { flex: 1, color: colors.textMuted, ...type.body },
   rowValue: { color: colors.textPrimary, ...type.bodyMedium },
-  reason: { ...type.small, color: colors.error, marginTop: spacing.sm, marginBottom: spacing.sm },
+  reason: { ...type.small, color: colors.errorText, marginTop: spacing.sm, marginBottom: spacing.sm },
 });
 
 export default ProfileScreen;

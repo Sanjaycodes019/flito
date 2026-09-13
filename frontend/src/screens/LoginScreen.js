@@ -63,6 +63,9 @@ const LoginScreen = ({ navigation }) => {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
+          {/* The logo mark and wordmark are the one deliberate exception to
+              colors.primaryText: WCAG's contrast minimums do not apply to
+              logotype, so this keeps the true brand amber. */}
           <View style={styles.logoMark}>
             <Icon name="truck" size={iconSize.xl} color={colors.primary} />
           </View>

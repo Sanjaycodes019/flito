@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeButtonPressed: { backgroundColor: colors.surfaceMuted },
-  focusRing: { borderWidth: 2, borderColor: colors.accent },
+  focusRing: { borderWidth: 2, borderColor: colors.focusRing },
   body: { flexGrow: 0 },
   bodyContent: { paddingHorizontal: spacing.xl, paddingBottom: spacing.lg },
   footer: {

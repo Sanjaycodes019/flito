@@ -36,7 +36,7 @@ const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
   return (
     <Card>
       <View style={styles.titleRow}>
-        <Icon name="camera" size={iconSize.md} color={colors.primary} style={styles.titleIcon} />
+        <Icon name="camera" size={iconSize.md} color={colors.primaryText} style={styles.titleIcon} />
         <Text style={styles.title}>Proof of Delivery{photos.length ? ` (${photos.length})` : ''}</Text>
       </View>
 
