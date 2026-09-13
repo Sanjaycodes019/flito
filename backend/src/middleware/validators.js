@@ -80,7 +80,50 @@ const validateRating = (req, res, next) => {
   next();
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PROFILE_TEXT_FIELDS = ['firstName', 'lastName', 'email', 'companyName'];
+
+// Whitelists what a user may change about themselves. Anything else in the
+// body — phone, role, kycStatus, rating — is dropped before it reaches the
+// controller, which works only from the cleaned result.
+const validateProfileUpdate = (req, res, next) => {
+  const fail = (message) => res.status(400).json({ success: false, message });
+  const body = req.body || {};
+  const update = {};
+
+  for (const key of PROFILE_TEXT_FIELDS) {
+    if (body[key] === undefined) continue;
+    if (typeof body[key] !== 'string') return fail(`${key} must be text`);
+    update[key] = body[key].trim();
+  }
+
+  if (body.address !== undefined) {
+    const { street, city } = body.address || {};
+    const invalid = [street, city].some((v) => v !== undefined && (typeof v !== 'string' || v.length > 100));
+    if (invalid) return fail('address street and city must be text of at most 100 characters');
+    update.address = { street: street?.trim(), city: city?.trim() };
+  }
+
+  if (update.firstName !== undefined && (!update.firstName || update.firstName.length > 50)) {
+    return fail('firstName must be 1 to 50 characters');
+  }
+  if (update.lastName !== undefined && update.lastName.length > 50) {
+    return fail('lastName must be at most 50 characters');
+  }
+  if (update.companyName !== undefined && update.companyName.length > 100) {
+    return fail('companyName must be at most 100 characters');
+  }
+  if (update.email) {
+    if (!EMAIL_REGEX.test(update.email)) return fail('Enter a valid email address');
+    update.email = update.email.toLowerCase();
+  }
+
+  req.body = update;
+  next();
+};
+
 module.exports = {
+  validateProfileUpdate,
   validateRating,
   isValidPhone,
   validateSendOtp,

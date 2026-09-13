@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeStackNavigator from './HomeStackNavigator';
-import ProfileScreen from '../screens/ProfileScreen';
+import ProfileStackNavigator from './ProfileStackNavigator';
 import { FLITO_COLORS } from '../utils/colors';
 
 const Tab = createBottomTabNavigator();
@@ -15,7 +15,7 @@ const TabNavigator = () => (
     }}
   >
     <Tab.Screen name="HomeTab" component={HomeStackNavigator} options={{ title: 'Home' }} />
-    <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
+    <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ title: 'Profile' }} />
   </Tab.Navigator>
 );
 

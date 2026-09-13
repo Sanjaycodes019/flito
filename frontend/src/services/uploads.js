@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import api from './api';
 
 const isWeb = Platform.OS === 'web';
@@ -38,25 +39,46 @@ export const pickImages = async ({ max = 1, camera = false } = {}) => {
   return result.assets.slice(0, max);
 };
 
-const mimeTypeOf = (asset) => asset.mimeType || (/\.png($|\?)/i.test(asset.uri) ? 'image/png' : 'image/jpeg');
+// Picks one image or PDF — for documents such as a citizenship card scan.
+export const pickDocument = async () => {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: ['image/*', 'application/pdf'],
+    copyToCacheDirectory: true,
+    multiple: false,
+  });
+  if (result.canceled) return null;
+  return result.assets[0];
+};
+
+const mimeTypeOf = (asset) => {
+  if (asset.mimeType) return asset.mimeType;
+  if (/\.pdf($|\?)/i.test(asset.uri) || /\.pdf$/i.test(asset.name || '')) return 'application/pdf';
+  if (/\.png($|\?)/i.test(asset.uri)) return 'image/png';
+  return 'image/jpeg';
+};
 
 // React Native and the browser build multipart bodies differently: native
 // accepts a { uri, name, type } descriptor, the web needs the actual Blob.
 const appendAsset = async (form, field, asset, index) => {
   const type = mimeTypeOf(asset);
-  const name = asset.fileName || `photo-${Date.now()}-${index}.${type.split('/')[1] || 'jpg'}`;
+  const extension = type === 'application/pdf' ? 'pdf' : (type.split('/')[1] || 'jpg');
+  const name = asset.fileName || asset.name || `file-${Date.now()}-${index}.${extension}`;
 
   if (isWeb) {
-    const blob = await (await fetch(asset.uri)).blob();
+    const blob = asset.file || await (await fetch(asset.uri)).blob();
     form.append(field, blob, name);
   } else {
     form.append(field, { uri: asset.uri, name, type });
   }
 };
 
-export const uploadPhotos = async (path, assets, field = 'photos') => {
+// Sends `assets` as multipart `field`, plus any plain `fields` (for example a
+// document type). Plain fields go first so the server sees them before files.
+export const uploadFiles = async (path, assets, { field = 'photos', fields = {} } = {}) => {
   const form = new FormData();
-  // Sequential so photos keep the order they were picked in.
+  Object.entries(fields).forEach(([key, value]) => form.append(key, String(value)));
+
+  // Sequential so files keep the order they were picked in.
   for (let i = 0; i < assets.length; i += 1) {
     await appendAsset(form, field, assets[i], i);
   }
@@ -68,3 +90,5 @@ export const uploadPhotos = async (path, assets, field = 'photos') => {
   });
   return data;
 };
+
+export const uploadPhotos = (path, assets, field = 'photos') => uploadFiles(path, assets, { field });

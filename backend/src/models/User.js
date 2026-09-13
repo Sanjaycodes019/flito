@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { KYC_DOCUMENT_TYPES } = require('../services/kycPolicy');
 
 const userSchema = new mongoose.Schema(
   {
@@ -41,17 +42,30 @@ const userSchema = new mongoose.Schema(
       bankName: String,
       accountNumber: String,
     },
+
+    // "not_submitted" until the user sends documents for review — only then
+    // "pending" — so the admin queue holds real submissions, not every signup.
     kycStatus: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending',
+      enum: ['not_submitted', 'pending', 'approved', 'rejected'],
+      default: 'not_submitted',
     },
+    // Identity documents live in private storage. Only storage identifiers are
+    // kept here, never a URL that could be shared or leaked.
     kycDocuments: [
       {
-        type: { type: String },
-        url: String,
+        type: { type: String, enum: KYC_DOCUMENT_TYPES, required: true },
+        publicId: { type: String, required: true },
+        format: String,
+        bytes: Number,
+        uploadedAt: { type: Date, default: Date.now },
       },
     ],
+    kycSubmittedAt: Date,
+    kycReviewedAt: Date,
+    kycReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    kycRejectionReason: String,
+
     walletBalance: {
       type: Number,
       default: 0,

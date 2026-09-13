@@ -1,16 +1,26 @@
 const multer = require('multer');
 
-const UPLOAD_ERRORS = {
-  LIMIT_FILE_SIZE: 'Each photo must be 5 MB or smaller',
-  LIMIT_FILE_COUNT: 'Too many files in one upload',
-  LIMIT_UNEXPECTED_FILE: 'Too many photos in one upload, or a file was sent under the wrong field name',
+const uploadErrorMessage = (err) => {
+  const isDocument = err.field === 'document';
+  switch (err.code) {
+    case 'LIMIT_FILE_SIZE':
+      return isDocument ? 'Documents must be 10 MB or smaller' : 'Each photo must be 5 MB or smaller';
+    case 'LIMIT_FILE_COUNT':
+      return isDocument ? 'Send one document at a time' : 'Too many files in one upload';
+    case 'LIMIT_UNEXPECTED_FILE':
+      return isDocument
+        ? 'Send one document at a time'
+        : 'Too many photos in one upload, or a file was sent under the wrong field name';
+    default:
+      return err.message;
+  }
 };
 
 // Centralized error handler — must be registered last, after all routes.
 // eslint-disable-next-line no-unused-vars
 module.exports = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    return res.status(400).json({ success: false, message: UPLOAD_ERRORS[err.code] || err.message });
+    return res.status(400).json({ success: false, message: uploadErrorMessage(err) });
   }
   if (err.name === 'ValidationError') {
     return res.status(400).json({ success: false, message: err.message });

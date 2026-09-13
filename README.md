@@ -148,6 +148,8 @@ cd backend
 npm run create-admin -- +9779800000000 Sita Sharma
 ```
 
+**Identity verification (KYC):** every account uploads both sides of its citizenship card; owners add a PAN certificate (company registration optional) and drivers add a driving license. Documents are stored privately in Cloudinary and shown only through links that expire after 10 minutes. Once submitted they're frozen; an admin approves, or rejects with a reason the user sees, and the user can fix and resubmit. A verified name can't be edited.
+
 ---
 
 ## API reference
@@ -182,14 +184,19 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 | POST | `/api/bookings/:id/rate` | party | Rate after completion |
 | POST | `/api/bookings/:id/delivery-proof` | driver | Upload up to 5 proof-of-delivery photos |
 | GET | `/api/users/lookup?phone=` | owner/admin | Find a driver by phone |
+| PATCH | `/api/users/me` | any | Edit own profile (name locks once KYC is submitted) |
+| GET | `/api/users/me/kyc` | shipper/owner/driver | Own verification status and documents |
+| POST | `/api/users/me/kyc/documents` | shipper/owner/driver | Upload or replace a document (multipart `document` + `type`) |
+| DELETE | `/api/users/me/kyc/documents/:docId` | shipper/owner/driver | Remove a document before submitting |
+| POST | `/api/users/me/kyc/submit` | shipper/owner/driver | Send documents for review |
 | POST | `/api/trucks` | owner | Add a truck to your fleet |
 | GET | `/api/trucks` | owner | Your fleet |
 | PATCH | `/api/trucks/:id` | owner | Update truck details/status |
 | PATCH | `/api/trucks/:id/driver` | owner | Assign/unassign the truck's driver |
 | DELETE | `/api/trucks/:id` | owner | Remove a truck |
 | GET | `/api/admin/stats` | admin | Platform metrics |
-| GET | `/api/admin/kyc/pending` | admin | KYC queue |
-| PATCH | `/api/admin/kyc/:userId` | admin | Approve/reject KYC |
+| GET | `/api/admin/kyc/pending` | admin | Submissions awaiting review, with 10-minute document links |
+| PATCH | `/api/admin/kyc/:userId` | admin | Approve, or reject with a required reason |
 | PATCH | `/api/admin/users/:userId/status` | admin | Suspend/ban/reactivate |
 
 ### Real-time (Socket.io)
@@ -258,7 +265,7 @@ Set the production `EXPO_PUBLIC_*` values per-profile in `eas.json` — EAS buil
 These are deliberate MVP scope cuts, not oversights:
 
 - **SMS needs an account.** The gateway integration is built (`src/services/sms.js`, Sparrow SMS), but until `SPARROW_SMS_TOKEN`/`SPARROW_SMS_FROM` are set, OTPs are only logged to the server console. Production refuses to boot without them, since undelivered codes mean nobody can log in. **This is the remaining hard blocker for a public launch.**
-- **KYC documents can't be uploaded yet.** Load photos and proof of delivery upload to Cloudinary (JPEG/PNG/WebP/HEIC, 5 MB each). KYC documents need private storage with time-limited links, which is the next step.
+- **Verification isn't required for anything yet.** Users can complete KYC, but an unverified account can still post loads, quote and take jobs. What verification should unlock is a product decision still to be made.
 - **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up. Needs a merchant account.
 - **Redis is optional, not required.** OTPs default to an in-memory `Map`, which is fine on a single instance but resets on redeploy. Set `REDIS_URL` to switch to the Redis backend (`src/services/otpStore.js`) before running more than one instance — you'll need to `npm install redis`.
 - **Frontend has no automated tests.** The backend suite covers auth, permissions and negotiation; UI verification is still manual.

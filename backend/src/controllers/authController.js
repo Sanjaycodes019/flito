@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const otpStore = require('../services/otpStore');
 const sms = require('../services/sms');
+const { publicUser } = require('../services/userView');
 
 // Math.random() is not suitable for a security credential — a 6-digit code is
 // small enough to brute-force offline if it is predictable.
@@ -16,16 +17,6 @@ const signToken = (user) =>
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
-
-const publicUser = (user) => ({
-  _id: user._id,
-  phone: user.phone,
-  role: user.role,
-  firstName: user.firstName,
-  lastName: user.lastName,
-  kycStatus: user.kycStatus,
-  rating: user.rating,
-});
 
 exports.sendOtp = async (req, res, next) => {
   try {
