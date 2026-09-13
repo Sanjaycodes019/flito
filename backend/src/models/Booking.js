@@ -65,6 +65,7 @@ const bookingSchema = new mongoose.Schema(
       lat: Number,
       lng: Number,
     },
+    locationUpdatedAt: Date,
 
     deliveryPhotos: [
       {

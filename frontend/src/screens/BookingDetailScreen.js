@@ -6,10 +6,13 @@ import Button from '../components/common/Button';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
 import DeliveryProofSection from '../components/bookings/DeliveryProofSection';
+import LocationSharingToggle from '../components/bookings/LocationSharingToggle';
+import TrackingMap from '../components/map/TrackingMap';
 import { FLITO_COLORS } from '../utils/colors';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, formatStatus, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
+import socketService from '../services/socket';
 import { notify } from '../utils/alert';
 
 const BookingDetailScreen = ({ route }) => {
@@ -43,6 +46,19 @@ const BookingDetailScreen = ({ route }) => {
       setLoading(false);
     })();
   }, [fetchBooking]);
+
+  // The driver's marker moves from socket pings without a full refetch; a
+  // refresh (pull-to-refresh, or fetchBooking after an action) still carries
+  // the persisted currentLocation, so this is a live overlay, not the source
+  // of truth.
+  useEffect(() => {
+    const onLocationUpdate = ({ bookingId: id, lat, lng }) => {
+      if (id !== bookingId) return;
+      setBooking((current) => (current ? { ...current, currentLocation: { lat, lng } } : current));
+    };
+    socketService.on('location-update', onLocationUpdate);
+    return () => socketService.off('location-update', onLocationUpdate);
+  }, [bookingId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -125,10 +141,17 @@ const BookingDetailScreen = ({ route }) => {
         <Detail label="Pickup Status" value={formatStatus(booking.pickupStatus)} />
         <Detail label="Dropoff Status" value={formatStatus(booking.dropoffStatus)} />
         <Detail label="Booked" value={formatDate(booking.createdAt)} />
-        {booking.currentLocation?.lat ? (
-          <Detail label="Last Known Location" value={`${booking.currentLocation.lat.toFixed(4)}, ${booking.currentLocation.lng.toFixed(4)}`} />
-        ) : null}
+
+        <TrackingMap
+          pickup={booking.loadId?.pickupLocation?.coordinates?.lat != null ? booking.loadId.pickupLocation.coordinates : null}
+          dropoff={booking.loadId?.dropoffLocation?.coordinates?.lat != null ? booking.loadId.dropoffLocation.coordinates : null}
+          driverLocation={booking.currentLocation?.lat != null ? booking.currentLocation : null}
+        />
       </Card>
+
+      {isDriver && booking.status === 'in_transit' && (
+        <LocationSharingToggle bookingId={bookingId} />
+      )}
 
       {isOwner && !booking.driverId && booking.status !== 'cancelled' && (
         <Card>

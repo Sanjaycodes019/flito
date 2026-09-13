@@ -175,14 +175,25 @@ exports.updateLocation = async (req, res, next) => {
     if (idOf(booking.driverId) !== req.user.userId) {
       return res.status(403).json({ success: false, message: 'Only the assigned driver can update location' });
     }
+    // GPS pings are only meaningful while cargo is moving; a booking that
+    // hasn't started or has already ended shouldn't gain a "current" location.
+    if (booking.status !== 'in_transit') {
+      return res.status(400).json({
+        success: false,
+        message: `Location can only be shared while a booking is in transit (this one is ${booking.status.replace('_', ' ')})`,
+      });
+    }
 
+    const locationUpdatedAt = new Date();
     booking.currentLocation = { lat, lng };
+    booking.locationUpdatedAt = locationUpdatedAt;
     await booking.save();
 
-    req.io?.to(`user-${booking.shipperId}`).emit('location-update', { bookingId: booking._id, lat, lng });
-    req.io?.to(`user-${booking.ownerId}`).emit('location-update', { bookingId: booking._id, lat, lng });
+    const payload = { bookingId: booking._id, lat, lng, updatedAt: locationUpdatedAt };
+    req.io?.to(`user-${booking.shipperId}`).emit('location-update', payload);
+    req.io?.to(`user-${booking.ownerId}`).emit('location-update', payload);
 
-    res.json({ success: true });
+    res.json({ success: true, currentLocation: booking.currentLocation, locationUpdatedAt });
   } catch (error) {
     next(error);
   }

@@ -147,8 +147,20 @@ describe('driver assignment and location', () => {
     expect(booking.status).toBe('confirmed');
   });
 
-  it('only lets the assigned driver push a location', async () => {
+  it('refuses a location ping before the booking is in transit', async () => {
+    const { driver, booking } = await setupBooking();
+
+    const res = await as(driver.token).patch(`/api/bookings/${booking._id}/location`)
+      .send({ lat: 27.7, lng: 85.3 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/in transit/);
+  });
+
+  it('only lets the assigned driver push a location, once in transit', async () => {
     const { owner, driver, booking } = await setupBooking();
+    await as(driver.token).patch(`/api/bookings/${booking._id}/status`)
+      .send({ pickupStatus: 'picked_up', status: 'in_transit' }).expect(200);
 
     await as(driver.token).patch(`/api/bookings/${booking._id}/location`)
       .send({ lat: 27.7, lng: 85.3 }).expect(200);
@@ -156,6 +168,30 @@ describe('driver assignment and location', () => {
     const res = await as(owner.token).patch(`/api/bookings/${booking._id}/location`)
       .send({ lat: 27.7, lng: 85.3 });
     expect(res.status).toBe(403);
+  });
+
+  it('rejects out-of-range coordinates', async () => {
+    const { driver, booking } = await setupBooking();
+    await as(driver.token).patch(`/api/bookings/${booking._id}/status`)
+      .send({ pickupStatus: 'picked_up', status: 'in_transit' }).expect(200);
+
+    for (const body of [{ lat: 91, lng: 85 }, { lat: 27, lng: 181 }, { lat: 'x', lng: 85 }, { lat: 27 }]) {
+      const res = await as(driver.token).patch(`/api/bookings/${booking._id}/location`).send(body);
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it('records when the location was last updated', async () => {
+    const { driver, booking } = await setupBooking();
+    await as(driver.token).patch(`/api/bookings/${booking._id}/status`)
+      .send({ pickupStatus: 'picked_up', status: 'in_transit' }).expect(200);
+
+    const before = Date.now();
+    const res = await as(driver.token).patch(`/api/bookings/${booking._id}/location`)
+      .send({ lat: 27.7, lng: 85.3 }).expect(200);
+
+    expect(res.body.currentLocation).toEqual({ lat: 27.7, lng: 85.3 });
+    expect(new Date(res.body.locationUpdatedAt).getTime()).toBeGreaterThanOrEqual(before);
   });
 });
 

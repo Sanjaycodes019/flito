@@ -28,6 +28,16 @@ const validateSignup = (req, res, next) => {
   next();
 };
 
+// Coordinates are optional on a load (a shipper may skip the map picker), but
+// a value that IS sent must be a real point, not garbage that would silently
+// break the tracking map later.
+const validCoordsOrAbsent = (coordinates) => {
+  if (coordinates == null) return true;
+  const { lat, lng } = coordinates;
+  if (lat === undefined && lng === undefined) return true;
+  return isValidLat(lat) && isValidLng(lng);
+};
+
 const validateCreateLoad = (req, res, next) => {
   const { goodsType, pickupLocation, dropoffLocation } = req.body;
   if (!goodsType) {
@@ -35,6 +45,9 @@ const validateCreateLoad = (req, res, next) => {
   }
   if (!pickupLocation?.address || !dropoffLocation?.address) {
     return res.status(400).json({ success: false, message: 'pickupLocation and dropoffLocation addresses are required' });
+  }
+  if (!validCoordsOrAbsent(pickupLocation.coordinates) || !validCoordsOrAbsent(dropoffLocation.coordinates)) {
+    return res.status(400).json({ success: false, message: 'pickup/dropoff coordinates must be valid lat/lng values' });
   }
   next();
 };
@@ -122,7 +135,21 @@ const validateProfileUpdate = (req, res, next) => {
   next();
 };
 
+const isValidLat = (v) => typeof v === 'number' && Number.isFinite(v) && v >= -90 && v <= 90;
+const isValidLng = (v) => typeof v === 'number' && Number.isFinite(v) && v >= -180 && v <= 180;
+
+const validateCoordinates = (req, res, next) => {
+  const { lat, lng } = req.body;
+  if (!isValidLat(lat) || !isValidLng(lng)) {
+    return res.status(400).json({ success: false, message: 'lat must be -90 to 90 and lng must be -180 to 180' });
+  }
+  next();
+};
+
 module.exports = {
+  isValidLat,
+  isValidLng,
+  validateCoordinates,
   validateProfileUpdate,
   validateRating,
   isValidPhone,

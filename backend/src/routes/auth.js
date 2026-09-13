@@ -18,11 +18,14 @@ const authLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === 'test',
 });
 
-router.use(authLimiter);
-
-router.post('/send-otp', validateSendOtp, authController.sendOtp);
-router.post('/signup', validateSignup, authController.signup);
-router.post('/login', authController.login);
+// Only the unauthenticated, credential-guessing endpoints are rate-limited.
+// GET /me requires an already-valid JWT and is called on every app cold
+// start (App.js's session bootstrap) — limiting it too meant one burst of
+// OTP attempts from anyone on a shared IP locked every logged-in user out of
+// even opening the app for the rest of the window.
+router.post('/send-otp', authLimiter, validateSendOtp, authController.sendOtp);
+router.post('/signup', authLimiter, validateSignup, authController.signup);
+router.post('/login', authLimiter, authController.login);
 router.get('/me', authMiddleware, authController.me);
 
 module.exports = router;

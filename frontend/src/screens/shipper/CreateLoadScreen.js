@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import PhotoStrip from '../../components/common/PhotoStrip';
+import LocationPickerMap from '../../components/map/LocationPickerMap';
 import { FLITO_COLORS } from '../../utils/colors';
 import { TRUCK_TYPES, MAX_LOAD_PHOTOS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
@@ -19,8 +20,10 @@ const CreateLoadScreen = ({ navigation }) => {
   const [weight, setWeight] = useState('');
   const [pickupAddress, setPickupAddress] = useState('');
   const [pickupPhone, setPickupPhone] = useState('');
+  const [pickupCoords, setPickupCoords] = useState(null);
   const [dropoffAddress, setDropoffAddress] = useState('');
   const [dropoffPhone, setDropoffPhone] = useState('');
+  const [dropoffCoords, setDropoffCoords] = useState(null);
   const [truckType, setTruckType] = useState('any');
   const [budgetEstimate, setBudgetEstimate] = useState('');
   const [photos, setPhotos] = useState([]);
@@ -49,8 +52,8 @@ const CreateLoadScreen = ({ navigation }) => {
         goodsType,
         description,
         weight: weight ? Number(weight) : undefined,
-        pickupLocation: { address: pickupAddress, phone: pickupPhone },
-        dropoffLocation: { address: dropoffAddress, phone: dropoffPhone },
+        pickupLocation: { address: pickupAddress, phone: pickupPhone, coordinates: pickupCoords || undefined },
+        dropoffLocation: { address: dropoffAddress, phone: dropoffPhone, coordinates: dropoffCoords || undefined },
         truckTypePreference: truckType,
         budgetEstimate: budgetEstimate ? Number(budgetEstimate) : undefined,
       });
@@ -99,11 +102,17 @@ const CreateLoadScreen = ({ navigation }) => {
         <Text style={styles.label}>Pickup Contact Phone</Text>
         <TextInput style={styles.input} value={pickupPhone} onChangeText={setPickupPhone} keyboardType="phone-pad" placeholder="+9779841234567" />
 
+        <Text style={styles.label}>Pickup Point on Map (optional)</Text>
+        <LocationPickerMap value={pickupCoords} onChange={setPickupCoords} />
+
         <Text style={styles.label}>Dropoff Address *</Text>
         <TextInput style={styles.input} value={dropoffAddress} onChangeText={setDropoffAddress} placeholder="Pokhara, Lakeside" />
 
         <Text style={styles.label}>Dropoff Contact Phone</Text>
         <TextInput style={styles.input} value={dropoffPhone} onChangeText={setDropoffPhone} keyboardType="phone-pad" placeholder="+9779841234567" />
+
+        <Text style={styles.label}>Dropoff Point on Map (optional)</Text>
+        <LocationPickerMap value={dropoffCoords} onChange={setDropoffCoords} />
 
         <Text style={styles.label}>Preferred Truck Type</Text>
         <View style={styles.chipRow}>

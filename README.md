@@ -182,7 +182,7 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 | GET | `/api/bookings/:id` | party | Booking detail |
 | PATCH | `/api/bookings/:id/assign-driver` | owner | Assign driver |
 | PATCH | `/api/bookings/:id/status` | party | Update status |
-| PATCH | `/api/bookings/:id/location` | driver | GPS ping |
+| PATCH | `/api/bookings/:id/location` | driver | GPS ping (only while `in_transit`) |
 | POST | `/api/bookings/:id/rate` | party | Rate after completion |
 | POST | `/api/bookings/:id/delivery-proof` | driver | Upload up to 5 proof-of-delivery photos |
 | GET | `/api/users/lookup?phone=` | owner/admin | Find a driver by phone |
@@ -204,6 +204,17 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 ### Real-time (Socket.io)
 
 Clients emit `join-room` with their JWT to join a private `user-<id>` room; the server verifies the token before joining. Server pushes: `new-quote`, `quote-updated`, `quote-accepted`, `booking-assigned`, `booking-status-changed`, `location-update`.
+
+---
+
+## Live tracking
+
+The pickup/dropoff map (on a load) and the live tracking map (on a booking) use **Leaflet + OpenStreetMap** — no API key, no billing account. The same HTML (`frontend/src/components/map/mapHtml.js`) renders inside a `WebView` on Android and an `iframe` on web (`MapCanvas.native.js` / `MapCanvas.web.js`, resolved automatically by the `.native`/`.web` filename convention), so the map behaves identically on both.
+
+- **Posting a load:** the shipper can tap the map to set an exact pickup/dropoff point (`LocationPickerMap`), or use "Use My Location". Coordinates are optional — a load with just an address still works, it just won't render a tracking map later.
+- **Tracking a booking:** `TrackingMap` shows static pickup/dropoff pins plus a driver marker that moves live as `location-update` socket events arrive, without reloading the map or resetting the viewer's pan/zoom.
+- **Sharing location:** while a booking is `in_transit`, the assigned driver sees a "Share My Location" toggle (`LocationSharingToggle`). It samples position every ~15s/25m (`expo-location`) and PATCHes `/api/bookings/:id/location`, which persists it and pushes `location-update` to the shipper and owner. Sharing stops automatically when the driver leaves the screen — it is never a background/always-on broadcast.
+- The server only accepts a location ping while the booking is `in_transit`, and validates `lat`/`lng` are real coordinates (not just any number).
 
 ---
 
