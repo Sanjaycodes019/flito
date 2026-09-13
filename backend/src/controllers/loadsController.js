@@ -47,8 +47,8 @@ exports.createLoad = async (req, res, next) => {
 };
 
 // A shipper sees all of their own loads. Everyone else browses loads that are
-// still taking bids — including ones that already have quotes, so several
-// owners can compete — minus any whose window has closed.
+// still taking bids, including ones that already have quotes, so several
+// owners can compete, minus any whose window has closed.
 exports.listLoads = async (req, res, next) => {
   try {
     const { mine, status } = req.query;
@@ -221,7 +221,7 @@ exports.addLoadPhotos = async (req, res, next) => {
 
     if (!updated) {
       await storage.deleteAssets(uploaded.map((photo) => photo.publicId));
-      return res.status(409).json({ success: false, message: 'This load changed while uploading — refresh and try again' });
+      return res.status(409).json({ success: false, message: 'This load changed while uploading. Refresh and try again.' });
     }
 
     res.status(201).json({ success: true, load: updated });

@@ -14,8 +14,8 @@ const {
 const statusPhrase = (status) => (status === 'pending' ? 'under review' : status);
 
 // Owners look up a driver by exact phone match before assigning them to a
-// booking. Restricted to role=driver results and a minimal public shape —
-// this is a lookup, not a general user directory.
+// booking. Restricted to role=driver results and a minimal public shape.
+// This is a lookup, not a general user directory.
 exports.lookupDriver = async (req, res, next) => {
   try {
     const { phone } = req.query;
@@ -78,7 +78,7 @@ exports.updateProfile = async (req, res, next) => {
 
 // ── Push notifications ─────────────────────────────────────────────────────
 
-// Called on login/app-open (a fresh token) — overwrites whatever was stored,
+// Called on login/app-open (a fresh token). Overwrites whatever was stored,
 // so only the device currently signed in to this account receives its push.
 exports.registerPushToken = async (req, res, next) => {
   try {
@@ -157,7 +157,7 @@ exports.uploadKycDocument = async (req, res, next) => {
 
     // One document per type, so a re-upload replaces the old one. A single
     // pipeline update swaps it atomically, and only while the status is still
-    // editable — a document can't slip in after the user has submitted.
+    // editable. A document can't slip in after the user has submitted.
     let updated;
     try {
       updated = await User.findOneAndUpdate(
@@ -262,7 +262,7 @@ exports.submitKyc = async (req, res, next) => {
       { new: true },
     );
     if (!updated) {
-      return res.status(409).json({ success: false, message: 'Your documents changed while submitting — refresh and try again' });
+      return res.status(409).json({ success: false, message: 'Your documents changed while submitting. Refresh and try again.' });
     }
 
     res.json({ success: true, kyc: kycView(updated), user: publicUser(updated) });

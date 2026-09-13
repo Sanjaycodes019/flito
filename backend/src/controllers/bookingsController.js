@@ -3,8 +3,8 @@ const User = require('../models/User');
 const { requiresVerification } = require('../services/kycPolicy');
 const { sendPushToUser, sendPushToUsers } = require('../services/push');
 
-// A ref may be a raw ObjectId or, on populated queries, a full user document —
-// normalize both to the id string before comparing.
+// A ref may be a raw ObjectId or, on populated queries, a full user document.
+// Normalize both to the id string before comparing.
 const idOf = (ref) => (ref ? String(ref._id || ref) : null);
 
 const isParty = (booking, userId) =>
@@ -69,7 +69,7 @@ exports.assignDriver = async (req, res, next) => {
       });
     }
 
-    // Must be a real, active driver account — any id used to be accepted,
+    // Must be a real, active driver account. Any id used to be accepted,
     // including a shipper's or one that doesn't exist.
     const driver = driverId
       ? await User.findOne({ _id: driverId, role: 'driver' }).select('firstName kycStatus status')
@@ -171,7 +171,7 @@ exports.updateStatus = async (req, res, next) => {
     parties.forEach((id) => req.io?.to(`user-${id}`).emit('booking-status-changed', { booking }));
 
     // One push for whichever change is most significant to the OTHER
-    // parties — never to req.user.userId, who already knows they caused it.
+    // parties, never to req.user.userId, who already knows they caused it.
     const notify = (title, body) => sendPushToUsers(
       parties.filter((id) => String(id) !== req.user.userId),
       { title, body, data: { type: 'booking', bookingId: String(booking._id) } },
@@ -240,7 +240,7 @@ exports.rateBooking = async (req, res, next) => {
     const ratedUserId = party === 'shipper' ? booking.ownerId : booking.shipperId;
 
     // Conditional on the rating still being unset, so a retry or double tap
-    // can't record — and count — a second score.
+    // can't record, and count, a second score.
     const updated = await Booking.findOneAndUpdate(
       { _id: booking._id, [`${field}.rating`]: { $exists: false } },
       { $set: { [field]: { rating, review, ratedAt: new Date() } } },

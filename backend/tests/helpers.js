@@ -7,7 +7,7 @@ const createApp = require('../src/app');
 let mongod;
 
 // Tests run against a real MongoDB (in-memory), not mocks, so schema
-// validation, indexes and populate behave exactly as they do in production —
+// validation, indexes and populate behave exactly as they do in production,
 // the populate/ownership bug this suite guards against only reproduces with
 // real documents.
 const setupTestDb = async () => {

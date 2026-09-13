@@ -8,7 +8,7 @@ import loadsReducer from '../src/redux/slices/loadsSlice';
 import bookingReducer from '../src/redux/slices/bookingSlice';
 
 // A fresh store per test (never the app's shared singleton), preloaded with
-// whatever auth state the test needs — most screens read the signed-in user
+// whatever auth state the test needs. Most screens read the signed-in user
 // via `useSelector((state) => state.auth.user)`.
 export const makeStore = (preloadedState = {}) => configureStore({
   reducer: { auth: authReducer, user: userReducer, loads: loadsReducer, bookings: bookingReducer },

@@ -12,7 +12,7 @@ const { formatCurrency } = require('../utils/format');
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 
-const CHANGED_UNDERNEATH = 'This quote just changed — refresh and try again';
+const CHANGED_UNDERNEATH = 'This quote just changed. Refresh and try again.';
 
 // Owner submits a quote on a load that is still taking bids
 exports.createQuote = async (req, res, next) => {
@@ -26,7 +26,7 @@ exports.createQuote = async (req, res, next) => {
     }
     if (isExpired(load)) return fail(res, 400, 'This load has expired and is no longer accepting quotes');
 
-    // One live offer per owner per load — they negotiate on it rather than
+    // One live offer per owner per load. They negotiate on it rather than
     // stacking new quotes, which would also inflate the load's quote count.
     const existing = await Quote.exists({
       loadId,
@@ -102,7 +102,7 @@ const loadNegotiation = async (req, res) => {
 };
 
 // Shared by accept and counter: the offer must still be live, its load still
-// taking bids, and it must be the caller's turn — nobody responds to their own
+// taking bids, and it must be the caller's turn. Nobody responds to their own
 // standing offer. Returns the sent response when a rule fails.
 const rejectIfNotRespondable = (res, { quote, load, side }) => {
   if (!OPEN_QUOTE_STATUSES.includes(quote.status)) return fail(res, 400, `Quote is already ${quote.status}`);

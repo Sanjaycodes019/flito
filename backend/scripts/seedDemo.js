@@ -1,5 +1,5 @@
 // Local demo data: one account per role plus a small marketplace to click
-// through. Safe to re-run — existing demo accounts and data are reused, never
+// through. Safe to re-run. Existing demo accounts and data are reused, never
 // duplicated. Refuses to run with NODE_ENV=production.
 //
 //   npm run seed
@@ -34,7 +34,7 @@ const upsertUsers = async () => {
 
 const seedMarketplace = async ({ shipper, ownerA, ownerB, driver }) => {
   if (await Load.exists({ shipperId: shipper._id })) {
-    console.log('Demo loads already exist — skipping marketplace data.');
+    console.log('Demo loads already exist, skipping marketplace data.');
     return;
   }
 

@@ -19,7 +19,7 @@ const uploadErrorMessage = (err) => {
   }
 };
 
-// Centralized error handler — must be registered last, after all routes.
+// Centralized error handler. Must be registered last, after all routes.
 // eslint-disable-next-line no-unused-vars
 module.exports = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {

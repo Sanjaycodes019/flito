@@ -5,7 +5,7 @@ const DOCUMENT_TYPES = [...IMAGE_TYPES, 'application/pdf'];
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
-// A drawn signature is a small canvas PNG — generous for that, tiny next to a
+// A drawn signature is a small canvas PNG, generous for that, tiny next to a
 // photo, so a much lower limit still can't be used to smuggle in a real image.
 const MAX_SIGNATURE_BYTES = 1 * 1024 * 1024;
 
@@ -16,7 +16,7 @@ const onlyTypes = (allowed, message) => (req, file, cb) => {
   cb(err);
 };
 
-// Files are held in memory only long enough to stream to storage — nothing is
+// Files are held in memory only long enough to stream to storage. Nothing is
 // written to the server's disk. Size and count limits bound that memory.
 const imageUpload = multer({
   storage: multer.memoryStorage(),

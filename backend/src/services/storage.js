@@ -2,7 +2,7 @@ const cloudinary = require('cloudinary').v2;
 
 // File storage behind a small interface so the provider can change without
 // touching controllers. Cloudinary is configured lazily from env, which keeps
-// the rest of the server — and the test suite — working with no credentials.
+// the rest of the server, and the test suite, working with no credentials.
 
 const isConfigured = () => Boolean(
   process.env.CLOUDINARY_CLOUD_NAME

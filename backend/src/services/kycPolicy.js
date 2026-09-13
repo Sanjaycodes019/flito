@@ -31,8 +31,8 @@ const EDITABLE_KYC_STATUSES = ['not_submitted', 'rejected'];
 const NAME_LOCKED_KYC_STATUSES = ['pending', 'approved'];
 
 // What verification unlocks. An action needs the acting role to be verified
-// only when that role is listed; everything else — browsing, posting loads,
-// and every shipper action — stays open to unverified accounts.
+// only when that role is listed; everything else (browsing, posting loads,
+// and every shipper action) stays open to unverified accounts.
 const VERIFIED_ROLES_REQUIRED = {
   // Putting a price on a load or agreeing to one: submitting a quote,
   // countering, or accepting a shipper's counter (which books the load).

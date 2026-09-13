@@ -14,7 +14,7 @@ const LocationPickerMap = ({ value, onChange, height = 220 }) => {
   const [locating, setLocating] = useState(false);
 
   // Rebuilt only if the marker's starting point changes identity-wise (not on
-  // every pixel of a drag) — the page manages the marker itself after that.
+  // every pixel of a drag). The page manages the marker itself after that.
   const html = useMemo(() => buildMapHtml({ interactive: true, initialPicked: value || null }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const useCurrentLocation = async () => {
@@ -30,7 +30,7 @@ const LocationPickerMap = ({ value, onChange, height = 220 }) => {
       canvasRef.current?.postMessage({ type: 'setPicked', lat, lng });
       onChange({ lat, lng });
     } catch (error) {
-      // Surfaced inline rather than a full alert — this is a minor, recoverable step.
+      // Surfaced inline rather than a full alert. This is a minor, recoverable step.
       setLocating(false);
       throw error;
     }

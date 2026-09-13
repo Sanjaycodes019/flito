@@ -32,8 +32,8 @@ module.exports = function validateEnv() {
       // Without a gateway, production OTPs are generated but never delivered,
       // so no real user can ever complete login.
       console.error(
-        'SPARROW_SMS_TOKEN and SPARROW_SMS_FROM must be set in production — ' +
-        'without an SMS gateway no user can receive a login code.'
+        'SPARROW_SMS_TOKEN and SPARROW_SMS_FROM must be set in production. ' +
+        'Without an SMS gateway no user can receive a login code.'
       );
       process.exit(1);
     }

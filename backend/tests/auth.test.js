@@ -33,7 +33,7 @@ describe('POST /api/auth/signup', () => {
   });
 
   // Regression: consumeOtp became async, and an un-awaited Promise is always
-  // truthy — which silently accepted ANY code. This is the guard for that.
+  // truthy, which silently accepted ANY code. This is the guard for that.
   it('rejects signup when no OTP was ever requested', async () => {
     const PHONE = uniquePhone();
     const res = await request(app())

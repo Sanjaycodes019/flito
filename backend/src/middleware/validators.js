@@ -97,7 +97,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PROFILE_TEXT_FIELDS = ['firstName', 'lastName', 'email', 'companyName'];
 
 // Whitelists what a user may change about themselves. Anything else in the
-// body — phone, role, kycStatus, rating — is dropped before it reaches the
+// body (phone, role, kycStatus, rating) is dropped before it reaches the
 // controller, which works only from the cleaned result.
 const validateProfileUpdate = (req, res, next) => {
   const fail = (message) => res.status(400).json({ success: false, message });

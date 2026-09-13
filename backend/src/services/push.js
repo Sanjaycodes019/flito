@@ -13,14 +13,14 @@ const isExpoPushToken = (value) => typeof value === 'string' && EXPO_PUSH_TOKEN_
 
 // Fire-and-forget push, alongside the socket.io event already sent for the
 // same change. Push reaches a backgrounded/closed app; the socket event
-// reaches an open one instantly — the two are complementary, not a fallback
+// reaches an open one instantly. The two are complementary, not a fallback
 // chain for each other.
 //
 // Deliberately no receipt-checking (Expo's second async step, recommended
 // ~15 minutes after sending, to catch DeviceNotRegistered etc. that the
 // initial response can't see). Skipping it means a token stale for months
 // keeps being tried until it fails the upfront format check or the
-// immediate-error case handled below — acceptable for launch; revisit if
+// immediate-error case handled below. Acceptable for launch; revisit if
 // push volume grows enough to matter.
 const sendPushToUser = async (userId, { title, body, data = {} }) => {
   try {
@@ -30,7 +30,7 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
     if (!token) return;
 
     if (!isExpoPushToken(token)) {
-      // Not a real Expo token (e.g. leftover test data) — drop it rather than
+      // Not a real Expo token (e.g. leftover test data). Drop it rather than
       // fail on every future send for this user.
       await User.updateOne({ _id: userId }, { $unset: { pushToken: '' } });
       return;

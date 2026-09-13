@@ -43,8 +43,8 @@ const userSchema = new mongoose.Schema(
       accountNumber: String,
     },
 
-    // "not_submitted" until the user sends documents for review — only then
-    // "pending" — so the admin queue holds real submissions, not every signup.
+    // "not_submitted" until the user sends documents for review, only then
+    // "pending", so the admin queue holds real submissions, not every signup.
     kycStatus: {
       type: String,
       enum: ['not_submitted', 'pending', 'approved', 'rejected'],

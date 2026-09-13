@@ -5,13 +5,13 @@ import Constants from 'expo-constants';
 import api from './api';
 import { navigate } from '../navigation/navigationRef';
 
-// Web has no Expo push token to register — browser push needs its own VAPID
+// Web has no Expo push token to register. Browser push needs its own VAPID
 // setup, out of scope here. The web build stays fully live via the existing
 // Socket.io connection instead, so nothing is lost while the tab is open.
 const supportsPush = () => Platform.OS !== 'web' && Device.isDevice;
 
 // Shown while the app is in the foreground. Screens already update live via
-// Socket.io, so this is a secondary confirmation, not the only signal — still
+// Socket.io, so this is a secondary confirmation, not the only signal, still
 // worth a banner (e.g. a quote arriving while on an unrelated screen).
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -22,7 +22,7 @@ Notifications.setNotificationHandler({
 });
 
 // Registers this device for push and sends the token to the backend. Safe to
-// call every time the app opens with a valid session — the backend simply
+// call every time the app opens with a valid session. The backend simply
 // overwrites whatever token was stored, so re-registering is a no-op in effect
 // when the token hasn't changed.
 export const registerForPushNotifications = async () => {
@@ -41,7 +41,7 @@ export const registerForPushNotifications = async () => {
     if (status !== 'granted') {
       ({ status } = await Notifications.requestPermissionsAsync());
     }
-    if (status !== 'granted') return; // user declined — nothing more to do
+    if (status !== 'granted') return; // user declined, nothing more to do
 
     // A real EAS build needs the project id for a reliable token; running in
     // Expo Go for local testing works without it. Run `eas init` before
@@ -53,7 +53,7 @@ export const registerForPushNotifications = async () => {
 
     await api.patch('/users/me/push-token', { pushToken: token });
   } catch (error) {
-    // Push is a nice-to-have, not on the critical path of using the app —
+    // Push is a nice-to-have, not on the critical path of using the app.
     // a failure here should never surface as an error to the user.
     console.log('[push] registration skipped:', error.message);
   }

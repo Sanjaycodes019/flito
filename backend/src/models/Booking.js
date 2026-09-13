@@ -74,7 +74,7 @@ const bookingSchema = new mongoose.Schema(
         uploadedAt: { type: Date, default: Date.now },
       },
     ],
-    // Not private like KYC documents — this is operational proof the driver
+    // Not private like KYC documents. This is operational proof the driver
     // and recipient can both point back to, same tier as delivery photos.
     deliverySignature: {
       url: String,

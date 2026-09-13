@@ -209,7 +209,7 @@ const LoadDetailScreen = ({ route, navigation }) => {
 };
 
 // One quote in a negotiation, from either side's point of view. Only the party
-// who did NOT make the standing offer can accept or counter it — the other side
+// who did NOT make the standing offer can accept or counter it. The other side
 // is waiting for a response. `canRespond` is false for an owner who isn't
 // verified: they can still reject, but not make or accept an offer.
 const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, showOwner = true, canRespond = true }) => {

@@ -1,7 +1,7 @@
 import { createNavigationContainerRef } from '@react-navigation/native';
 
 // Lets code outside the component tree (the push notification tap handler in
-// App.js) navigate without needing a `navigation` prop — it isn't rendered
+// App.js) navigate without needing a `navigation` prop. It isn't rendered
 // inside any screen.
 export const navigationRef = createNavigationContainerRef();
 

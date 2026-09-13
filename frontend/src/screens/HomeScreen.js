@@ -54,7 +54,7 @@ const HomeScreen = ({ navigation }) => {
 
   // Home is the stack root, so it stays mounted while the user works in
   // pushed screens. Refetch whenever it regains focus so the dashboard counts
-  // reflect loads posted, quotes accepted, and bookings updated elsewhere —
+  // reflect loads posted, quotes accepted, and bookings updated elsewhere,
   // and so a verification decided in the meantime shows up.
   useFocusEffect(
     useCallback(() => {

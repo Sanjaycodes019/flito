@@ -142,7 +142,7 @@ describe('sending pushes', () => {
     expect(pushCallTo(VALID_TOKEN_2)?.title).toMatch(/delivery assigned/i);
   });
 
-  it('notifies the other parties on pickup, delivery, and cancellation — never the actor', async () => {
+  it('notifies the other parties on pickup, delivery, and cancellation, never the actor', async () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     const driver = await newUser('driver');

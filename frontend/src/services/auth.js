@@ -30,7 +30,7 @@ export const authService = {
   },
 
   logout: async () => {
-    // Best-effort, and before clearing the token — the request needs it to
+    // Best-effort, and before clearing the token. The request needs it to
     // authenticate. Safe even when the token is already invalid (App.js's
     // cold-start cleanup path): the failure is caught inside and swallowed.
     await unregisterPushNotifications();

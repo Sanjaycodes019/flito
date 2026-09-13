@@ -5,7 +5,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 // The Express app is built separately from the HTTP server so tests can
 // exercise it in-process without binding a port or opening a socket server.
-// `io` is optional — controllers push through `req.io?.…`, so real-time
+// `io` is optional. Controllers push through `req.io?.…`, so real-time
 // emits are simply skipped when it is absent.
 module.exports = function createApp({ io } = {}) {
   const app = express();

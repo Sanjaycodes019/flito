@@ -6,8 +6,8 @@ const MESSAGES = {
 };
 
 // Blocks an action for roles that must be verified to take it. The status is
-// read from the database rather than the login token, so an approval — or a
-// revocation — takes effect immediately without logging in again.
+// read from the database rather than the login token, so an approval (or a
+// revocation) takes effect immediately without logging in again.
 const requireVerification = (action) => async (req, res, next) => {
   try {
     if (!requiresVerification(action, req.user.role)) return next();

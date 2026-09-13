@@ -18,7 +18,7 @@ const allowedOrigins = [
 
 // io needs the raw HTTP server and the app needs io, so the server is created
 // bare, io attaches to it, then the Express app is wired in as its request
-// handler — avoiding a circular construction.
+// handler, avoiding a circular construction.
 const bootstrap = async () => {
   const server = http.createServer();
 

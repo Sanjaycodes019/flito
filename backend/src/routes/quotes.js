@@ -14,8 +14,8 @@ router.get('/mine', requireRole('owner'), quotesController.listMyQuotes);
 
 // Accept/counter/reject are open to both parties in the negotiation; the
 // controller decides which side may act on the standing offer. Countering and
-// accepting are offers, so an owner must be verified for them — shippers never
-// are — while anyone can still walk away with reject.
+// accepting are offers, so an owner must be verified for them (shippers never
+// are), while anyone can still walk away with reject.
 router.patch('/:id/counter', requireVerification('makeOffer'), validateCounterOffer, quotesController.counterQuote);
 router.patch('/:id/accept', requireVerification('makeOffer'), quotesController.acceptQuote);
 router.patch('/:id/reject', quotesController.rejectQuote);

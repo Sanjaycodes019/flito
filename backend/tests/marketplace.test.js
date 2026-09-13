@@ -23,7 +23,7 @@ const newUser = (role, firstName = 'Test') => signUp({ phone: uniquePhone(), rol
 
 describe('competitive bidding', () => {
   // Bug: browse listed only "open" loads, and the first quote flips a load to
-  // "quoted" — so it vanished for every other owner after one bid.
+  // "quoted", so it vanished for every other owner after one bid.
   it('keeps a load visible to other owners after the first quote', async () => {
     const shipper = await newUser('shipper');
     const ownerA = await newUser('owner');
@@ -52,7 +52,7 @@ describe('competitive bidding', () => {
 
 describe('booking a load exactly once', () => {
   // Bug: accepting never checked the load was still bookable, and competing
-  // quotes stayed "pending" — so a second accept created a second booking.
+  // quotes stayed "pending", so a second accept created a second booking.
   it('refuses a second acceptance on an already-booked load', async () => {
     const shipper = await newUser('shipper');
     const ownerA = await newUser('owner');

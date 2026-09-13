@@ -68,7 +68,7 @@ const CreateLoadScreen = ({ navigation }) => {
       });
 
       // The load is saved before its photos, so a failed upload never loses
-      // the posting — photos can be retried from the load's page.
+      // the posting. Photos can be retried from the load's page.
       let load = data.load;
       let photoError = null;
       if (photos.length) {

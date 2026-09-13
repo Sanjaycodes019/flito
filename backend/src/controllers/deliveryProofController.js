@@ -76,7 +76,7 @@ exports.addDeliveryProof = async (req, res, next) => {
 
     if (!updated) {
       await storage.deleteAssets(uploaded.map((photo) => photo.publicId));
-      return res.status(409).json({ success: false, message: 'This booking changed while uploading — refresh and try again' });
+      return res.status(409).json({ success: false, message: 'This booking changed while uploading. Refresh and try again.' });
     }
 
     [updated.shipperId, updated.ownerId].forEach((id) => req.io?.to(`user-${id}`)
@@ -94,7 +94,7 @@ exports.addDeliveryProof = async (req, res, next) => {
 };
 
 // A signature can be recaptured (e.g. a mis-drawn one) under the same window
-// as photos — it isn't locked the moment it's first set.
+// as photos. It isn't locked the moment it's first set.
 exports.addDeliverySignature = async (req, res, next) => {
   try {
     const { booking } = req;
@@ -114,7 +114,7 @@ exports.addDeliverySignature = async (req, res, next) => {
 
     if (!updated) {
       await storage.deleteAssets([uploaded.publicId]);
-      return res.status(409).json({ success: false, message: 'This booking changed while uploading — refresh and try again' });
+      return res.status(409).json({ success: false, message: 'This booking changed while uploading. Refresh and try again.' });
     }
 
     if (previous?.publicId) await storage.deleteAssets([previous.publicId]);

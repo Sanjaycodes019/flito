@@ -13,7 +13,7 @@ const api = require('../src/services/api').default;
 const LOAD_ID = 'load-1';
 const baseLoad = (overrides = {}) => ({
   _id: LOAD_ID,
-  shipperId: 'shipper-id', // matches fakeUser('shipper')._id — makes isMyLoad true
+  shipperId: 'shipper-id', // matches fakeUser('shipper')._id, makes isMyLoad true
   goodsType: 'Cement bags',
   status: 'quoted',
   pickupLocation: { address: 'Kathmandu' },

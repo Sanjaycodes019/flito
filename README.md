@@ -1,6 +1,6 @@
 # FLITO
 
-**Freight & Load Interchange for Truck Operations** — a digital freight matching platform connecting trucks with cargo to eliminate empty return trips in Nepal.
+**Freight & Load Interchange for Truck Operations**, a digital freight matching platform connecting trucks with cargo to eliminate empty return trips in Nepal.
 
 Shippers post loads. Truck owners bid on them. A booking is created when a bid is accepted, a driver is assigned, and both sides track the delivery to completion.
 
@@ -61,7 +61,7 @@ Backend and frontend are independent npm projects in one repo, so Render and Ver
 # 1. Backend
 cd backend
 npm install
-cp .env.example .env     # then edit .env — set MONGODB_URI and JWT_SECRET
+cp .env.example .env     # then edit .env and set MONGODB_URI and JWT_SECRET
 npm run dev              # http://localhost:5000
 ```
 
@@ -82,14 +82,14 @@ cd backend
 npm test
 ```
 
-138 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering auth and OTP handling, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, and push notifications (Expo's API is mocked — no real push is ever sent by the suite).
+138 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering auth and OTP handling, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, and push notifications (Expo's API is mocked, no real push is ever sent by the suite).
 
 ```bash
 cd frontend
 npm test
 ```
 
-33 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, the WebView-based map/signature canvases) are mocked — see `jest.setup.js`.
+33 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, the WebView-based map/signature canvases) are mocked. See `jest.setup.js`.
 
 ### Demo data
 
@@ -104,7 +104,7 @@ Every demo account logs in with OTP `123456` in development: admin `+97798000000
 
 ### Signing in during development
 
-Auth is phone + OTP. In development (`NODE_ENV !== production`) the OTP is always **`123456`** and is also returned in the `/api/auth/send-otp` response for convenience. In production a random 6-digit code is generated and never returned in the response — wiring it to an SMS gateway (e.g. Sparrow SMS) is a prerequisite for launch. See [Known gaps](#known-gaps).
+Auth is phone + OTP. In development (`NODE_ENV !== production`) the OTP is always **`123456`** and is also returned in the `/api/auth/send-otp` response for convenience. In production a random 6-digit code is generated and never returned in the response. Wiring it to an SMS gateway (e.g. Sparrow SMS) is a prerequisite for launch. See [Known gaps](#known-gaps).
 
 Phone numbers must match `+977XXXXXXXXXX`.
 
@@ -118,18 +118,18 @@ Phone numbers must match `+977XXXXXXXXXX`.
 | `JWT_SECRET` | backend `.env`, Render | 32+ random chars (required in production) |
 | `JWT_EXPIRE` | backend `.env`, Render | `7d` |
 | `NODE_ENV` | backend `.env`, Render | `development` / `production` |
-| `PORT` | backend `.env` | `5000` (Render injects its own — don't hardcode) |
+| `PORT` | backend `.env` | `5000` (Render injects its own, don't hardcode) |
 | `FRONTEND_URL` | backend `.env`, Render | `https://flito.vercel.app` (required in production) |
 | `SPARROW_SMS_TOKEN` | backend `.env`, Render | Sparrow SMS API token (required in production) |
 | `SPARROW_SMS_FROM` | backend `.env`, Render | Approved sender identity (required in production) |
-| `REDIS_URL` | backend `.env`, Render | Optional — switches the OTP store to Redis |
+| `REDIS_URL` | backend `.env`, Render | Optional. Switches the OTP store to Redis |
 | `CLOUDINARY_CLOUD_NAME` | backend `.env`, Render | Cloudinary cloud name (file uploads) |
 | `CLOUDINARY_API_KEY` | backend `.env`, Render | Cloudinary API key |
-| `CLOUDINARY_API_SECRET` | backend `.env`, Render | Cloudinary API secret — server only, never in the app |
+| `CLOUDINARY_API_SECRET` | backend `.env`, Render | Cloudinary API secret, server only, never in the app |
 | `EXPO_PUBLIC_API_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com/api` |
 | `EXPO_PUBLIC_SOCKET_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com` |
 
-Only `EXPO_PUBLIC_`-prefixed vars are exposed to Expo client code. Never commit real values — only `.env.example` is tracked.
+Only `EXPO_PUBLIC_`-prefixed vars are exposed to Expo client code. Never commit real values, only `.env.example` is tracked.
 
 The backend validates its config at boot and exits with a clear message if something required is missing, rather than failing later with opaque 500s.
 
@@ -167,10 +167,10 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 
 | Method | Route | Role | Purpose |
 |---|---|---|---|
-| GET | `/api/health` | — | Health check (used by Render) |
-| POST | `/api/auth/send-otp` | — | Send login/signup OTP |
-| POST | `/api/auth/signup` | — | Verify OTP, create account |
-| POST | `/api/auth/login` | — | Verify OTP, return JWT |
+| GET | `/api/health` | public | Health check (used by Render) |
+| POST | `/api/auth/send-otp` | public | Send login/signup OTP |
+| POST | `/api/auth/signup` | public | Verify OTP, create account |
+| POST | `/api/auth/login` | public | Verify OTP, return JWT |
 | GET | `/api/auth/me` | any | Current user |
 | POST | `/api/loads` | shipper | Post a load |
 | GET | `/api/loads` | any | Open loads, or `?mine=true` for own |
@@ -219,23 +219,23 @@ Clients emit `join-room` with their JWT to join a private `user-<id>` room; the 
 
 ## Push notifications
 
-Free, via Expo's push API — no Firebase/APNs setup, no paid account. `backend/src/services/push.js` posts directly to `https://exp.host/--/api/v2/push/send` (not the `expo-server-sdk` package, which currently ships an ESM-only build that breaks under Jest/CommonJS); the frontend registers a token on login (`services/pushNotifications.js`) and unregisters it on logout.
+Free, via Expo's push API. No Firebase/APNs setup, no paid account. `backend/src/services/push.js` posts directly to `https://exp.host/--/api/v2/push/send` (not the `expo-server-sdk` package, which currently ships an ESM-only build that breaks under Jest/CommonJS); the frontend registers a token on login (`services/pushNotifications.js`) and unregisters it on logout.
 
-A push fires alongside the matching Socket.io event for: a new quote, a counter-offer, a quote accepted (winner) or superseded (losing bids), a driver assigned, pickup/delivery/cancellation, delivery photos or a signature added, and a KYC decision. Deliberately **not** on `location-update` — that fires every ~15s while a driver shares location, and would spam a device with a notification per ping.
+A push fires alongside the matching Socket.io event for: a new quote, a counter-offer, a quote accepted (winner) or superseded (losing bids), a driver assigned, pickup/delivery/cancellation, delivery photos or a signature added, and a KYC decision. Deliberately **not** on `location-update`, that fires every ~15s while a driver shares location, and would spam a device with a notification per ping.
 
-**Web has no push** (browser push needs its own VAPID/service-worker setup, out of scope) — `registerForPushNotifications()` is a no-op on web, and the web build stays live entirely through the existing Socket.io connection while its tab is open. Tapping a notification on Android deep-links to the relevant load, booking, or the KYC screen (`navigationRef.js`).
+**Web has no push** (browser push needs its own VAPID/service-worker setup, out of scope). `registerForPushNotifications()` is a no-op on web, and the web build stays live entirely through the existing Socket.io connection while its tab is open. Tapping a notification on Android deep-links to the relevant load, booking, or the KYC screen (`navigationRef.js`).
 
-Before an EAS/standalone Android build (not needed for Expo Go testing), run `eas init` once to populate `app.json`'s EAS project id — `getExpoPushTokenAsync()` needs it for a reliable token outside of Expo Go.
+Before an EAS/standalone Android build (not needed for Expo Go testing), run `eas init` once to populate `app.json`'s EAS project id. `getExpoPushTokenAsync()` needs it for a reliable token outside of Expo Go.
 
 ---
 
 ## Live tracking
 
-The pickup/dropoff map (on a load) and the live tracking map (on a booking) use **Leaflet + OpenStreetMap** — no API key, no billing account. The same HTML (`frontend/src/components/map/mapHtml.js`) renders inside a `WebView` on Android and an `iframe` on web (`MapCanvas.native.js` / `MapCanvas.web.js`, resolved automatically by the `.native`/`.web` filename convention), so the map behaves identically on both.
+The pickup/dropoff map (on a load) and the live tracking map (on a booking) use **Leaflet + OpenStreetMap**, no API key, no billing account. The same HTML (`frontend/src/components/map/mapHtml.js`) renders inside a `WebView` on Android and an `iframe` on web (`MapCanvas.native.js` / `MapCanvas.web.js`, resolved automatically by the `.native`/`.web` filename convention), so the map behaves identically on both.
 
-- **Posting a load:** the shipper can tap the map to set an exact pickup/dropoff point (`LocationPickerMap`), or use "Use My Location". Coordinates are optional — a load with just an address still works, it just won't render a tracking map later.
+- **Posting a load:** the shipper can tap the map to set an exact pickup/dropoff point (`LocationPickerMap`), or use "Use My Location". Coordinates are optional. A load with just an address still works, it just won't render a tracking map later.
 - **Tracking a booking:** `TrackingMap` shows static pickup/dropoff pins plus a driver marker that moves live as `location-update` socket events arrive, without reloading the map or resetting the viewer's pan/zoom.
-- **Sharing location:** while a booking is `in_transit`, the assigned driver sees a "Share My Location" toggle (`LocationSharingToggle`). It samples position every ~15s/25m (`expo-location`) and PATCHes `/api/bookings/:id/location`, which persists it and pushes `location-update` to the shipper and owner. Sharing stops automatically when the driver leaves the screen — it is never a background/always-on broadcast.
+- **Sharing location:** while a booking is `in_transit`, the assigned driver sees a "Share My Location" toggle (`LocationSharingToggle`). It samples position every ~15s/25m (`expo-location`) and PATCHes `/api/bookings/:id/location`, which persists it and pushes `location-update` to the shipper and owner. Sharing stops automatically when the driver leaves the screen. It is never a background/always-on broadcast.
 - The server only accepts a location ping while the booking is `in_transit`, and validates `lat`/`lng` are real coordinates (not just any number).
 
 ---
@@ -244,7 +244,7 @@ The pickup/dropoff map (on a load) and the live tracking map (on a booking) use 
 
 ### 1. MongoDB Atlas
 
-1. Create a free **M0** cluster (pick a region near your users — Mumbai/Singapore for Nepal).
+1. Create a free **M0** cluster (pick a region near your users, Mumbai/Singapore for Nepal).
 2. **Database Access** → add a DB user with a strong password (not your Atlas login password). Use alphanumerics only, or URL-encode special characters in the connection string.
 3. **Network Access** → allow `0.0.0.0/0`. Render's free tier uses dynamic outbound IPs, so a fixed allow-list isn't possible. This is safe as long as the DB user password is strong and the connection string is never exposed client-side.
 4. **Connect → Drivers** → copy the `mongodb+srv://...` string, replace `<password>`, and add `/flito` before the `?` as the database name.
@@ -265,7 +265,7 @@ The pickup/dropoff map (on a load) and the live tracking map (on a booking) use 
 3. Environment variables: `EXPO_PUBLIC_API_URL=https://<render-url>/api` and `EXPO_PUBLIC_SOCKET_URL=https://<render-url>`.
 4. Deploy.
 
-### 4. Close the loop — CORS
+### 4. Close the Loop on CORS
 
 Back in Render, set `FRONTEND_URL` to your exact Vercel domain (https, no trailing slash) and save. **Skipping this blocks every API call with a CORS error even though both services are up.**
 
@@ -279,7 +279,7 @@ eas build:configure
 eas build --platform android --profile preview
 ```
 
-Set the production `EXPO_PUBLIC_*` values per-profile in `eas.json` — EAS builds run on Expo's servers and won't see your local `.env`.
+Set the production `EXPO_PUBLIC_*` values per-profile in `eas.json`. EAS builds run on Expo's servers and won't see your local `.env`.
 
 ### Deployment checklist
 
@@ -301,7 +301,7 @@ These are deliberate MVP scope cuts, not oversights:
 
 - **SMS needs an account.** The gateway integration is built (`src/services/sms.js`, Sparrow SMS), but until `SPARROW_SMS_TOKEN`/`SPARROW_SMS_FROM` are set, OTPs are only logged to the server console. Production refuses to boot without them, since undelivered codes mean nobody can log in. **This is the remaining hard blocker for a public launch.**
 - **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up. Needs a merchant account.
-- **Redis is optional, not required.** OTPs default to an in-memory `Map`, which is fine on a single instance but resets on redeploy. Set `REDIS_URL` to switch to the Redis backend (`src/services/otpStore.js`) before running more than one instance — you'll need to `npm install redis`.
+- **Redis is optional, not required.** OTPs default to an in-memory `Map`, which is fine on a single instance but resets on redeploy. Set `REDIS_URL` to switch to the Redis backend (`src/services/otpStore.js`) before running more than one instance. You'll need to `npm install redis`.
 - **Trucks aren't linked to bookings.** A truck carries a default driver, but per-booking driver assignment happens on the booking itself; the specific truck used isn't recorded.
 - **Push receipt-checking is skipped.** Expo's push API has a second async step (check delivery receipts ~15 minutes later) that would catch a token going stale faster; not implemented. A dead token still gets cleared, just on its *next* failed send rather than proactively.
 - **Native push delivery is unverified on a real device.** The full pipeline (registration → backend send → Android banner → tap → deep link) is built and the backend half is tested, but this development environment has no Android device/emulator to confirm a real push actually arrives. Worth a real-device check before relying on it.
@@ -313,9 +313,9 @@ These are deliberate MVP scope cuts, not oversights:
 | Symptom | Cause |
 |---|---|
 | CORS error in browser console | `FRONTEND_URL` on Render doesn't exactly match the Vercel domain (http vs https, trailing slash, or a preview URL) |
-| 502/504 on first request | Render free instance waking from sleep — retry |
+| 502/504 on first request | Render free instance waking from sleep, retry |
 | MongoDB "Authentication failed" | Special characters in the DB password need URL-encoding in `MONGODB_URI` |
-| Backend exits immediately at boot | Missing `MONGODB_URI`/`JWT_SECRET` — the error message names the variable |
+| Backend exits immediately at boot | Missing `MONGODB_URI`/`JWT_SECRET`. The error message names the variable |
 | Socket connects then drops | socket.io client/server major versions mismatched, or `transports: ['websocket']` not forced |
 | 404 refreshing a non-root route on Vercel | Missing `rewrites` in `frontend/vercel.json` |
 | EAS build can't see env vars | `EXPO_PUBLIC_*` must be set in `eas.json` profiles, not just local `.env` |

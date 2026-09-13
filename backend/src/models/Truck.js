@@ -46,7 +46,7 @@ const truckSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Registration numbers are unique per owner, not globally — two owners should
+// Registration numbers are unique per owner, not globally. Two owners should
 // never be blocked by each other, but one owner can't list the same truck twice.
 truckSchema.index({ ownerId: 1, registrationNumber: 1 }, { unique: true });
 

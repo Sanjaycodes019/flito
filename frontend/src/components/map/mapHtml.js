@@ -4,7 +4,7 @@
 //
 // Host <-> page messaging is a small JSON bridge, transport-agnostic on
 // purpose: a WebView delivers postMessage to `document` on Android and to
-// `window` on iOS, and an iframe delivers to `window` — so the page listens
+// `window` on iOS, and an iframe delivers to `window`, so the page listens
 // on both, and replies via window.ReactNativeWebView.postMessage when present
 // (native) or window.parent.postMessage otherwise (web).
 //

@@ -1,5 +1,5 @@
 // A minimal canvas signature pad, hosted the same way the map pages are (see
-// components/map/mapHtml.js) — inside a native WebView or a web iframe via
+// components/map/mapHtml.js), inside a native WebView or a web iframe via
 // MapCanvas, with the same postMessage bridge. Reusing that bridge here
 // avoids writing a second host/transport layer for what is, mechanically,
 // the same "embed an HTML page, exchange JSON messages" problem as the map.
@@ -28,8 +28,8 @@ export const buildSignaturePadHtml = () => `<!DOCTYPE html>
       var last = null;
 
       function resize() {
-        // A canvas's backing-store size and its CSS size are independent —
-        // without this it stays blurry/mis-scaled on a resized or high-DPI view.
+        // A canvas's backing-store size and its CSS size are independent.
+        // Without this it stays blurry/mis-scaled on a resized or high-DPI view.
         var ratio = window.devicePixelRatio || 1;
         var priorDataUrl = hasDrawn ? canvas.toDataURL() : null;
         canvas.width = canvas.clientWidth * ratio;

@@ -40,7 +40,7 @@ export const pickImages = async ({ max = 1, camera = false } = {}) => {
   return result.assets.slice(0, max);
 };
 
-// Picks one image or PDF — for documents such as a citizenship card scan.
+// Picks one image or PDF, for documents such as a citizenship card scan.
 export const pickDocument = async () => {
   const result = await DocumentPicker.getDocumentAsync({
     type: ['image/*', 'application/pdf'],
@@ -95,7 +95,7 @@ export const uploadFiles = async (path, assets, { field = 'photos', fields = {} 
 export const uploadPhotos = (path, assets, field = 'photos') => uploadFiles(path, assets, { field });
 
 // Turns a canvas `data:` URI (e.g. a drawn signature) into an asset
-// `uploadFiles` can send. On web, `fetch()` reads a data: URI directly — no
+// `uploadFiles` can send. On web, `fetch()` reads a data: URI directly. No
 // special handling needed. On native, React Native's multipart FormData only
 // accepts a real `file://`/`content://` uri, not `data:`, so the bytes are
 // written to a temp file first and that file's uri is used instead.

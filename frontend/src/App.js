@@ -30,8 +30,8 @@ const Bootstrap = ({ children }) => {
     })();
   }, [dispatch]);
 
-  // Registers this device for push whenever a session becomes active —
-  // covers both a restored session above and a fresh login/signup elsewhere.
+  // Registers this device for push whenever a session becomes active.
+  // This covers both a restored session above and a fresh login/signup elsewhere.
   useEffect(() => {
     if (token) registerForPushNotifications();
   }, [token]);

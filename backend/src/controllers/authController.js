@@ -5,7 +5,7 @@ const otpStore = require('../services/otpStore');
 const sms = require('../services/sms');
 const { publicUser } = require('../services/userView');
 
-// Math.random() is not suitable for a security credential — a 6-digit code is
+// Math.random() is not suitable for a security credential. A 6-digit code is
 // small enough to brute-force offline if it is predictable.
 const generateOtp = () => (process.env.NODE_ENV === 'production'
   ? String(crypto.randomInt(100000, 1000000))
@@ -26,7 +26,7 @@ exports.sendOtp = async (req, res, next) => {
     await sms.sendOtpSms(phone, otp);
 
     const payload = { success: true, message: 'OTP sent' };
-    // Returning the code is a development convenience only — never in
+    // Returning the code is a development convenience only, never in
     // production, where it would hand any caller a valid credential.
     if (process.env.NODE_ENV !== 'production') payload.otp = otp;
 
