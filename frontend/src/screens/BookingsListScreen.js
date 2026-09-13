@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Card from '../components/common/Card';
 import StatusBadge from '../components/common/StatusBadge';
-import { FLITO_COLORS } from '../utils/colors';
+import Spinner from '../components/common/Spinner';
+import EmptyState from '../components/common/EmptyState';
+import Icon from '../theme/icons';
+import { colors, spacing, type, iconSize } from '../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
 import { fetchBookingsStart, fetchBookingsSuccess, fetchBookingsError } from '../redux/slices/bookingSlice';
 
 const BookingsListScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { items: bookings, isLoading } = useSelector((state) => state.bookings);
+  const { items: bookings, isLoading, error } = useSelector((state) => state.bookings);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -31,46 +34,60 @@ const BookingsListScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  if (isLoading && !refreshing && bookings.length === 0) return <Spinner />;
+
+  if (error && bookings.length === 0) {
+    return (
+      <View style={styles.container}>
+        <EmptyState icon="offline" tone="error" title="Could not load this" message={error} actionLabel="Try Again" onAction={load} />
+      </View>
+    );
+  }
+
   return (
     <FlatList
       style={styles.container}
       contentContainerStyle={styles.content}
       data={bookings}
       keyExtractor={(item) => item._id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      ListEmptyComponent={!isLoading && <Text style={styles.empty}>No bookings yet</Text>}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      ListEmptyComponent={
+        <EmptyState icon="truckDelivery" title="No bookings yet" message="Bookings appear here once a quote is accepted." />
+      }
       renderItem={({ item }) => (
-        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}>
-          <Card style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.goodsType}>{item.loadId?.goodsType || 'Load'}</Text>
-              <StatusBadge status={item.status} />
-            </View>
-            <Text style={styles.route}>
-              {item.loadId?.pickupLocation?.address} → {item.loadId?.dropoffLocation?.address}
-            </Text>
-            <View style={styles.rowBottom}>
-              <Text style={styles.amount}>{formatCurrency(item.totalAmount)}</Text>
-              <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-            </View>
-          </Card>
-        </TouchableOpacity>
+        <Card style={styles.card} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })} accessibilityLabel={`${item.loadId?.goodsType || 'Load'} booking`}>
+          <View style={styles.row}>
+            <Text style={styles.goodsType} numberOfLines={1}>{item.loadId?.goodsType || 'Load'}</Text>
+            <StatusBadge status={item.status} />
+          </View>
+          <View style={styles.routeRow}>
+            <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
+            <Text style={styles.route} numberOfLines={1}>{item.loadId?.pickupLocation?.address}</Text>
+            <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
+            <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
+            <Text style={styles.route} numberOfLines={1}>{item.loadId?.dropoffLocation?.address}</Text>
+          </View>
+          <View style={styles.rowBottom}>
+            <Text style={styles.amount}>{formatCurrency(item.totalAmount)}</Text>
+            <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+          </View>
+        </Card>
       )}
     />
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
-  card: { marginVertical: 6 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg, flexGrow: 1 },
+  card: { marginVertical: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-  goodsType: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary },
-  route: { fontSize: 13, color: FLITO_COLORS.textMuted, marginTop: 6 },
-  amount: { fontSize: 14, fontWeight: '700', color: FLITO_COLORS.primary },
-  date: { fontSize: 11, color: FLITO_COLORS.textMuted },
-  empty: { textAlign: 'center', color: FLITO_COLORS.textMuted, marginTop: 40, fontSize: 14 },
+  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },
+  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  goodsType: { ...type.h3, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  route: { ...type.small, color: colors.textMuted },
+  amount: { ...type.bodyMedium, color: colors.primary },
+  date: { ...type.small, color: colors.textMuted },
 });
 
 export default BookingsListScreen;

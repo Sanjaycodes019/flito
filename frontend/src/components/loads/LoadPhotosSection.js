@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Button from '../common/Button';
 import PhotoStrip from '../common/PhotoStrip';
-import { FLITO_COLORS } from '../../utils/colors';
+import { colors, spacing, type } from '../../theme/tokens';
 import { MAX_LOAD_PHOTOS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
 import { notify, confirmAction } from '../../utils/alert';
@@ -59,16 +59,16 @@ const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
       )}
 
       {canEdit && remaining > 0 && (
-        <Button title="Add Photos" variant="outline" onPress={handleAdd} loading={busy} />
+        <Button title="Add Photos" icon="camera" variant="tertiary" onPress={handleAdd} loading={busy} />
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  section: { marginTop: 12 },
-  title: { fontSize: 14, fontWeight: '700', color: FLITO_COLORS.secondary },
-  hint: { fontSize: 13, color: FLITO_COLORS.textMuted, marginTop: 6 },
+  section: { marginTop: spacing.md },
+  title: { ...type.bodyMedium, color: colors.textPrimary },
+  hint: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
 });
 
 export default LoadPhotosSection;

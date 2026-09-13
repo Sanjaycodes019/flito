@@ -5,18 +5,34 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout, setUser } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import Icon from '../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { authService } from '../services/auth';
 import socketService from '../services/socket';
-import { FLITO_COLORS } from '../utils/colors';
 import { ROLES } from '../utils/constants';
 import { confirmAction } from '../utils/alert';
 
 const KYC_SUMMARY = {
-  not_submitted: { label: 'Not verified', action: 'Verify Identity', color: FLITO_COLORS.textMuted },
-  pending: { label: 'Under review', action: 'View Documents', color: FLITO_COLORS.warning },
-  approved: { label: 'Verified', action: 'View Documents', color: FLITO_COLORS.success },
-  rejected: { label: 'Changes needed', action: 'Fix Documents', color: FLITO_COLORS.error },
+  not_submitted: { label: 'Not verified', action: 'Verify Identity', color: colors.textMuted, icon: 'unverified' },
+  pending: { label: 'Under review', action: 'View Documents', color: colors.warning, icon: 'pending' },
+  approved: { label: 'Verified', action: 'View Documents', color: colors.success, icon: 'verified' },
+  rejected: { label: 'Changes needed', action: 'Fix Documents', color: colors.error, icon: 'unverified' },
 };
+
+const ROLE_ICON = {
+  [ROLES.SHIPPER]: 'shipper',
+  [ROLES.OWNER]: 'owner',
+  [ROLES.DRIVER]: 'driver',
+  [ROLES.ADMIN]: 'admin',
+};
+
+const Row = ({ icon, label, value }) => (
+  <View style={styles.row}>
+    <Icon name={icon} size={iconSize.sm} color={colors.textMuted} style={styles.rowIcon} />
+    <Text style={styles.rowLabel}>{label}</Text>
+    <Text style={styles.rowValue}>{value}</Text>
+  </View>
+);
 
 const ProfileScreen = ({ navigation }) => {
   const { user } = useSelector((state) => state.auth);
@@ -53,6 +69,9 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Card style={styles.headerCard}>
+        <View style={styles.avatar}>
+          <Icon name={ROLE_ICON[user?.role] || 'person'} size={iconSize.xl} color={colors.textOnPrimary} />
+        </View>
         <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
         <Text style={styles.phone}>{user?.phone}</Text>
         <View style={styles.badge}>
@@ -62,7 +81,8 @@ const ProfileScreen = ({ navigation }) => {
 
       {verifies && (
         <Card>
-          <View style={styles.row}>
+          <View style={styles.verifyRow}>
+            <Icon name={kyc.icon} size={iconSize.md} color={kyc.color} style={styles.rowIcon} />
             <Text style={styles.rowLabel}>Identity Verification</Text>
             <Text style={[styles.rowValue, { color: kyc.color }]}>{kyc.label}</Text>
           </View>
@@ -71,56 +91,65 @@ const ProfileScreen = ({ navigation }) => {
           ) : null}
           <Button
             title={kyc.action}
-            variant={user?.kycStatus === 'approved' ? 'outline' : 'primary'}
+            icon={kyc.icon}
+            variant={user?.kycStatus === 'approved' ? 'tertiary' : 'primary'}
             onPress={() => navigation.navigate('Kyc')}
           />
         </Card>
       )}
 
       <Card>
-        <Row label="Rating" value={user?.rating ? `${user.rating.toFixed(1)} ★ (${user.totalRatings})` : 'No ratings yet'} />
-        {user?.companyName ? <Row label="Company" value={user.companyName} /> : null}
-        {user?.email ? <Row label="Email" value={user.email} /> : null}
-        {user?.address?.city ? <Row label="City" value={user.address.city} /> : null}
+        <Row
+          icon="star"
+          label="Rating"
+          value={user?.rating ? `${user.rating.toFixed(1)} (${user.totalRatings})` : 'No ratings yet'}
+        />
+        {user?.companyName ? <Row icon="owner" label="Company" value={user.companyName} /> : null}
+        {user?.email ? <Row icon="phone" label="Email" value={user.email} /> : null}
+        {user?.address?.city ? <Row icon="location" label="City" value={user.address.city} /> : null}
       </Card>
 
-      <Button title="Edit Profile" variant="secondary" onPress={() => navigation.navigate('EditProfile')} />
-      <Button title="Log Out" variant="outline" onPress={handleLogout} />
+      <Button title="Edit Profile" icon="edit" variant="secondary" onPress={() => navigation.navigate('EditProfile')} />
+      <Button title="Log Out" icon="logout" variant="tertiary" onPress={handleLogout} />
     </ScrollView>
   );
 };
 
-const Row = ({ label, value }) => (
-  <View style={styles.row}>
-    <Text style={styles.rowLabel}>{label}</Text>
-    <Text style={styles.rowValue}>{value}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
-  headerCard: { alignItems: 'center', paddingVertical: 24 },
-  name: { fontSize: 20, fontWeight: 'bold', color: FLITO_COLORS.secondary },
-  phone: { fontSize: 14, color: FLITO_COLORS.textMuted, marginTop: 4 },
-  badge: {
-    marginTop: 12,
-    backgroundColor: FLITO_COLORS.primary,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
+  headerCard: { alignItems: 'center', paddingVertical: spacing.xxl },
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.pill,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
-  badgeText: { color: '#FFF', fontWeight: '600', fontSize: 12 },
+  name: { ...type.h2, color: colors.secondary },
+  phone: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
+  badge: {
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xxs,
+  },
+  badgeText: { color: colors.textOnPrimary, fontWeight: '700', fontSize: 12, letterSpacing: 0.5 },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    borderBottomColor: colors.divider,
   },
-  rowLabel: { color: FLITO_COLORS.textMuted, fontSize: 14 },
-  rowValue: { color: FLITO_COLORS.secondary, fontSize: 14, fontWeight: '600' },
-  reason: { fontSize: 13, color: FLITO_COLORS.error, marginTop: 8 },
+  verifyRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+  rowIcon: { marginRight: spacing.sm },
+  rowLabel: { flex: 1, color: colors.textMuted, ...type.body },
+  rowValue: { color: colors.textPrimary, ...type.bodyMedium },
+  reason: { ...type.small, color: colors.error, marginTop: spacing.sm, marginBottom: spacing.sm },
 });
 
 export default ProfileScreen;

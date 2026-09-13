@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 import Spinner from '../../components/common/Spinner';
 import StatusBadge from '../../components/common/StatusBadge';
-import { FLITO_COLORS } from '../../utils/colors';
+import EmptyState from '../../components/common/EmptyState';
+import Icon from '../../theme/icons';
+import { colors, spacing, type, iconSize } from '../../theme/tokens';
 import { TRUCK_TYPES } from '../../utils/constants';
 import { getErrorMessage, pluralize } from '../../utils/helpers';
 import { notify, confirmAction } from '../../utils/alert';
@@ -67,13 +70,15 @@ const ManageFleet = () => {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <View style={styles.headerRow}>
         <Text style={styles.heading}>{pluralize(trucks.length, 'truck')}</Text>
         <Button
           title={adding ? 'Cancel' : 'Add Truck'}
-          variant={adding ? 'outline' : 'primary'}
+          icon={adding ? 'close' : 'add'}
+          variant={adding ? 'tertiary' : 'primary'}
+          size="sm"
           onPress={() => setAdding((v) => !v)}
           style={styles.addButton}
         />
@@ -82,7 +87,7 @@ const ManageFleet = () => {
       {adding && <AddTruckForm onAdded={async () => { setAdding(false); await load(); }} />}
 
       {trucks.length === 0 && !adding && (
-        <Text style={styles.empty}>No trucks yet. Add one to start assigning drivers.</Text>
+        <EmptyState icon="fleet" title="No trucks yet" message="Add one to start assigning drivers." />
       )}
 
       {trucks.map((truck) => (
@@ -134,13 +139,14 @@ const AddTruckForm = ({ onAdded }) => {
     <Card>
       <Text style={styles.sectionTitle}>Add a Truck</Text>
 
-      <Text style={styles.label}>Registration Number *</Text>
-      <TextInput
-        style={styles.input}
+      <Input
+        label="Registration Number"
         value={registrationNumber}
         onChangeText={setRegistrationNumber}
         placeholder="BA 2 KHA 1234"
         autoCapitalize="characters"
+        icon="truck"
+        required
       />
 
       <Text style={styles.label}>Truck Type</Text>
@@ -149,20 +155,18 @@ const AddTruckForm = ({ onAdded }) => {
           <Button
             key={t}
             title={t}
-            variant={truckType === t ? 'primary' : 'outline'}
+            size="sm"
+            variant={truckType === t ? 'primary' : 'tertiary'}
             onPress={() => setTruckType(t)}
             style={styles.chip}
           />
         ))}
       </View>
 
-      <Text style={styles.label}>Capacity (kg)</Text>
-      <TextInput style={styles.input} value={capacity} onChangeText={setCapacity} keyboardType="numeric" placeholder="e.g. 10000" />
+      <Input label="Capacity (kg)" value={capacity} onChangeText={setCapacity} keyboardType="numeric" placeholder="e.g. 10000" icon="weight" />
+      <Input label="Make / Model" value={makeModel} onChangeText={setMakeModel} placeholder="e.g. Tata 1613" icon="truck" />
 
-      <Text style={styles.label}>Make / Model</Text>
-      <TextInput style={styles.input} value={makeModel} onChangeText={setMakeModel} placeholder="e.g. Tata 1613" />
-
-      <Button title="Add Truck" onPress={handleSubmit} loading={submitting} />
+      <Button title="Add Truck" icon="add" onPress={handleSubmit} loading={submitting} />
     </Card>
   );
 };
@@ -186,7 +190,10 @@ const TruckCard = ({ truck, busy, onAssignDriver, onSetStatus, onDelete }) => {
       </Text>
 
       <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Driver</Text>
+        <View style={styles.detailLabelRow}>
+          <Icon name="driver" size={iconSize.xs} color={colors.textMuted} style={styles.detailIcon} />
+          <Text style={styles.detailLabel}>Driver</Text>
+        </View>
         <Text style={styles.detailValue}>
           {driver
             // Unverified drivers can be on a truck but can't be put on a booking yet.
@@ -197,34 +204,36 @@ const TruckCard = ({ truck, busy, onAssignDriver, onSetStatus, onDelete }) => {
 
       {assigning ? (
         <View>
-          <Text style={styles.label}>Driver Phone</Text>
-          <TextInput
-            style={styles.input}
+          <Input
+            label="Driver Phone"
             value={driverPhone}
             onChangeText={setDriverPhone}
             keyboardType="phone-pad"
             placeholder="+9779841234567"
+            icon="phone"
           />
           <View style={styles.actionsRow}>
             <Button
               title="Assign"
+              icon="checkmark"
               onPress={() => { setAssigning(false); onAssignDriver(driverPhone); }}
               loading={busy}
               style={styles.actionButton}
             />
-            <Button title="Cancel" variant="outline" onPress={() => setAssigning(false)} style={styles.actionButton} />
+            <Button title="Cancel" variant="ghost" onPress={() => setAssigning(false)} style={styles.actionButton} />
           </View>
         </View>
       ) : (
         <View style={styles.actionsRow}>
           <Button
             title={driver ? 'Change Driver' : 'Assign Driver'}
+            icon="driver"
             variant="secondary"
             onPress={() => setAssigning(true)}
             style={styles.actionButton}
           />
           {driver && (
-            <Button title="Unassign" variant="outline" onPress={() => onAssignDriver('')} loading={busy} style={styles.actionButton} />
+            <Button title="Unassign" icon="close" variant="destructive" onPress={() => onAssignDriver('')} loading={busy} style={styles.actionButton} />
           )}
         </View>
       )}
@@ -232,52 +241,46 @@ const TruckCard = ({ truck, busy, onAssignDriver, onSetStatus, onDelete }) => {
       <View style={styles.actionsRow}>
         <Button
           title={truck.status === 'active' ? 'Mark In Maintenance' : 'Mark Active'}
-          variant="outline"
+          icon="settings"
+          variant="tertiary"
           onPress={() => onSetStatus(truck.status === 'active' ? 'maintenance' : 'active')}
           loading={busy}
           style={styles.actionButton}
         />
-        <Button title="Remove" variant="outline" onPress={onDelete} style={styles.actionButton} />
+        <Button title="Remove" icon="trash" variant="destructive" onPress={onDelete} style={styles.actionButton} />
       </View>
     </Card>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  heading: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary },
-  addButton: { minWidth: 120, marginVertical: 0 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary, marginBottom: 8 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  heading: { ...type.h3, color: colors.textPrimary },
+  addButton: { minWidth: 130 },
+  sectionTitle: { ...type.h3, color: colors.textPrimary, marginBottom: spacing.sm },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  reg: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary },
-  meta: { fontSize: 13, color: FLITO_COLORS.textMuted, marginTop: 4 },
+  reg: { ...type.h3, color: colors.textPrimary },
+  meta: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    marginTop: 4,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: '#EEE',
+    borderTopColor: colors.divider,
   },
-  detailLabel: { fontSize: 13, color: FLITO_COLORS.textMuted },
-  detailValue: { fontSize: 13, fontWeight: '600', color: FLITO_COLORS.secondary },
-  label: { fontSize: 14, fontWeight: '600', color: FLITO_COLORS.secondary, marginBottom: 8, marginTop: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-    fontSize: 14,
-  },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  chip: { minWidth: 90, marginVertical: 4 },
-  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  detailLabelRow: { flexDirection: 'row', alignItems: 'center' },
+  detailIcon: { marginRight: spacing.xs },
+  detailLabel: { ...type.small, color: colors.textMuted },
+  detailValue: { ...type.smallMedium, color: colors.textPrimary },
+  label: { ...type.smallMedium, color: colors.textSecondary, marginBottom: spacing.sm, marginTop: spacing.xs },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
+  chip: { minWidth: 90 },
+  actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   actionButton: { flex: 1 },
-  empty: { textAlign: 'center', color: FLITO_COLORS.textMuted, marginTop: 30, fontSize: 14 },
 });
 
 export default ManageFleet;

@@ -1,17 +1,30 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useSelector } from 'react-redux';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
+import Input from '../components/common/Input';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
+import EmptyState from '../components/common/EmptyState';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
-import { FLITO_COLORS } from '../utils/colors';
+import Icon from '../theme/icons';
+import { colors, spacing, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
 import { notify } from '../utils/alert';
 import LoadPhotosSection from '../components/loads/LoadPhotosSection';
+
+const DETAIL_ICON = {
+  Pickup: 'pickup',
+  Dropoff: 'dropoff',
+  Weight: 'weight',
+  'Truck Type': 'truck',
+  'Budget Estimate': 'price',
+  Posted: 'calendar',
+  Truck: 'truck',
+};
 
 const LoadDetailScreen = ({ route, navigation }) => {
   const { loadId } = route.params;
@@ -119,13 +132,13 @@ const LoadDetailScreen = ({ route, navigation }) => {
   };
 
   if (loading) return <Spinner />;
-  if (!load) return <Text style={styles.empty}>Load not found</Text>;
+  if (!load) return <EmptyState icon="empty" title="Load not found" message="This load may have been removed." />;
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <Card>
         <View style={styles.row}>
@@ -150,19 +163,21 @@ const LoadDetailScreen = ({ route, navigation }) => {
         {isMyLoad && load.status === 'expired' && (
           <>
             <Text style={styles.expiredNote}>No booking was made before this load expired.</Text>
-            <Button title="Relist Load" onPress={handleRelist} loading={busy} />
+            <Button title="Relist Load" icon="refresh" onPress={handleRelist} loading={busy} />
           </>
         )}
 
         {isMyLoad && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status) && (
-          <Button title="Cancel Load" variant="outline" onPress={handleCancelLoad} loading={busy} />
+          <Button title="Cancel Load" icon="close" variant="destructive" onPress={handleCancelLoad} loading={busy} />
         )}
       </Card>
 
       {isShipper && isMyLoad && (
         <View>
           <Text style={styles.sectionTitle}>Quotes ({quotes.length})</Text>
-          {quotes.length === 0 && <Text style={styles.empty}>No quotes yet</Text>}
+          {quotes.length === 0 && (
+            <EmptyState icon="quote" title="No quotes yet" message="Owners will submit offers here as they come in." />
+          )}
           {quotes.map((q) => (
             <QuoteCard
               key={q._id}
@@ -233,49 +248,55 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, sho
       <Text style={styles.price}>{formatCurrency(standingPrice)}</Text>
       {quote.counterOfferPrice != null && (
         <Text style={styles.counterNote}>
-          Countered by the {quote.counterOfferBy} · originally {formatCurrency(quote.quotedPrice)}
+          Countered by the {quote.counterOfferBy}, originally {formatCurrency(quote.quotedPrice)}
         </Text>
       )}
       {quote.truckType ? <Detail label="Truck" value={quote.truckType} /> : null}
 
       {isOpen && !myTurn && (
-        <Text style={styles.waitingNote}>Waiting for the other party to respond to your offer.</Text>
+        <View style={styles.waitingRow}>
+          <Icon name="time" size={iconSize.xs} color={colors.textMuted} />
+          <Text style={styles.waitingNote}>Waiting for the other party to respond to your offer.</Text>
+        </View>
       )}
 
       {myTurn && !canRespond && (
         <>
-          <Text style={styles.waitingNote}>
-            Verify your identity to accept or counter this offer. You can still reject it.
-          </Text>
+          <View style={styles.waitingRow}>
+            <Icon name="unverified" size={iconSize.xs} color={colors.warning} />
+            <Text style={styles.waitingNote}>
+              Verify your identity to accept or counter this offer. You can still reject it.
+            </Text>
+          </View>
           <View style={styles.actionsRow}>
-            <Button title="Reject" variant="outline" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
+            <Button title="Reject" icon="close" variant="destructive" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
           </View>
         </>
       )}
 
       {myTurn && canRespond && !countering && (
         <View style={styles.actionsRow}>
-          <Button title="Accept" onPress={() => onAccept(quote._id)} loading={busy} style={styles.actionButton} />
-          <Button title="Counter" variant="secondary" onPress={() => setCountering(true)} style={styles.actionButton} />
-          <Button title="Reject" variant="outline" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
+          <Button title="Accept" icon="checkmark" onPress={() => onAccept(quote._id)} loading={busy} style={styles.actionButton} />
+          <Button title="Counter" icon="counterOffer" variant="secondary" onPress={() => setCountering(true)} style={styles.actionButton} />
+          <Button title="Reject" icon="close" variant="destructive" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
         </View>
       )}
 
       {myTurn && canRespond && countering && (
         <View>
-          <Text style={styles.label}>Your Counter-Offer (Rs.)</Text>
-          <TextInput
-            style={styles.input}
+          <Input
+            label="Your Counter-Offer (Rs.)"
             value={counterPrice}
             onChangeText={setCounterPrice}
             keyboardType="numeric"
             placeholder={String(standingPrice)}
+            icon="price"
           />
           <View style={styles.actionsRow}>
-            <Button title="Send" onPress={submitCounter} loading={busy} style={styles.actionButton} />
+            <Button title="Send" icon="send" onPress={submitCounter} loading={busy} style={styles.actionButton} />
             <Button
               title="Cancel"
-              variant="outline"
+              variant="ghost"
               onPress={() => { setCountering(false); setCounterPrice(''); }}
               style={styles.actionButton}
             />
@@ -288,8 +309,11 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, sho
 
 const Detail = ({ label, value }) => (
   <View style={styles.detailRow}>
-    <Text style={styles.detailLabel}>{label}</Text>
-    <Text style={styles.detailValue}>{value || '—'}</Text>
+    <View style={styles.detailLabelRow}>
+      {!!DETAIL_ICON[label] && <Icon name={DETAIL_ICON[label]} size={iconSize.xs} color={colors.textMuted} style={styles.detailIcon} />}
+      <Text style={styles.detailLabel}>{label}</Text>
+    </View>
+    <Text style={styles.detailValue}>{value || '-'}</Text>
   </View>
 );
 
@@ -348,43 +372,40 @@ const OwnerQuoteSection = ({ load, myQuote, kycStatus, busy, onSubmitted, onAcce
   return (
     <Card>
       <Text style={styles.sectionTitle}>Submit a Quote</Text>
-      <Text style={styles.label}>Your Price (Rs.)</Text>
-      <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="e.g. 15000" />
-      <Text style={styles.label}>Truck Type</Text>
-      <TextInput style={styles.input} value={truckType} onChangeText={setTruckType} placeholder="e.g. 10-ton" />
-      <Button title="Submit Quote" onPress={handleSubmit} loading={submitting} />
+      <Input label="Your Price (Rs.)" value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="e.g. 15000" icon="price" />
+      <Input label="Truck Type" value={truckType} onChangeText={setTruckType} placeholder="e.g. 10-ton" icon="truck" />
+      <Button title="Submit Quote" icon="quote" onPress={handleSubmit} loading={submitting} />
     </Card>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '700', color: FLITO_COLORS.secondary },
-  desc: { fontSize: 14, color: FLITO_COLORS.textMuted, marginTop: 8 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-  detailLabel: { fontSize: 13, color: FLITO_COLORS.textMuted },
-  detailValue: { fontSize: 13, fontWeight: '600', color: FLITO_COLORS.secondary },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary, marginTop: 16, marginBottom: 8 },
-  ownerName: { fontSize: 15, fontWeight: '600', color: FLITO_COLORS.secondary },
-  price: { fontSize: 18, fontWeight: '700', color: FLITO_COLORS.primary, marginVertical: 6 },
-  counterNote: { fontSize: 12, color: FLITO_COLORS.textMuted, marginBottom: 6 },
-  waitingNote: { fontSize: 12, color: FLITO_COLORS.textMuted, fontStyle: 'italic', marginTop: 8 },
-  expiredNote: { fontSize: 13, color: FLITO_COLORS.textMuted, marginTop: 12 },
-  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  actionButton: { flex: 1 },
-  label: { fontSize: 14, fontWeight: '600', color: FLITO_COLORS.secondary, marginBottom: 8, marginTop: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-    fontSize: 14,
+  title: { ...type.h2, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  desc: { ...type.body, color: colors.textMuted, marginTop: spacing.sm },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
-  empty: { textAlign: 'center', color: FLITO_COLORS.textMuted, marginTop: 20, fontSize: 14 },
+  detailLabelRow: { flexDirection: 'row', alignItems: 'center' },
+  detailIcon: { marginRight: spacing.xs },
+  detailLabel: { ...type.small, color: colors.textMuted },
+  detailValue: { ...type.smallMedium, color: colors.textPrimary },
+  sectionTitle: { ...type.h3, color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.sm },
+  ownerName: { ...type.bodyMedium, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  price: { ...type.h2, color: colors.primary, marginVertical: spacing.xs },
+  counterNote: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },
+  waitingRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: spacing.sm },
+  waitingNote: { ...type.small, color: colors.textMuted, flex: 1 },
+  expiredNote: { ...type.small, color: colors.textMuted, marginTop: spacing.md, marginBottom: spacing.sm },
+  actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  actionButton: { flex: 1 },
 });
 
 export default LoadDetailScreen;

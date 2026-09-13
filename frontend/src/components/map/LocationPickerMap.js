@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 import MapCanvas from './MapCanvas';
 import Button from '../common/Button';
 import { buildMapHtml } from './mapHtml';
-import { FLITO_COLORS } from '../../utils/colors';
+import { colors, spacing, radius, type } from '../../theme/tokens';
 
 // Tap-to-pick coordinates for a load's pickup/dropoff. Kept deliberately
 // separate from TrackingMap: this one is interactive and single-marker,
@@ -55,7 +55,9 @@ const LocationPickerMap = ({ value, onChange, height = 220 }) => {
         </Text>
         <Button
           title="Use My Location"
-          variant="outline"
+          icon="gps"
+          variant="tertiary"
+          size="sm"
           loading={locating}
           onPress={() => useCurrentLocation().catch(() => {})}
           style={styles.locateButton}
@@ -66,10 +68,10 @@ const LocationPickerMap = ({ value, onChange, height = 220 }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { borderRadius: 10, overflow: 'hidden', backgroundColor: '#EEE', marginTop: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, marginBottom: 8 },
-  hint: { flex: 1, fontSize: 12, color: FLITO_COLORS.textMuted, marginRight: 8 },
-  locateButton: { marginVertical: 0, minWidth: 140 },
+  container: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surfaceMuted, marginTop: spacing.xs },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm, marginBottom: spacing.sm },
+  hint: { flex: 1, ...type.small, color: colors.textMuted, marginRight: spacing.sm },
+  locateButton: { minWidth: 140 },
 });
 
 export default LocationPickerMap;

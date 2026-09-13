@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, Linking, StyleSheet } from 'react-native';
-import { FLITO_COLORS } from '../../utils/colors';
+import { View, Text, Image, Pressable, Linking, StyleSheet } from 'react-native';
+import Icon from '../../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 
 // A private document behind a short-lived link: images preview inline, PDFs
 // show a badge. Tapping opens the full file.
@@ -9,30 +10,35 @@ const DocumentTile = ({ doc, label, size = 72 }) => {
   const open = () => doc.url && Linking.openURL(doc.url);
 
   return (
-    <TouchableOpacity style={styles.tile} onPress={open} disabled={!doc.url} accessibilityLabel={`Open ${label}`}>
+    <Pressable style={styles.tile} onPress={open} disabled={!doc.url} accessibilityRole="link" accessibilityLabel={`Open ${label}`}>
       {isPdf || !doc.url ? (
         <View style={[styles.badge, { width: size, height: size }]}>
-          <Text style={styles.badgeText}>{isPdf ? 'PDF' : 'FILE'}</Text>
+          <Icon name="document" size={iconSize.lg} color={colors.textOnPrimary} />
+          {isPdf && <Text style={styles.badgeText}>PDF</Text>}
         </View>
       ) : (
         <Image source={{ uri: doc.url }} style={[styles.thumb, { width: size, height: size }]} />
       )}
-      <Text style={styles.label} numberOfLines={2}>{label}</Text>
-    </TouchableOpacity>
+      <View style={styles.labelRow}>
+        <Text style={styles.label} numberOfLines={2}>{label}</Text>
+        <Icon name="forward" size={iconSize.sm} color={colors.textLink} />
+      </View>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  tile: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
-  thumb: { borderRadius: 8, backgroundColor: '#EEE' },
+  tile: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xs },
+  thumb: { borderRadius: radius.sm, backgroundColor: colors.surfaceMuted },
   badge: {
-    borderRadius: 8,
-    backgroundColor: FLITO_COLORS.secondary,
+    borderRadius: radius.sm,
+    backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
-  label: { flex: 1, fontSize: 13, color: FLITO_COLORS.info, textDecorationLine: 'underline' },
+  badgeText: { color: colors.textOnPrimary, fontWeight: '700', fontSize: 11, marginTop: 2 },
+  labelRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  label: { flex: 1, ...type.small, color: colors.textLink },
 });
 
 export default DocumentTile;

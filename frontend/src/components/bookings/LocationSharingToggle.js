@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import * as Location from 'expo-location';
 import Card from '../common/Card';
 import Button from '../common/Button';
-import { FLITO_COLORS } from '../../utils/colors';
+import Icon from '../../theme/icons';
+import { colors, spacing, type, iconSize } from '../../theme/tokens';
 import { getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
 import api from '../../services/api';
@@ -45,8 +46,8 @@ const LocationSharingToggle = ({ bookingId }) => {
             await api.patch(`/bookings/${bookingId}/location`, { lat: coords.latitude, lng: coords.longitude });
             setLastSentAt(new Date());
           } catch (error) {
-            // A single dropped ping isn't worth interrupting the driver over;
-            // the next one a few seconds later will likely succeed.
+            // A single dropped ping isn't worth interrupting the driver over.
+            // The next one a few seconds later will likely succeed.
             console.log('[location-share] ping failed:', getErrorMessage(error));
           }
         }
@@ -60,7 +61,11 @@ const LocationSharingToggle = ({ bookingId }) => {
 
   return (
     <Card>
-      <Text style={styles.title}>Live Location</Text>
+      <View style={styles.titleRow}>
+        <Icon name={sharing ? 'gps' : 'location'} size={iconSize.md} color={sharing ? colors.success : colors.primary} style={styles.titleIcon} />
+        <Text style={styles.title}>Live Location</Text>
+        {sharing && <View style={styles.liveDot} />}
+      </View>
       <Text style={styles.hint}>
         {sharing
           ? 'The shipper and owner can see your position on the map.'
@@ -71,7 +76,8 @@ const LocationSharingToggle = ({ bookingId }) => {
       )}
       <Button
         title={sharing ? 'Stop Sharing' : 'Share My Location'}
-        variant={sharing ? 'outline' : 'primary'}
+        icon={sharing ? 'close' : 'gps'}
+        variant={sharing ? 'tertiary' : 'primary'}
         onPress={sharing ? stop : start}
         loading={starting}
       />
@@ -80,9 +86,12 @@ const LocationSharingToggle = ({ bookingId }) => {
 };
 
 const styles = StyleSheet.create({
-  title: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary, marginBottom: 4 },
-  hint: { fontSize: 13, color: FLITO_COLORS.textMuted, marginBottom: 6 },
-  meta: { fontSize: 11, color: FLITO_COLORS.textMuted, marginBottom: 8 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+  titleIcon: { marginRight: spacing.xs },
+  title: { ...type.h3, color: colors.textPrimary },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, marginLeft: spacing.sm },
+  hint: { ...type.small, color: colors.textMuted, marginBottom: spacing.sm },
+  meta: { ...type.small, fontSize: 11, color: colors.textMuted, marginBottom: spacing.sm },
 });
 
 export default LocationSharingToggle;

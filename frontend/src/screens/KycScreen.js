@@ -6,7 +6,8 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Spinner from '../components/common/Spinner';
 import DocumentTile from '../components/kyc/DocumentTile';
-import { FLITO_COLORS } from '../utils/colors';
+import Icon from '../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { KYC_DOCUMENT_LABELS, MAX_DOCUMENT_BYTES } from '../utils/constants';
 import { formatDate, getErrorMessage } from '../utils/helpers';
 import { notify, confirmAction } from '../utils/alert';
@@ -18,22 +19,26 @@ const STATUS_COPY = {
   not_submitted: {
     title: 'Verify your identity',
     body: 'Upload the documents below, then submit them for review.',
-    color: FLITO_COLORS.info,
+    color: colors.info,
+    icon: 'unverified',
   },
   pending: {
     title: 'Under review',
     body: "Your documents are being checked. You can't change them until the review is finished.",
-    color: FLITO_COLORS.warning,
+    color: colors.warning,
+    icon: 'pending',
   },
   approved: {
     title: 'Verified',
     body: 'Your identity has been verified.',
-    color: FLITO_COLORS.success,
+    color: colors.success,
+    icon: 'verified',
   },
   rejected: {
     title: 'Changes needed',
     body: 'Your documents were not approved. Fix the issue below and submit again.',
-    color: FLITO_COLORS.error,
+    color: colors.error,
+    icon: 'unverified',
   },
 };
 
@@ -131,10 +136,13 @@ const KycScreen = () => {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <Card style={[styles.banner, { borderLeftColor: copy.color }]}>
-        <Text style={[styles.bannerTitle, { color: copy.color }]}>{copy.title}</Text>
+        <View style={styles.bannerHeader}>
+          <Icon name={copy.icon} size={iconSize.md} color={copy.color} style={styles.bannerIcon} />
+          <Text style={[styles.bannerTitle, { color: copy.color }]}>{copy.title}</Text>
+        </View>
         <Text style={styles.bannerBody}>{copy.body}</Text>
         {kyc.rejectionReason ? <Text style={styles.reason}>Reason: {kyc.rejectionReason}</Text> : null}
         {kyc.status === 'pending' && kyc.submittedAt ? (
@@ -148,10 +156,15 @@ const KycScreen = () => {
         return (
           <Card key={type}>
             <View style={styles.docHeader}>
-              <Text style={styles.docLabel}>{labelFor(type)}</Text>
-              <Text style={[styles.docState, doc ? styles.docUploaded : null]}>
-                {doc ? 'Uploaded' : required ? 'Required' : 'Optional'}
-              </Text>
+              <View style={styles.docHeaderLeft}>
+                <Icon name="idCard" size={iconSize.sm} color={colors.textMuted} style={styles.docIcon} />
+                <Text style={styles.docLabel}>{labelFor(type)}</Text>
+              </View>
+              <View style={[styles.stateBadge, doc && styles.stateBadgeUploaded]}>
+                <Text style={[styles.docState, doc ? styles.docUploaded : null]}>
+                  {doc ? 'Uploaded' : required ? 'Required' : 'Optional'}
+                </Text>
+              </View>
             </View>
 
             {doc && <DocumentTile doc={doc} label={`View ${labelFor(type).toLowerCase()}`} />}
@@ -160,13 +173,14 @@ const KycScreen = () => {
               <View style={styles.actionsRow}>
                 <Button
                   title={doc ? 'Replace' : 'Upload'}
-                  variant={doc ? 'outline' : 'primary'}
+                  icon={doc ? 'refresh' : 'upload'}
+                  variant={doc ? 'tertiary' : 'primary'}
                   onPress={() => handleUpload(type)}
                   loading={busyType === type}
                   style={styles.actionButton}
                 />
                 {doc && (
-                  <Button title="Remove" variant="outline" onPress={() => handleRemove(doc)} style={styles.actionButton} />
+                  <Button title="Remove" icon="trash" variant="tertiary" onPress={() => handleRemove(doc)} style={styles.actionButton} />
                 )}
               </View>
             )}
@@ -178,6 +192,7 @@ const KycScreen = () => {
         <>
           <Button
             title={kyc.status === 'rejected' ? 'Resubmit for Review' : 'Submit for Review'}
+            icon="checkmark"
             onPress={handleSubmit}
             loading={submitting}
             disabled={!ready}
@@ -190,20 +205,26 @@ const KycScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
   banner: { borderLeftWidth: 4 },
-  bannerTitle: { fontSize: 18, fontWeight: '700' },
-  bannerBody: { fontSize: 14, color: FLITO_COLORS.secondary, marginTop: 4 },
-  reason: { fontSize: 14, color: FLITO_COLORS.error, fontWeight: '600', marginTop: 8 },
-  meta: { fontSize: 12, color: FLITO_COLORS.textMuted, marginTop: 6 },
-  docHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  docLabel: { fontSize: 15, fontWeight: '600', color: FLITO_COLORS.secondary },
-  docState: { fontSize: 12, fontWeight: '600', color: FLITO_COLORS.textMuted },
-  docUploaded: { color: FLITO_COLORS.success },
-  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  bannerHeader: { flexDirection: 'row', alignItems: 'center' },
+  bannerIcon: { marginRight: spacing.sm },
+  bannerTitle: { ...type.h3 },
+  bannerBody: { ...type.body, color: colors.textSecondary, marginTop: spacing.xs },
+  reason: { ...type.smallMedium, color: colors.error, marginTop: spacing.sm },
+  meta: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
+  docHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+  docHeaderLeft: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
+  docIcon: { marginRight: spacing.xs },
+  docLabel: { ...type.bodyMedium, color: colors.textPrimary },
+  stateBadge: { backgroundColor: colors.surfaceMuted, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  stateBadgeUploaded: { backgroundColor: colors.successMuted },
+  docState: { ...type.caption, color: colors.textMuted },
+  docUploaded: { color: colors.success },
+  actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   actionButton: { flex: 1 },
-  hint: { textAlign: 'center', fontSize: 12, color: FLITO_COLORS.textMuted, marginBottom: 16 },
+  hint: { textAlign: 'center', ...type.small, color: colors.textMuted, marginBottom: spacing.lg },
 });
 
 export default KycScreen;

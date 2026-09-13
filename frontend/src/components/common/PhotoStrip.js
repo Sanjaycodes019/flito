@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { View, Image, ScrollView, TouchableOpacity, Text, Modal, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Image, ScrollView, Pressable, Text, Modal, StyleSheet, Platform } from 'react-native';
+import Icon from '../../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 
 // Cloudinary serves resized variants of the same image by URL, so a strip asks
 // for small square thumbnails instead of downloading full-size photos.
@@ -12,6 +14,13 @@ const thumbnail = (uri, px) =>
 const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
   const [preview, setPreview] = useState(null);
 
+  useEffect(() => {
+    if (!preview || Platform.OS !== 'web') return undefined;
+    const onKeyDown = (event) => { if (event.key === 'Escape') setPreview(null); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [preview]);
+
   if (!photos.length) return null;
 
   return (
@@ -21,21 +30,22 @@ const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
           const uri = photo.url || photo.uri;
           return (
             <View key={photo._id || uri || index} style={{ width: size, height: size }}>
-              <TouchableOpacity activeOpacity={0.8} onPress={() => setPreview(uri)} accessibilityLabel="View photo">
+              <Pressable onPress={() => setPreview(uri)} accessibilityRole="button" accessibilityLabel="View photo">
                 <Image
                   source={{ uri: thumbnail(uri, size * 2) }}
                   style={[styles.thumb, { width: size, height: size }]}
                 />
-              </TouchableOpacity>
+              </Pressable>
               {onRemove && (
-                <TouchableOpacity
+                <Pressable
                   style={styles.remove}
                   onPress={() => onRemove(photo, index)}
+                  accessibilityRole="button"
                   accessibilityLabel="Remove photo"
                   hitSlop={8}
                 >
-                  <Text style={styles.removeText}>×</Text>
-                </TouchableOpacity>
+                  <Icon name="close" size={14} color={colors.white} />
+                </Pressable>
               )}
             </View>
           );
@@ -43,8 +53,17 @@ const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
       </ScrollView>
 
       <Modal visible={!!preview} transparent animationType="fade" onRequestClose={() => setPreview(null)}>
-        <Pressable style={styles.backdrop} onPress={() => setPreview(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setPreview(null)} accessibilityRole="none">
           {preview && <Image source={{ uri: preview }} style={styles.full} resizeMode="contain" />}
+          <Pressable
+            style={styles.closeButton}
+            onPress={() => setPreview(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Close preview"
+            hitSlop={8}
+          >
+            <Icon name="close" size={iconSize.lg} color={colors.white} />
+          </Pressable>
           <Text style={styles.closeHint}>Tap anywhere to close</Text>
         </Pressable>
       </Modal>
@@ -53,29 +72,29 @@ const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
 };
 
 const styles = StyleSheet.create({
-  strip: { gap: 8, paddingVertical: 8 },
-  thumb: { borderRadius: 8, backgroundColor: '#EEE' },
+  strip: { gap: spacing.sm, paddingVertical: spacing.sm },
+  thumb: { borderRadius: radius.sm, backgroundColor: colors.surfaceMuted },
   remove: {
     position: 'absolute',
     top: 4,
     right: 4,
     width: 24,
     height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: radius.pill,
+    backgroundColor: colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeText: { color: '#FFF', fontSize: 16, fontWeight: '700', lineHeight: 20 },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: 'rgba(18, 22, 26, 0.95)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
   full: { width: '100%', height: '80%' },
-  closeHint: { color: '#FFF', opacity: 0.7, marginTop: 12, fontSize: 13 },
+  closeButton: { position: 'absolute', top: spacing.xl, right: spacing.xl },
+  closeHint: { color: colors.white, opacity: 0.7, marginTop: spacing.md, ...type.small },
 });
 
 export default PhotoStrip;

@@ -1,15 +1,17 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
-import { FLITO_COLORS } from '../../utils/colors';
+import EmptyState from '../../components/common/EmptyState';
+import Icon from '../../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
 import api from '../../services/api';
 
 // Once a load leaves "open" it disappears from the browse list, so this is the
-// owner's only route back to a negotiation they're part of — including ones
+// owner's only route back to a negotiation they're part of, including ones
 // where the shipper has countered and is waiting on them.
 const MyQuotesScreen = ({ navigation }) => {
   const [quotes, setQuotes] = useState([]);
@@ -34,42 +36,58 @@ const MyQuotesScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  if (loading && !refreshing && quotes.length === 0) {
+    return (
+      <View style={styles.container}>
+        <EmptyState icon="quote" title="Loading your quotes" message="One moment..." />
+      </View>
+    );
+  }
+
   return (
     <FlatList
       style={styles.container}
       contentContainerStyle={styles.content}
       data={quotes}
       keyExtractor={(item) => item._id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       ListEmptyComponent={
-        !loading && <Text style={styles.empty}>You haven't quoted on any loads yet</Text>
+        <EmptyState icon="quote" title="No quotes yet" message="You haven't quoted on any loads yet. Browse open loads to submit one." />
       }
       renderItem={({ item }) => {
         const load = item.loadId || {};
         const needsYou = item.status === 'countered' && item.counterOfferBy === 'shipper';
 
         return (
-          <TouchableOpacity
-            activeOpacity={0.7}
+          <Card
+            style={styles.card}
             onPress={() => navigation.navigate('LoadDetail', { loadId: load._id || load })}
+            accessibilityLabel={`${load.goodsType || 'Load'} quote`}
           >
-            <Card style={styles.card}>
-              <View style={styles.row}>
-                <Text style={styles.goodsType}>{load.goodsType || 'Load'}</Text>
-                <StatusBadge status={item.status} />
+            <View style={styles.row}>
+              <Text style={styles.goodsType} numberOfLines={1}>{load.goodsType || 'Load'}</Text>
+              <StatusBadge status={item.status} />
+            </View>
+            {load.pickupLocation?.address ? (
+              <View style={styles.routeRow}>
+                <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
+                <Text style={styles.route} numberOfLines={1}>{load.pickupLocation.address}</Text>
+                <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
+                <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
+                <Text style={styles.route} numberOfLines={1}>{load.dropoffLocation?.address}</Text>
               </View>
-              {load.pickupLocation?.address ? (
-                <Text style={styles.route}>
-                  {load.pickupLocation.address} → {load.dropoffLocation?.address}
-                </Text>
-              ) : null}
-              <View style={styles.rowBottom}>
-                <Text style={styles.price}>{formatCurrency(item.counterOfferPrice ?? item.quotedPrice)}</Text>
-                <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+            ) : null}
+            <View style={styles.rowBottom}>
+              <Text style={styles.price}>{formatCurrency(item.counterOfferPrice ?? item.quotedPrice)}</Text>
+              <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+            </View>
+            {needsYou && (
+              <View style={styles.actionNeededRow}>
+                <Icon name="warning" size={iconSize.xs} color={colors.warning} />
+                <Text style={styles.actionNeeded}>The shipper countered, your response is needed</Text>
               </View>
-              {needsYou && <Text style={styles.actionNeeded}>The shipper countered — your response is needed</Text>}
-            </Card>
-          </TouchableOpacity>
+            )}
+          </Card>
         );
       }}
     />
@@ -77,17 +95,27 @@ const MyQuotesScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
-  card: { marginVertical: 6 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg, flexGrow: 1 },
+  card: { marginVertical: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-  goodsType: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary },
-  route: { fontSize: 13, color: FLITO_COLORS.textMuted, marginTop: 6 },
-  price: { fontSize: 15, fontWeight: '700', color: FLITO_COLORS.primary },
-  date: { fontSize: 11, color: FLITO_COLORS.textMuted },
-  actionNeeded: { fontSize: 12, color: FLITO_COLORS.warning, fontWeight: '600', marginTop: 8 },
-  empty: { textAlign: 'center', color: FLITO_COLORS.textMuted, marginTop: 40, fontSize: 14 },
+  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },
+  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  goodsType: { ...type.h3, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  route: { ...type.small, color: colors.textMuted },
+  price: { ...type.bodyMedium, color: colors.primary },
+  date: { ...type.small, color: colors.textMuted },
+  actionNeededRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.sm,
+    backgroundColor: colors.warningMuted,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  actionNeeded: { ...type.small, color: colors.warning, fontWeight: '600' },
 });
 
 export default MyQuotesScreen;

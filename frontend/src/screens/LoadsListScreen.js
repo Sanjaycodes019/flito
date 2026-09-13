@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import Card from '../components/common/Card';
 import StatusBadge from '../components/common/StatusBadge';
-import { FLITO_COLORS } from '../utils/colors';
+import Spinner from '../components/common/Spinner';
+import EmptyState from '../components/common/EmptyState';
+import Icon from '../theme/icons';
+import { colors, spacing, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
@@ -12,7 +15,7 @@ import { fetchLoadsStart, fetchLoadsSuccess, fetchLoadsError } from '../redux/sl
 const LoadsListScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { items: loads, isLoading } = useSelector((state) => state.loads);
+  const { items: loads, isLoading, error } = useSelector((state) => state.loads);
   const [refreshing, setRefreshing] = useState(false);
 
   const isShipper = user?.role === ROLES.SHIPPER;
@@ -40,50 +43,70 @@ const LoadsListScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  if (isLoading && !refreshing && loads.length === 0) return <Spinner />;
+
+  if (error && loads.length === 0) {
+    return (
+      <View style={styles.container}>
+        <EmptyState icon="offline" tone="error" title="Could not load this" message={error} actionLabel="Try Again" onAction={load} />
+      </View>
+    );
+  }
+
   return (
     <FlatList
       style={styles.container}
       contentContainerStyle={styles.content}
       data={loads}
       keyExtractor={(item) => item._id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       ListEmptyComponent={
-        !isLoading && (
-          <Text style={styles.empty}>{isShipper ? "You haven't posted any loads yet" : 'No open loads right now'}</Text>
-        )
+        <EmptyState
+          icon="load"
+          title={isShipper ? 'No loads yet' : 'No open loads right now'}
+          message={isShipper ? "You haven't posted any loads yet. Post one to start getting quotes." : 'Check back soon, or widen your search.'}
+        />
       }
       renderItem={({ item }) => (
-        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('LoadDetail', { loadId: item._id })}>
-          <Card style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.goodsType}>{item.goodsType}</Text>
-              <StatusBadge status={item.status} />
-            </View>
-            <Text style={styles.route}>{item.pickupLocation?.address} → {item.dropoffLocation?.address}</Text>
-            <View style={styles.rowBottom}>
+        <Card style={styles.card} onPress={() => navigation.navigate('LoadDetail', { loadId: item._id })} accessibilityLabel={`${item.goodsType} load`}>
+          <View style={styles.row}>
+            <Text style={styles.goodsType} numberOfLines={1}>{item.goodsType}</Text>
+            <StatusBadge status={item.status} />
+          </View>
+          <View style={styles.routeRow}>
+            <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
+            <Text style={styles.route} numberOfLines={1}>{item.pickupLocation?.address}</Text>
+            <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
+            <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
+            <Text style={styles.route} numberOfLines={1}>{item.dropoffLocation?.address}</Text>
+          </View>
+          <View style={styles.rowBottom}>
+            <View style={styles.metaRow}>
+              <Icon name="quote" size={iconSize.xs} color={colors.textMuted} />
               <Text style={styles.meta}>{item.totalQuotes || 0} quotes</Text>
-              {item.budgetEstimate ? <Text style={styles.budget}>{formatCurrency(item.budgetEstimate)}</Text> : null}
             </View>
-            <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-          </Card>
-        </TouchableOpacity>
+            {item.budgetEstimate ? <Text style={styles.budget}>{formatCurrency(item.budgetEstimate)}</Text> : null}
+          </View>
+          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+        </Card>
       )}
     />
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
-  card: { marginVertical: 6 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg, flexGrow: 1 },
+  card: { marginVertical: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
-  goodsType: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary },
-  route: { fontSize: 13, color: FLITO_COLORS.textMuted, marginTop: 6 },
-  meta: { fontSize: 12, color: FLITO_COLORS.textMuted },
-  budget: { fontSize: 13, fontWeight: '700', color: FLITO_COLORS.primary },
-  date: { fontSize: 11, color: FLITO_COLORS.textMuted, marginTop: 6 },
-  empty: { textAlign: 'center', color: FLITO_COLORS.textMuted, marginTop: 40, fontSize: 14 },
+  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },
+  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  goodsType: { ...type.h3, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  route: { ...type.small, color: colors.textMuted },
+  meta: { ...type.small, color: colors.textMuted },
+  budget: { ...type.bodyMedium, color: colors.primary },
+  date: { ...type.small, fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
 });
 
 export default LoadsListScreen;

@@ -1,20 +1,35 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useSelector } from 'react-redux';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
+import Input from '../components/common/Input';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
+import EmptyState from '../components/common/EmptyState';
 import DeliveryProofSection from '../components/bookings/DeliveryProofSection';
 import DeliverySignatureSection from '../components/bookings/DeliverySignatureSection';
 import LocationSharingToggle from '../components/bookings/LocationSharingToggle';
 import TrackingMap from '../components/map/TrackingMap';
-import { FLITO_COLORS } from '../utils/colors';
+import Icon from '../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, formatStatus, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
 import socketService from '../services/socket';
 import { notify } from '../utils/alert';
+
+const DETAIL_ICON = {
+  Pickup: 'pickup',
+  Dropoff: 'dropoff',
+  Amount: 'price',
+  Shipper: 'shipper',
+  Owner: 'owner',
+  Driver: 'driver',
+  'Pickup Status': 'pickup',
+  'Dropoff Status': 'dropoff',
+  Booked: 'calendar',
+};
 
 const BookingDetailScreen = ({ route }) => {
   const { bookingId } = route.params;
@@ -112,7 +127,7 @@ const BookingDetailScreen = ({ route }) => {
   });
 
   if (loading) return <Spinner />;
-  if (!booking) return <Text style={styles.empty}>Booking not found</Text>;
+  if (!booking) return <EmptyState icon="empty" title="Booking not found" message="This booking may have been removed." />;
 
   const alreadyRated = isShipper ? !!booking.ownerRating?.rating : isOwner ? !!booking.shipperRating?.rating : true;
 
@@ -126,7 +141,7 @@ const BookingDetailScreen = ({ route }) => {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <Card>
         <View style={styles.row}>
@@ -156,31 +171,31 @@ const BookingDetailScreen = ({ route }) => {
 
       {isOwner && !booking.driverId && booking.status !== 'cancelled' && (
         <Card>
-          <Text style={styles.sectionTitle}>Assign a Driver</Text>
-          <TextInput
-            style={styles.input}
+          <SectionTitle icon="driver" title="Assign a Driver" />
+          <Input
             value={driverPhone}
             onChangeText={setDriverPhone}
             placeholder="+9779841234567"
             keyboardType="phone-pad"
+            icon="phone"
           />
-          <Button title="Find & Assign" onPress={handleAssignDriver} loading={busy} />
+          <Button title="Find & Assign" icon="search" onPress={handleAssignDriver} loading={busy} />
         </Card>
       )}
 
       {isDriver && booking.status !== 'completed' && booking.status !== 'cancelled' && (
         <Card>
-          <Text style={styles.sectionTitle}>Update Job Status</Text>
+          <SectionTitle icon="truckDelivery" title="Update Job Status" />
           {booking.pickupStatus !== 'picked_up' && (
             <View style={styles.actionsRow}>
-              <Button title="Arrived at Pickup" variant="outline" onPress={() => handlePickupStatus('arrived')} loading={busy} style={styles.actionButton} />
-              <Button title="Picked Up" onPress={() => handlePickupStatus('picked_up')} loading={busy} style={styles.actionButton} />
+              <Button title="Arrived at Pickup" icon="pickup" variant="tertiary" onPress={() => handlePickupStatus('arrived')} loading={busy} style={styles.actionButton} />
+              <Button title="Picked Up" icon="checkmark" onPress={() => handlePickupStatus('picked_up')} loading={busy} style={styles.actionButton} />
             </View>
           )}
           {booking.pickupStatus === 'picked_up' && booking.dropoffStatus !== 'delivered' && (
             <View style={styles.actionsRow}>
-              <Button title="Arrived at Dropoff" variant="outline" onPress={() => handleDropoffStatus('arrived')} loading={busy} style={styles.actionButton} />
-              <Button title="Delivered" onPress={() => handleDropoffStatus('delivered')} loading={busy} style={styles.actionButton} />
+              <Button title="Arrived at Dropoff" icon="dropoff" variant="tertiary" onPress={() => handleDropoffStatus('arrived')} loading={busy} style={styles.actionButton} />
+              <Button title="Delivered" icon="checkmark" onPress={() => handleDropoffStatus('delivered')} loading={busy} style={styles.actionButton} />
             </View>
           )}
         </Card>
@@ -190,62 +205,73 @@ const BookingDetailScreen = ({ route }) => {
       <DeliverySignatureSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
 
       {isShipper && ['pending', 'confirmed'].includes(booking.status) && (
-        <Button title="Cancel Booking" variant="outline" onPress={handleCancel} loading={busy} style={styles.cancelButton} />
+        <Button title="Cancel Booking" icon="close" variant="destructive" onPress={handleCancel} loading={busy} style={styles.cancelButton} />
       )}
 
       {booking.status === 'completed' && !alreadyRated && (
         <Card>
-          <Text style={styles.sectionTitle}>Rate {isShipper ? 'the Owner' : 'the Shipper'}</Text>
+          <SectionTitle icon="star" title={`Rate ${isShipper ? 'the Owner' : 'the Shipper'}`} />
           <View style={styles.chipRow}>
             {[1, 2, 3, 4, 5].map((n) => (
               <Button
                 key={n}
                 title={String(n)}
-                variant={rating === String(n) ? 'primary' : 'outline'}
+                variant={rating === String(n) ? 'primary' : 'tertiary'}
                 onPress={() => setRating(String(n))}
                 style={styles.ratingChip}
               />
             ))}
           </View>
-          <TextInput style={styles.input} value={review} onChangeText={setReview} placeholder="Optional review" />
-          <Button title="Submit Rating" onPress={handleRate} loading={busy} />
+          <Input value={review} onChangeText={setReview} placeholder="Optional review" icon="document" />
+          <Button title="Submit Rating" icon="send" onPress={handleRate} loading={busy} />
         </Card>
       )}
     </ScrollView>
   );
 };
 
+const SectionTitle = ({ icon, title }) => (
+  <View style={styles.sectionTitleRow}>
+    <Icon name={icon} size={iconSize.md} color={colors.primary} style={styles.sectionIcon} />
+    <Text style={styles.sectionTitle}>{title}</Text>
+  </View>
+);
+
 const Detail = ({ label, value }) => (
   <View style={styles.detailRow}>
-    <Text style={styles.detailLabel}>{label}</Text>
-    <Text style={styles.detailValue}>{value || '—'}</Text>
+    <View style={styles.detailLabelRow}>
+      {!!DETAIL_ICON[label] && <Icon name={DETAIL_ICON[label]} size={iconSize.xs} color={colors.textMuted} style={styles.detailIcon} />}
+      <Text style={styles.detailLabel}>{label}</Text>
+    </View>
+    <Text style={styles.detailValue}>{value || '-'}</Text>
   </View>
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '700', color: FLITO_COLORS.secondary },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-  detailLabel: { fontSize: 13, color: FLITO_COLORS.textMuted },
-  detailValue: { fontSize: 13, fontWeight: '600', color: FLITO_COLORS.secondary, textTransform: 'capitalize' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary, marginBottom: 8 },
-  actionsRow: { flexDirection: 'row', gap: 8 },
-  actionButton: { flex: 1 },
-  cancelButton: { marginTop: 8 },
-  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  ratingChip: { flex: 1, marginVertical: 0 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-    fontSize: 14,
+  title: { ...type.h2, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
-  empty: { textAlign: 'center', color: FLITO_COLORS.textMuted, marginTop: 40, fontSize: 14 },
+  detailLabelRow: { flexDirection: 'row', alignItems: 'center' },
+  detailIcon: { marginRight: spacing.xs },
+  detailLabel: { ...type.small, color: colors.textMuted },
+  detailValue: { ...type.smallMedium, color: colors.textPrimary, textTransform: 'capitalize' },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  sectionIcon: { marginRight: spacing.xs },
+  sectionTitle: { ...type.h3, color: colors.textPrimary },
+  actionsRow: { flexDirection: 'row', gap: spacing.sm },
+  actionButton: { flex: 1 },
+  cancelButton: { marginTop: spacing.xs },
+  chipRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  ratingChip: { flex: 1, marginVertical: 0 },
 });
 
 export default BookingDetailScreen;

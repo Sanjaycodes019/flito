@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import PhotoStrip from '../common/PhotoStrip';
-import { FLITO_COLORS } from '../../utils/colors';
+import Icon from '../../theme/icons';
+import { colors, spacing, type, iconSize } from '../../theme/tokens';
 import { MAX_DELIVERY_PHOTOS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
@@ -34,7 +35,10 @@ const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
 
   return (
     <Card>
-      <Text style={styles.title}>Proof of Delivery{photos.length ? ` (${photos.length})` : ''}</Text>
+      <View style={styles.titleRow}>
+        <Icon name="camera" size={iconSize.md} color={colors.primary} style={styles.titleIcon} />
+        <Text style={styles.title}>Proof of Delivery{photos.length ? ` (${photos.length})` : ''}</Text>
+      </View>
 
       {photos.length ? (
         <PhotoStrip photos={photos} />
@@ -47,6 +51,7 @@ const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
       {canUpload && remaining > 0 && (
         <Button
           title={Platform.OS === 'web' ? 'Add Photo' : 'Take Photo'}
+          icon="camera"
           onPress={handleAdd}
           loading={busy}
         />
@@ -56,8 +61,10 @@ const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
 };
 
 const styles = StyleSheet.create({
-  title: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary, marginBottom: 4 },
-  hint: { fontSize: 13, color: FLITO_COLORS.textMuted, marginVertical: 6 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+  titleIcon: { marginRight: spacing.xs },
+  title: { ...type.h3, color: colors.textPrimary },
+  hint: { ...type.small, color: colors.textMuted, marginVertical: spacing.sm },
 });
 
 export default DeliveryProofSection;

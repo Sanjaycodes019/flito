@@ -1,9 +1,10 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Card from '../common/Card';
 import Button from '../common/Button';
-import { FLITO_COLORS } from '../../utils/colors';
+import Icon from '../../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 
 const STATUS_NOTE = {
   pending: 'Your documents are under review.',
@@ -19,12 +20,20 @@ const VerificationPrompt = ({ kycStatus, message }) => {
 
   return (
     <Card style={styles.card}>
-      <Text style={styles.title}>Identity verification required</Text>
-      <Text style={styles.message}>{message}</Text>
-      {note ? <Text style={styles.note}>{note}</Text> : null}
+      <View style={styles.row}>
+        <View style={styles.iconWrap}>
+          <Icon name={underReview ? 'pending' : 'unverified'} size={iconSize.md} color={colors.warning} />
+        </View>
+        <View style={styles.textCol}>
+          <Text style={styles.title}>Identity verification required</Text>
+          <Text style={styles.message}>{message}</Text>
+          {!!note && <Text style={styles.note}>{note}</Text>}
+        </View>
+      </View>
       <Button
         title={underReview ? 'View Verification' : 'Verify Identity'}
-        variant={underReview ? 'outline' : 'primary'}
+        variant={underReview ? 'tertiary' : 'primary'}
+        icon={underReview ? 'time' : 'verified'}
         onPress={() => navigation.navigate('Profile', { screen: 'Kyc', initial: false })}
       />
     </Card>
@@ -32,10 +41,21 @@ const VerificationPrompt = ({ kycStatus, message }) => {
 };
 
 const styles = StyleSheet.create({
-  card: { borderLeftWidth: 4, borderLeftColor: FLITO_COLORS.warning },
-  title: { fontSize: 15, fontWeight: '700', color: FLITO_COLORS.secondary },
-  message: { fontSize: 13, color: FLITO_COLORS.secondary, marginTop: 4 },
-  note: { fontSize: 12, color: FLITO_COLORS.textMuted, marginTop: 6 },
+  card: { borderLeftWidth: 4, borderLeftColor: colors.warning },
+  row: { flexDirection: 'row', marginBottom: spacing.md },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  textCol: { flex: 1 },
+  title: { ...type.bodyMedium, color: colors.textPrimary },
+  message: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs },
+  note: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
 });
 
 export default VerificationPrompt;

@@ -1,8 +1,9 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import MapCanvas from './MapCanvas';
 import { buildMapHtml } from './mapHtml';
-import { FLITO_COLORS } from '../../utils/colors';
+import Icon from '../../theme/icons';
+import { colors, spacing, radius, shadow, type, iconSize } from '../../theme/tokens';
 
 // Read-only map: static pickup/dropoff pins plus a driver marker that moves
 // live as `driverLocation` changes, without reloading the page (so the user's
@@ -12,7 +13,7 @@ const TrackingMap = ({ pickup, dropoff, driverLocation, height = 260 }) => {
   const [ready, setReady] = useState(false);
   const sentDriverLocation = useRef(null);
 
-  // The page is only rebuilt when the static pickup/dropoff points change —
+  // The page is only rebuilt when the static pickup/dropoff points change,
   // never for driver movement, which goes through postMessage instead.
   const html = useMemo(() => buildMapHtml({ pickup, dropoff }), [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]);
 
@@ -31,6 +32,7 @@ const TrackingMap = ({ pickup, dropoff, driverLocation, height = 260 }) => {
   if (!pickup && !dropoff) {
     return (
       <View style={[styles.container, styles.empty, { height }]}>
+        <Icon name="location" size={iconSize.lg} color={colors.textMuted} style={styles.emptyIcon} />
         <Text style={styles.emptyText}>No location data for this load</Text>
       </View>
     );
@@ -50,36 +52,39 @@ const TrackingMap = ({ pickup, dropoff, driverLocation, height = 260 }) => {
         }}
       />
       {driverLocation && (
-        <TouchableOpacity
+        <Pressable
           style={styles.recenterButton}
           onPress={() => canvasRef.current?.postMessage({ type: 'fitAll' })}
+          accessibilityRole="button"
           accessibilityLabel="Fit map to all markers"
         >
+          <Icon name="gps" size={iconSize.xs} color={colors.secondary} style={styles.recenterIcon} />
           <Text style={styles.recenterText}>Fit</Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { borderRadius: 10, overflow: 'hidden', backgroundColor: '#EEE', marginVertical: 8 },
+  container: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surfaceMuted, marginVertical: spacing.sm },
   empty: { alignItems: 'center', justifyContent: 'center' },
-  emptyText: { color: FLITO_COLORS.textMuted, fontSize: 13 },
+  emptyIcon: { marginBottom: spacing.xs },
+  emptyText: { color: colors.textMuted, ...type.small },
   recenterButton: {
     position: 'absolute',
-    right: 8,
-    bottom: 8,
-    backgroundColor: FLITO_COLORS.bgLight,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    right: spacing.sm,
+    bottom: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+    ...shadow.level2,
   },
-  recenterText: { fontSize: 12, fontWeight: '700', color: FLITO_COLORS.secondary },
+  recenterIcon: { marginRight: 4 },
+  recenterText: { ...type.smallMedium, fontSize: 12, color: colors.secondary },
 });
 
 export default TrackingMap;

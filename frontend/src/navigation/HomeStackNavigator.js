@@ -10,7 +10,7 @@ import ManageFleet from '../screens/owner/ManageFleet';
 import MyQuotesScreen from '../screens/owner/MyQuotesScreen';
 import EarningsScreen from '../screens/driver/EarningsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
-import { FLITO_COLORS } from '../utils/colors';
+import { colors, type } from '../theme/tokens';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,8 +20,11 @@ const Stack = createNativeStackNavigator();
 const HomeStackNavigator = () => (
   <Stack.Navigator
     screenOptions={{
-      headerTintColor: FLITO_COLORS.secondary,
-      headerStyle: { backgroundColor: FLITO_COLORS.bgLight },
+      headerTintColor: colors.primary,
+      headerStyle: { backgroundColor: colors.surface },
+      headerTitleStyle: { color: colors.textPrimary, fontSize: type.h3.fontSize, fontWeight: type.h3.fontWeight },
+      headerShadowVisible: false,
+      contentStyle: { backgroundColor: colors.background },
     }}
   >
     <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'FLITO' }} />

@@ -3,7 +3,8 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import SignaturePad from '../signature/SignaturePad';
-import { FLITO_COLORS } from '../../utils/colors';
+import Icon from '../../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
 import { assetFromDataUrl, uploadFiles } from '../../services/uploads';
@@ -32,7 +33,10 @@ const DeliverySignatureSection = ({ booking, canUpload, onChanged }) => {
 
   return (
     <Card>
-      <Text style={styles.title}>Delivery Signature</Text>
+      <View style={styles.titleRow}>
+        <Icon name="signature" size={iconSize.md} color={colors.primary} style={styles.titleIcon} />
+        <Text style={styles.title}>Delivery Signature</Text>
+      </View>
 
       {signature?.url ? (
         <View style={styles.preview}>
@@ -46,7 +50,8 @@ const DeliverySignatureSection = ({ booking, canUpload, onChanged }) => {
       {canUpload && (
         <Button
           title={signature?.url ? 'Recapture Signature' : 'Capture Signature'}
-          variant={signature?.url ? 'outline' : 'primary'}
+          icon="signature"
+          variant={signature?.url ? 'tertiary' : 'primary'}
           onPress={() => setPadVisible(true)}
         />
       )}
@@ -57,11 +62,13 @@ const DeliverySignatureSection = ({ booking, canUpload, onChanged }) => {
 };
 
 const styles = StyleSheet.create({
-  title: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary, marginBottom: 4 },
-  hint: { fontSize: 13, color: FLITO_COLORS.textMuted, marginVertical: 6 },
-  preview: { alignItems: 'center', marginVertical: 8 },
-  signatureImage: { width: '100%', height: 120, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#EEE' },
-  meta: { fontSize: 11, color: FLITO_COLORS.textMuted, marginTop: 6 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+  titleIcon: { marginRight: spacing.xs },
+  title: { ...type.h3, color: colors.textPrimary },
+  hint: { ...type.small, color: colors.textMuted, marginVertical: spacing.sm },
+  preview: { alignItems: 'center', marginVertical: spacing.sm },
+  signatureImage: { width: '100%', height: 120, backgroundColor: colors.white, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.divider },
+  meta: { ...type.small, fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
 });
 
 export default DeliverySignatureSection;

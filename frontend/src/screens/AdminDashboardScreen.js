@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
+import Input from '../components/common/Input';
 import Spinner from '../components/common/Spinner';
+import EmptyState from '../components/common/EmptyState';
 import DocumentTile from '../components/kyc/DocumentTile';
-import { FLITO_COLORS } from '../utils/colors';
+import Icon from '../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { KYC_DOCUMENT_LABELS } from '../utils/constants';
 import { formatDate, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
@@ -12,6 +15,13 @@ import { notify } from '../utils/alert';
 
 // Mirrors the server: a rejection must tell the user what to fix.
 const MIN_REASON_LENGTH = 5;
+
+const STAT_ICON = {
+  Users: 'people',
+  Loads: 'load',
+  Bookings: 'truckDelivery',
+  'Pending KYC': 'pending',
+};
 
 const AdminDashboardScreen = () => {
   const [stats, setStats] = useState(null);
@@ -66,7 +76,7 @@ const AdminDashboardScreen = () => {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <View style={styles.statsGrid}>
         <StatTile label="Users" value={stats?.userCount} />
@@ -76,14 +86,19 @@ const AdminDashboardScreen = () => {
       </View>
 
       <Text style={styles.sectionTitle}>KYC Queue ({pendingUsers.length})</Text>
-      {pendingUsers.length === 0 && <Text style={styles.empty}>No submissions waiting for review</Text>}
+      {pendingUsers.length === 0 && (
+        <EmptyState icon="verified" title="All caught up" message="No submissions waiting for review." />
+      )}
 
       {pendingUsers.map((u) => {
         const reason = reasons[u._id] || '';
         const canReject = reason.trim().length >= MIN_REASON_LENGTH;
         return (
           <Card key={u._id}>
-            <Text style={styles.name}>{u.firstName} {u.lastName}</Text>
+            <View style={styles.nameRow}>
+              <Icon name="person" size={iconSize.sm} color={colors.textMuted} style={styles.nameIcon} />
+              <Text style={styles.name}>{u.firstName} {u.lastName}</Text>
+            </View>
             <Text style={styles.meta}>
               {u.phone} · {u.role}{u.companyName ? ` · ${u.companyName}` : ''}
             </Text>
@@ -95,24 +110,27 @@ const AdminDashboardScreen = () => {
               ))}
             </View>
 
-            <TextInput
-              style={styles.input}
+            <Input
               value={reason}
               onChangeText={(text) => setReasons((current) => ({ ...current, [u._id]: text }))}
-              placeholder="Reason — required to reject (the user will see it)"
+              placeholder="Reason (required to reject, the user will see it)"
               multiline
+              icon="document"
+              containerStyle={styles.reasonInput}
             />
 
             <View style={styles.actionsRow}>
               <Button
                 title="Approve"
+                icon="checkmark"
                 onPress={() => decide(u._id, 'approved')}
                 loading={busyId === u._id}
                 style={styles.actionButton}
               />
               <Button
                 title="Reject"
-                variant="outline"
+                icon="close"
+                variant="destructive"
                 onPress={() => decide(u._id, 'rejected')}
                 loading={busyId === u._id}
                 disabled={!canReject}
@@ -128,35 +146,40 @@ const AdminDashboardScreen = () => {
 
 const StatTile = ({ label, value, highlight }) => (
   <Card style={styles.statTile}>
-    <Text style={[styles.statValue, highlight && { color: FLITO_COLORS.warning }]}>{value ?? '—'}</Text>
+    <View style={[styles.statIconWrap, highlight && styles.statIconWrapHighlight]}>
+      <Icon name={STAT_ICON[label]} size={iconSize.md} color={highlight ? colors.warning : colors.primary} />
+    </View>
+    <Text style={[styles.statValue, highlight && { color: colors.warning }]}>{value ?? '-'}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </Card>
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
-  statTile: { width: '47%', alignItems: 'center', paddingVertical: 20 },
-  statValue: { fontSize: 26, fontWeight: '800', color: FLITO_COLORS.secondary },
-  statLabel: { fontSize: 12, color: FLITO_COLORS.textMuted, marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: FLITO_COLORS.secondary, marginTop: 20, marginBottom: 8 },
-  name: { fontSize: 15, fontWeight: '600', color: FLITO_COLORS.secondary },
-  meta: { fontSize: 12, color: FLITO_COLORS.textMuted, marginTop: 2, textTransform: 'capitalize' },
-  documents: { marginTop: 10 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 8,
-    fontSize: 14,
-    minHeight: 44,
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
+  statTile: { width: '47%', alignItems: 'center', paddingVertical: spacing.xl },
+  statIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
-  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  statIconWrapHighlight: { backgroundColor: colors.warningMuted },
+  statValue: { ...type.display, fontSize: 26, color: colors.textPrimary },
+  statLabel: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
+  sectionTitle: { ...type.h3, color: colors.textPrimary, marginTop: spacing.xl, marginBottom: spacing.sm },
+  nameRow: { flexDirection: 'row', alignItems: 'center' },
+  nameIcon: { marginRight: spacing.xs },
+  name: { ...type.bodyMedium, color: colors.textPrimary },
+  meta: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs, textTransform: 'capitalize' },
+  documents: { marginTop: spacing.sm },
+  reasonInput: { marginTop: spacing.sm, marginBottom: 0 },
+  actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   actionButton: { flex: 1 },
-  empty: { textAlign: 'center', color: FLITO_COLORS.textMuted, marginTop: 10, fontSize: 14 },
 });
 
 export default AdminDashboardScreen;

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Text, TextInput, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useDispatch } from 'react-redux';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
+import Input from '../components/common/Input';
 import Spinner from '../components/common/Spinner';
-import { FLITO_COLORS } from '../utils/colors';
+import Icon from '../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
@@ -75,75 +77,72 @@ const EditProfileScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Card>
-        <Text style={styles.label}>First Name</Text>
-        <TextInput
-          style={[styles.input, namesLocked && styles.inputLocked]}
+        <Input
+          label="First Name"
           value={form.firstName}
           onChangeText={update('firstName')}
           editable={!namesLocked}
+          icon="person"
         />
-
-        <Text style={styles.label}>Last Name</Text>
-        <TextInput
-          style={[styles.input, namesLocked && styles.inputLocked]}
+        <Input
+          label="Last Name"
           value={form.lastName}
           onChangeText={update('lastName')}
           editable={!namesLocked}
+          icon="person"
         />
         {namesLocked && (
-          <Text style={styles.note}>
-            Your name is matched to your identity documents, so it can't be changed while they are under review or approved.
-          </Text>
+          <View style={styles.lockNote}>
+            <Icon name="lock" size={iconSize.xs} color={colors.textMuted} style={styles.lockIcon} />
+            <Text style={styles.note}>
+              Your name is matched to your identity documents, so it can&apos;t be changed while they are under review or approved.
+            </Text>
+          </View>
         )}
 
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
+        <Input
+          label="Email"
           value={form.email}
           onChangeText={update('email')}
           placeholder="Optional"
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
+          icon="phone"
         />
 
         {isOwner && (
-          <>
-            <Text style={styles.label}>Company Name</Text>
-            <TextInput style={styles.input} value={form.companyName} onChangeText={update('companyName')} placeholder="Optional" />
-          </>
+          <Input
+            label="Company Name"
+            value={form.companyName}
+            onChangeText={update('companyName')}
+            placeholder="Optional"
+            icon="owner"
+          />
         )}
 
-        <Text style={styles.label}>Street</Text>
-        <TextInput style={styles.input} value={form.street} onChangeText={update('street')} placeholder="Optional" />
+        <Input label="Street" value={form.street} onChangeText={update('street')} placeholder="Optional" icon="location" />
+        <Input label="City" value={form.city} onChangeText={update('city')} placeholder="Optional" icon="location" />
 
-        <Text style={styles.label}>City</Text>
-        <TextInput style={styles.input} value={form.city} onChangeText={update('city')} placeholder="Optional" />
+        <View style={styles.readOnlyRow}>
+          <Icon name="phone" size={iconSize.xs} color={colors.textMuted} style={styles.lockIcon} />
+          <Text style={styles.readOnly}>{account.phone} · {account.role}</Text>
+        </View>
 
-        <Text style={styles.readOnly}>Phone {account.phone} · {account.role}</Text>
-
-        <Button title="Save Changes" onPress={handleSave} loading={saving} />
+        <Button title="Save Changes" icon="checkmark" onPress={handleSave} loading={saving} />
       </Card>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16 },
-  label: { fontSize: 14, fontWeight: '600', color: FLITO_COLORS.secondary, marginBottom: 8, marginTop: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-    fontSize: 14,
-  },
-  inputLocked: { backgroundColor: FLITO_COLORS.background, color: FLITO_COLORS.textMuted },
-  note: { fontSize: 12, color: FLITO_COLORS.textMuted, marginBottom: 8 },
-  readOnly: { fontSize: 12, color: FLITO_COLORS.textMuted, marginVertical: 12, textTransform: 'capitalize' },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
+  lockNote: { flexDirection: 'row', alignItems: 'flex-start', marginTop: -spacing.sm, marginBottom: spacing.md },
+  lockIcon: { marginRight: spacing.xs, marginTop: 2 },
+  note: { ...type.small, color: colors.textMuted, flex: 1 },
+  readOnlyRow: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.md },
+  readOnly: { ...type.small, color: colors.textMuted, textTransform: 'capitalize' },
 });
 
 export default EditProfileScreen;

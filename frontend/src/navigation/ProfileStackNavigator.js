@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import KycScreen from '../screens/KycScreen';
-import { FLITO_COLORS } from '../utils/colors';
+import { colors, type } from '../theme/tokens';
 
 const Stack = createNativeStackNavigator();
 
@@ -12,8 +12,11 @@ const Stack = createNativeStackNavigator();
 const ProfileStackNavigator = () => (
   <Stack.Navigator
     screenOptions={{
-      headerTintColor: FLITO_COLORS.secondary,
-      headerStyle: { backgroundColor: FLITO_COLORS.bgLight },
+      headerTintColor: colors.primary,
+      headerStyle: { backgroundColor: colors.surface },
+      headerTitleStyle: { color: colors.textPrimary, fontSize: type.h3.fontSize, fontWeight: type.h3.fontWeight },
+      headerShadowVisible: false,
+      contentStyle: { backgroundColor: colors.background },
     }}
   >
     <Stack.Screen name="ProfileHome" component={ProfileScreen} options={{ title: 'Profile' }} />

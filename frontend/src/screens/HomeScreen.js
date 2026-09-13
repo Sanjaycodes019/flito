@@ -2,10 +2,10 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
+import DashboardCard from '../components/home/DashboardCard';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
-import { FLITO_COLORS } from '../utils/colors';
+import Icon from '../theme/icons';
+import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import api from '../services/api';
 import { authService } from '../services/auth';
@@ -14,6 +14,13 @@ import { setUser } from '../redux/slices/authSlice';
 import { fetchLoadsStart, fetchLoadsSuccess, fetchLoadsError, updateLoad } from '../redux/slices/loadsSlice';
 import { fetchBookingsStart, fetchBookingsSuccess, fetchBookingsError, updateBooking } from '../redux/slices/bookingSlice';
 import { formatCurrency, getErrorMessage } from '../utils/helpers';
+
+const ROLE_ICON = {
+  [ROLES.SHIPPER]: 'shipper',
+  [ROLES.OWNER]: 'owner',
+  [ROLES.DRIVER]: 'driver',
+  [ROLES.ADMIN]: 'admin',
+};
 
 const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -94,11 +101,19 @@ const HomeScreen = ({ navigation }) => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <View style={styles.header}>
-        <Text style={styles.greeting}>Hello, {user?.firstName}</Text>
-        <Text style={styles.role}>Role: {user?.role}</Text>
+        <View style={styles.avatar}>
+          <Icon name={ROLE_ICON[user?.role] || 'person'} size={iconSize.lg} color={colors.textOnPrimary} />
+        </View>
+        <View>
+          <Text style={styles.greeting}>Hello, {user?.firstName}</Text>
+          <View style={styles.roleChip}>
+            <Text style={styles.roleText}>{user?.role}</Text>
+          </View>
+        </View>
       </View>
 
       {needsVerification && (
@@ -112,89 +127,124 @@ const HomeScreen = ({ navigation }) => {
 
       {user?.role === ROLES.SHIPPER && (
         <>
-          <Card>
-            <Text style={styles.cardTitle}>Post a Load</Text>
-            <Text style={styles.cardDesc}>Describe your shipment and get quotes from truck owners</Text>
-            <Button title="Post Load" onPress={() => navigation.navigate('CreateLoad')} />
-          </Card>
-          <Card>
-            <Text style={styles.cardTitle}>Your Loads ({loads.length})</Text>
-            <Text style={styles.cardDesc}>
-              {loadsLoading ? 'Loading…' : loads.filter((l) => l.status === 'open' || l.status === 'quoted').length + ' awaiting quotes'}
-            </Text>
-            <Button title="View My Loads" variant="secondary" onPress={() => navigation.navigate('LoadsList')} />
-          </Card>
-          <Card>
-            <Text style={styles.cardTitle}>Active Bookings ({activeBookings.length})</Text>
-            <Text style={styles.cardDesc}>Track pickup, delivery, and driver location</Text>
-            <Button title="View Bookings" variant="secondary" onPress={() => navigation.navigate('Bookings')} />
-          </Card>
+          <DashboardCard
+            icon="load"
+            title="Post a Load"
+            description="Describe your shipment and get quotes from truck owners"
+            actionLabel="Post Load"
+            onAction={() => navigation.navigate('CreateLoad')}
+          />
+          <DashboardCard
+            icon="document"
+            title={`Your Loads (${loads.length})`}
+            description={loadsLoading ? 'Loading...' : `${loads.filter((l) => l.status === 'open' || l.status === 'quoted').length} awaiting quotes`}
+            actionLabel="View My Loads"
+            variant="secondary"
+            onAction={() => navigation.navigate('LoadsList')}
+          />
+          <DashboardCard
+            icon="truckDelivery"
+            title={`Active Bookings (${activeBookings.length})`}
+            description="Track pickup, delivery, and driver location"
+            actionLabel="View Bookings"
+            variant="secondary"
+            onAction={() => navigation.navigate('Bookings')}
+          />
         </>
       )}
 
       {isOwner && (
         <>
-          <Card>
-            <Text style={styles.cardTitle}>Available Loads ({loads.length})</Text>
-            <Text style={styles.cardDesc}>Find new shipping opportunities and submit quotes</Text>
-            <Button title="Browse Loads" onPress={() => navigation.navigate('LoadsList')} />
-          </Card>
-          <Card>
-            <Text style={styles.cardTitle}>My Quotes</Text>
-            <Text style={styles.cardDesc}>
-              {awaitingMyResponse > 0
-                ? `${awaitingMyResponse} awaiting your response`
-                : 'Track the loads you have bid on'}
-            </Text>
-            <Button title="View My Quotes" variant="secondary" onPress={() => navigation.navigate('MyQuotes')} />
-          </Card>
-          <Card>
-            <Text style={styles.cardTitle}>My Bookings ({activeBookings.length} active)</Text>
-            <Text style={styles.cardDesc}>Assign drivers and track jobs you've won</Text>
-            <Button title="View Bookings" variant="secondary" onPress={() => navigation.navigate('Bookings')} />
-          </Card>
-          <Card>
-            <Text style={styles.cardTitle}>My Fleet</Text>
-            <Text style={styles.cardDesc}>Manage your trucks and their assigned drivers</Text>
-            <Button title="Manage Fleet" variant="secondary" onPress={() => navigation.navigate('Fleet')} />
-          </Card>
+          <DashboardCard
+            icon="search"
+            title={`Available Loads (${loads.length})`}
+            description="Find new shipping opportunities and submit quotes"
+            actionLabel="Browse Loads"
+            onAction={() => navigation.navigate('LoadsList')}
+          />
+          <DashboardCard
+            icon="quote"
+            title="My Quotes"
+            description={awaitingMyResponse > 0 ? `${awaitingMyResponse} awaiting your response` : 'Track the loads you have bid on'}
+            actionLabel="View My Quotes"
+            variant="secondary"
+            onAction={() => navigation.navigate('MyQuotes')}
+          />
+          <DashboardCard
+            icon="truckDelivery"
+            title={`My Bookings (${activeBookings.length} active)`}
+            description="Assign drivers and track jobs you've won"
+            actionLabel="View Bookings"
+            variant="secondary"
+            onAction={() => navigation.navigate('Bookings')}
+          />
+          <DashboardCard
+            icon="fleet"
+            title="My Fleet"
+            description="Manage your trucks and their assigned drivers"
+            actionLabel="Manage Fleet"
+            variant="secondary"
+            onAction={() => navigation.navigate('Fleet')}
+          />
         </>
       )}
 
       {isDriver && (
         <>
-          <Card>
-            <Text style={styles.cardTitle}>Active Jobs ({activeBookings.length})</Text>
-            <Text style={styles.cardDesc}>{bookingsLoading ? 'Loading…' : 'Jobs assigned to you'}</Text>
-            <Button title="View Jobs" onPress={() => navigation.navigate('Jobs')} />
-          </Card>
-          <Card>
-            <Text style={styles.cardTitle}>Earnings</Text>
-            <Text style={styles.earnings}>{formatCurrency(todaysEarnings)}</Text>
-            <Button title="Earnings History" variant="secondary" onPress={() => navigation.navigate('Earnings')} />
-          </Card>
+          <DashboardCard
+            icon="jobs"
+            title={`Active Jobs (${activeBookings.length})`}
+            description={bookingsLoading ? 'Loading...' : 'Jobs assigned to you'}
+            actionLabel="View Jobs"
+            onAction={() => navigation.navigate('Jobs')}
+          />
+          <DashboardCard
+            icon="earnings"
+            title="Earnings"
+            value={formatCurrency(todaysEarnings)}
+            actionLabel="Earnings History"
+            variant="secondary"
+            onAction={() => navigation.navigate('Earnings')}
+          />
         </>
       )}
 
       {user?.role === ROLES.ADMIN && (
-        <Card>
-          <Text style={styles.cardTitle}>Admin Dashboard</Text>
-          <Text style={styles.cardDesc}>KYC approvals, disputes, platform metrics</Text>
-          <Button title="Open Dashboard" onPress={() => navigation.navigate('AdminDashboard')} />
-        </Card>
+        <DashboardCard
+          icon="admin"
+          title="Admin Dashboard"
+          description="KYC approvals, disputes, platform metrics"
+          actionLabel="Open Dashboard"
+          onAction={() => navigation.navigate('AdminDashboard')}
+        />
       )}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background, padding: 16 },
-  header: { marginBottom: 24, marginTop: 8 },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: FLITO_COLORS.secondary },
-  role: { fontSize: 14, color: FLITO_COLORS.textMuted, marginTop: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: FLITO_COLORS.secondary, marginBottom: 8 },
-  cardDesc: { fontSize: 13, color: FLITO_COLORS.textMuted, marginBottom: 12 },
-  earnings: { fontSize: 24, fontWeight: 'bold', color: FLITO_COLORS.primary, marginVertical: 12 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl, marginTop: spacing.xs },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.lg,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  greeting: { ...type.h1, color: colors.secondary },
+  roleChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryMuted,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    marginTop: spacing.xxs,
+  },
+  roleText: { ...type.caption, color: colors.primary, textTransform: 'capitalize' },
 });
 
 export default HomeScreen;
