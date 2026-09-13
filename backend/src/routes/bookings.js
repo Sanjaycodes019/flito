@@ -6,7 +6,7 @@ const deliveryProofController = require('../controllers/deliveryProofController'
 const authMiddleware = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
 const { validateRating, validateCoordinates } = require('../middleware/validators');
-const { photos } = require('../middleware/upload');
+const { photos, signature } = require('../middleware/upload');
 
 router.use(authMiddleware);
 
@@ -24,6 +24,13 @@ router.post(
   deliveryProofController.loadProofBooking,
   photos(deliveryProofController.MAX_DELIVERY_PHOTOS),
   deliveryProofController.addDeliveryProof,
+);
+router.post(
+  '/:id/signature',
+  requireRole('driver'),
+  deliveryProofController.loadProofBooking,
+  signature(),
+  deliveryProofController.addDeliverySignature,
 );
 
 module.exports = router;

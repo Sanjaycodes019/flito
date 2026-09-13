@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const storage = require('../services/storage');
+const { sendPushToUsers } = require('../services/push');
 
 const MAX_DELIVERY_PHOTOS = 5;
 
@@ -80,6 +81,51 @@ exports.addDeliveryProof = async (req, res, next) => {
 
     [updated.shipperId, updated.ownerId].forEach((id) => req.io?.to(`user-${id}`)
       .emit('delivery-proof-added', { bookingId: updated._id, count: updated.deliveryPhotos.length }));
+    await sendPushToUsers([updated.shipperId, updated.ownerId], {
+      title: 'Delivery photos added',
+      body: 'The driver added proof-of-delivery photos',
+      data: { type: 'booking', bookingId: String(updated._id) },
+    });
+
+    res.status(201).json({ success: true, booking: updated });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// A signature can be recaptured (e.g. a mis-drawn one) under the same window
+// as photos — it isn't locked the moment it's first set.
+exports.addDeliverySignature = async (req, res, next) => {
+  try {
+    const { booking } = req;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Attach the signature image' });
+    }
+
+    const [uploaded] = await storage.uploadImages([req.file], { folder: `flito/delivery/${booking._id}/signature` });
+    const previous = booking.deliverySignature;
+
+    const updated = await Booking.findOneAndUpdate(
+      { _id: booking._id, driverId: booking.driverId, status: { $in: ['in_transit', 'completed'] } },
+      { deliverySignature: { url: uploaded.url, publicId: uploaded.publicId, capturedAt: new Date() } },
+      { new: true },
+    );
+
+    if (!updated) {
+      await storage.deleteAssets([uploaded.publicId]);
+      return res.status(409).json({ success: false, message: 'This booking changed while uploading — refresh and try again' });
+    }
+
+    if (previous?.publicId) await storage.deleteAssets([previous.publicId]);
+
+    [updated.shipperId, updated.ownerId].forEach((id) => req.io?.to(`user-${id}`)
+      .emit('delivery-proof-added', { bookingId: updated._id, count: updated.deliveryPhotos.length }));
+    await sendPushToUsers([updated.shipperId, updated.ownerId], {
+      title: 'Delivery signed',
+      body: 'The recipient signed for this delivery',
+      data: { type: 'booking', bookingId: String(updated._id) },
+    });
 
     res.status(201).json({ success: true, booking: updated });
   } catch (error) {

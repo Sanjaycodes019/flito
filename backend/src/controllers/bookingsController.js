@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const { requiresVerification } = require('../services/kycPolicy');
+const { sendPushToUser, sendPushToUsers } = require('../services/push');
 
 // A ref may be a raw ObjectId or, on populated queries, a full user document —
 // normalize both to the id string before comparing.
@@ -91,6 +92,16 @@ exports.assignDriver = async (req, res, next) => {
 
     req.io?.to(`user-${driver._id}`).emit('booking-assigned', { booking });
     req.io?.to(`user-${booking.shipperId}`).emit('booking-status-changed', { booking });
+    await sendPushToUser(driver._id, {
+      title: 'New delivery assigned',
+      body: `You've been assigned to a booking worth Rs. ${(booking.totalAmount || 0).toLocaleString('en-IN')}`,
+      data: { type: 'booking', bookingId: String(booking._id) },
+    });
+    await sendPushToUser(booking.shipperId, {
+      title: 'Driver assigned',
+      body: `${driver.firstName} will handle your delivery`,
+      data: { type: 'booking', bookingId: String(booking._id) },
+    });
 
     res.json({ success: true, booking });
   } catch (error) {
@@ -156,9 +167,18 @@ exports.updateStatus = async (req, res, next) => {
     if (dropoffStatus) booking.dropoffStatus = dropoffStatus;
     await booking.save();
 
-    [booking.shipperId, booking.ownerId, booking.driverId]
-      .filter(Boolean)
-      .forEach((id) => req.io?.to(`user-${id}`).emit('booking-status-changed', { booking }));
+    const parties = [booking.shipperId, booking.ownerId, booking.driverId].filter(Boolean);
+    parties.forEach((id) => req.io?.to(`user-${id}`).emit('booking-status-changed', { booking }));
+
+    // One push for whichever change is most significant to the OTHER
+    // parties — never to req.user.userId, who already knows they caused it.
+    const notify = (title, body) => sendPushToUsers(
+      parties.filter((id) => String(id) !== req.user.userId),
+      { title, body, data: { type: 'booking', bookingId: String(booking._id) } },
+    );
+    if (status === 'cancelled') await notify('Booking cancelled', 'A booking you were part of has been cancelled');
+    else if (dropoffStatus === 'delivered') await notify('Delivered', 'The cargo has been delivered');
+    else if (pickupStatus === 'picked_up') await notify('Picked up', 'Your cargo is on its way');
 
     res.json({ success: true, booking });
   } catch (error) {

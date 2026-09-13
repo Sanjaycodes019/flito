@@ -1,15 +1,17 @@
 import React, { useEffect } from 'react';
-import { Provider, useDispatch } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { StatusBar } from 'expo-status-bar';
 import { store } from './redux/store';
 import { loginSuccess, setHydrated } from './redux/slices/authSlice';
 import { authService } from './services/auth';
+import { registerForPushNotifications, subscribeToNotificationTaps } from './services/pushNotifications';
 import RootNavigator from './navigation/RootNavigator';
 
 // On cold start, check for a previously stored JWT and restore the session
 // by fetching the current user, before rendering the real navigator.
 const Bootstrap = ({ children }) => {
   const dispatch = useDispatch();
+  const token = useSelector((state) => state.auth.token);
 
   useEffect(() => {
     (async () => {
@@ -26,6 +28,15 @@ const Bootstrap = ({ children }) => {
       }
     })();
   }, [dispatch]);
+
+  // Registers this device for push whenever a session becomes active —
+  // covers both a restored session above and a fresh login/signup elsewhere.
+  useEffect(() => {
+    if (token) registerForPushNotifications();
+  }, [token]);
+
+  // Tap routing doesn't depend on auth state; wired once for the app's lifetime.
+  useEffect(() => subscribeToNotificationTaps(), []);
 
   return children;
 };

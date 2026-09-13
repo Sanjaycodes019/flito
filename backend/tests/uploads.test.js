@@ -266,4 +266,88 @@ describe('proof of delivery', () => {
     expect(over.status).toBe(400);
     expect(over.body.message).toMatch(/at most 5/);
   });
+
+  describe('signature', () => {
+    const uploadSignature = (actor, booking) => as(actor.token)
+      .post(`/api/bookings/${booking._id}/signature`)
+      .attach('signature', PNG, { filename: 'sig.png', contentType: 'image/png' });
+
+    it('refuses a signature before the load is picked up', async () => {
+      const { driver, booking } = await setupBooking();
+
+      const res = await uploadSignature(driver, booking);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/picked up/i);
+      expect(storage.uploadImages).not.toHaveBeenCalled();
+    });
+
+    it('lets the assigned driver capture a signature while in transit', async () => {
+      const { driver, booking } = await setupBooking();
+      await pickUp(driver, booking);
+
+      const res = await uploadSignature(driver, booking).expect(201);
+
+      expect(res.body.booking.deliverySignature).toEqual(expect.objectContaining({
+        url: expect.stringContaining('res.cloudinary.com'),
+        capturedAt: expect.anything(),
+      }));
+      expect(storage.uploadImages).toHaveBeenCalledWith(
+        expect.any(Array),
+        { folder: `flito/delivery/${booking._id}/signature` },
+      );
+    });
+
+    it('refuses a signature from the shipper or owner', async () => {
+      const { shipper, owner, driver, booking } = await setupBooking();
+      await pickUp(driver, booking);
+
+      expect((await uploadSignature(shipper, booking)).status).toBe(403);
+      expect((await uploadSignature(owner, booking)).status).toBe(403);
+      expect(storage.uploadImages).not.toHaveBeenCalled();
+    });
+
+    it('replaces a prior signature and deletes the old file', async () => {
+      const { driver, booking } = await setupBooking();
+      await pickUp(driver, booking);
+      const first = (await uploadSignature(driver, booking).expect(201)).body.booking.deliverySignature;
+
+      const second = (await uploadSignature(driver, booking).expect(201)).body.booking.deliverySignature;
+
+      expect(second.url).not.toBe(first.url);
+      // Deletion targets storage's internal publicId, not the URL the client sees.
+      expect(storage.deleteAssets).toHaveBeenCalledWith([`flito/delivery/${booking._id}/signature/photo1`]);
+    });
+
+    it('rejects a non-image file', async () => {
+      const { driver, booking } = await setupBooking();
+      await pickUp(driver, booking);
+
+      const res = await as(driver.token).post(`/api/bookings/${booking._id}/signature`)
+        .attach('signature', Buffer.from('hello'), { filename: 'x.txt', contentType: 'text/plain' });
+
+      expect(res.status).toBe(400);
+      expect(storage.uploadImages).not.toHaveBeenCalled();
+    });
+
+    it('rejects a signature over 1 MB', async () => {
+      const { driver, booking } = await setupBooking();
+      await pickUp(driver, booking);
+
+      const res = await as(driver.token).post(`/api/bookings/${booking._id}/signature`)
+        .attach('signature', Buffer.alloc(1024 * 1024 + 1), { filename: 'sig.png', contentType: 'image/png' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/1 MB/);
+    });
+
+    it('still accepts a signature after the job is completed', async () => {
+      const { driver, booking } = await setupBooking();
+      await pickUp(driver, booking);
+      await as(driver.token).patch(`/api/bookings/${booking._id}/status`)
+        .send({ dropoffStatus: 'delivered', status: 'completed' }).expect(200);
+
+      await uploadSignature(driver, booking).expect(201);
+    });
+  });
 });

@@ -146,10 +146,20 @@ const validateCoordinates = (req, res, next) => {
   next();
 };
 
+const validatePushToken = (req, res, next) => {
+  const { pushToken } = req.body;
+  const { isExpoPushToken } = require('../services/push');
+  if (typeof pushToken !== 'string' || !isExpoPushToken(pushToken)) {
+    return res.status(400).json({ success: false, message: 'pushToken must be a valid Expo push token' });
+  }
+  next();
+};
+
 module.exports = {
   isValidLat,
   isValidLng,
   validateCoordinates,
+  validatePushToken,
   validateProfileUpdate,
   validateRating,
   isValidPhone,

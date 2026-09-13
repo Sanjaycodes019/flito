@@ -6,6 +6,7 @@ import Button from '../components/common/Button';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
 import DeliveryProofSection from '../components/bookings/DeliveryProofSection';
+import DeliverySignatureSection from '../components/bookings/DeliverySignatureSection';
 import LocationSharingToggle from '../components/bookings/LocationSharingToggle';
 import TrackingMap from '../components/map/TrackingMap';
 import { FLITO_COLORS } from '../utils/colors';
@@ -186,6 +187,7 @@ const BookingDetailScreen = ({ route }) => {
       )}
 
       <DeliveryProofSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
+      <DeliverySignatureSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
 
       {isShipper && ['pending', 'confirmed'].includes(booking.status) && (
         <Button title="Cancel Booking" variant="outline" onPress={handleCancel} loading={busy} style={styles.cancelButton} />

@@ -2,14 +2,17 @@ const multer = require('multer');
 
 const uploadErrorMessage = (err) => {
   const isDocument = err.field === 'document';
+  const isSignature = err.field === 'signature';
   switch (err.code) {
     case 'LIMIT_FILE_SIZE':
-      return isDocument ? 'Documents must be 10 MB or smaller' : 'Each photo must be 5 MB or smaller';
+      if (isDocument) return 'Documents must be 10 MB or smaller';
+      if (isSignature) return 'Signature image must be 1 MB or smaller';
+      return 'Each photo must be 5 MB or smaller';
     case 'LIMIT_FILE_COUNT':
-      return isDocument ? 'Send one document at a time' : 'Too many files in one upload';
+      return isDocument || isSignature ? 'Send one file at a time' : 'Too many files in one upload';
     case 'LIMIT_UNEXPECTED_FILE':
-      return isDocument
-        ? 'Send one document at a time'
+      return isDocument || isSignature
+        ? 'Send one file at a time'
         : 'Too many photos in one upload, or a file was sent under the wrong field name';
     default:
       return err.message;

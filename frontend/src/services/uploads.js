@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import api from './api';
 
 const isWeb = Platform.OS === 'web';
@@ -92,3 +93,17 @@ export const uploadFiles = async (path, assets, { field = 'photos', fields = {} 
 };
 
 export const uploadPhotos = (path, assets, field = 'photos') => uploadFiles(path, assets, { field });
+
+// Turns a canvas `data:` URI (e.g. a drawn signature) into an asset
+// `uploadFiles` can send. On web, `fetch()` reads a data: URI directly — no
+// special handling needed. On native, React Native's multipart FormData only
+// accepts a real `file://`/`content://` uri, not `data:`, so the bytes are
+// written to a temp file first and that file's uri is used instead.
+export const assetFromDataUrl = async (dataUrl, { fileName = 'signature.png', mimeType = 'image/png' } = {}) => {
+  if (isWeb) return { uri: dataUrl, mimeType, fileName };
+
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const fileUri = `${FileSystem.cacheDirectory}${Date.now()}-${fileName}`;
+  await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+  return { uri: fileUri, mimeType, fileName };
+};

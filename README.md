@@ -82,7 +82,14 @@ cd backend
 npm test
 ```
 
-67 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering auth and OTP handling, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, and fleet ownership scoping.
+138 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering auth and OTP handling, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, and push notifications (Expo's API is mocked — no real push is ever sent by the suite).
+
+```bash
+cd frontend
+npm test
+```
+
+33 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, the WebView-based map/signature canvases) are mocked — see `jest.setup.js`.
 
 ### Demo data
 
@@ -185,8 +192,11 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 | PATCH | `/api/bookings/:id/location` | driver | GPS ping (only while `in_transit`) |
 | POST | `/api/bookings/:id/rate` | party | Rate after completion |
 | POST | `/api/bookings/:id/delivery-proof` | driver | Upload up to 5 proof-of-delivery photos |
+| POST | `/api/bookings/:id/signature` | driver | Capture (or replace) the recipient's delivery signature |
 | GET | `/api/users/lookup?phone=` | owner/admin | Find a driver by phone |
 | PATCH | `/api/users/me` | any | Edit own profile (name locks once KYC is submitted) |
+| PATCH | `/api/users/me/push-token` | any | Register this device's Expo push token |
+| DELETE | `/api/users/me/push-token` | any | Unregister on logout |
 | GET | `/api/users/me/kyc` | shipper/owner/driver | Own verification status and documents |
 | POST | `/api/users/me/kyc/documents` | shipper/owner/driver | Upload or replace a document (multipart `document` + `type`) |
 | DELETE | `/api/users/me/kyc/documents/:docId` | shipper/owner/driver | Remove a document before submitting |
@@ -204,6 +214,18 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 ### Real-time (Socket.io)
 
 Clients emit `join-room` with their JWT to join a private `user-<id>` room; the server verifies the token before joining. Server pushes: `new-quote`, `quote-updated`, `quote-accepted`, `booking-assigned`, `booking-status-changed`, `location-update`.
+
+---
+
+## Push notifications
+
+Free, via Expo's push API — no Firebase/APNs setup, no paid account. `backend/src/services/push.js` posts directly to `https://exp.host/--/api/v2/push/send` (not the `expo-server-sdk` package, which currently ships an ESM-only build that breaks under Jest/CommonJS); the frontend registers a token on login (`services/pushNotifications.js`) and unregisters it on logout.
+
+A push fires alongside the matching Socket.io event for: a new quote, a counter-offer, a quote accepted (winner) or superseded (losing bids), a driver assigned, pickup/delivery/cancellation, delivery photos or a signature added, and a KYC decision. Deliberately **not** on `location-update` — that fires every ~15s while a driver shares location, and would spam a device with a notification per ping.
+
+**Web has no push** (browser push needs its own VAPID/service-worker setup, out of scope) — `registerForPushNotifications()` is a no-op on web, and the web build stays live entirely through the existing Socket.io connection while its tab is open. Tapping a notification on Android deep-links to the relevant load, booking, or the KYC screen (`navigationRef.js`).
+
+Before an EAS/standalone Android build (not needed for Expo Go testing), run `eas init` once to populate `app.json`'s EAS project id — `getExpoPushTokenAsync()` needs it for a reliable token outside of Expo Go.
 
 ---
 
@@ -280,8 +302,9 @@ These are deliberate MVP scope cuts, not oversights:
 - **SMS needs an account.** The gateway integration is built (`src/services/sms.js`, Sparrow SMS), but until `SPARROW_SMS_TOKEN`/`SPARROW_SMS_FROM` are set, OTPs are only logged to the server console. Production refuses to boot without them, since undelivered codes mean nobody can log in. **This is the remaining hard blocker for a public launch.**
 - **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up. Needs a merchant account.
 - **Redis is optional, not required.** OTPs default to an in-memory `Map`, which is fine on a single instance but resets on redeploy. Set `REDIS_URL` to switch to the Redis backend (`src/services/otpStore.js`) before running more than one instance — you'll need to `npm install redis`.
-- **Frontend has no automated tests.** The backend suite covers auth, permissions and negotiation; UI verification is still manual.
 - **Trucks aren't linked to bookings.** A truck carries a default driver, but per-booking driver assignment happens on the booking itself; the specific truck used isn't recorded.
+- **Push receipt-checking is skipped.** Expo's push API has a second async step (check delivery receipts ~15 minutes later) that would catch a token going stale faster; not implemented. A dead token still gets cleared, just on its *next* failed send rather than proactively.
+- **Native push delivery is unverified on a real device.** The full pipeline (registration → backend send → Android banner → tap → deep link) is built and the backend half is tested, but this development environment has no Android device/emulator to confirm a real push actually arrives. Worth a real-device check before relying on it.
 
 ---
 

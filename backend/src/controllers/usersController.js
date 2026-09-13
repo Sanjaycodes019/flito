@@ -76,6 +76,30 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
+// ── Push notifications ─────────────────────────────────────────────────────
+
+// Called on login/app-open (a fresh token) — overwrites whatever was stored,
+// so only the device currently signed in to this account receives its push.
+exports.registerPushToken = async (req, res, next) => {
+  try {
+    await User.updateOne({ _id: req.user.userId }, { pushToken: req.body.pushToken });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Called on logout, so a shared/reused device stops getting push for an
+// account that just signed out of it.
+exports.unregisterPushToken = async (req, res, next) => {
+  try {
+    await User.updateOne({ _id: req.user.userId }, { $unset: { pushToken: '' } });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ── KYC ───────────────────────────────────────────────────────────────────
 
 exports.getMyKyc = async (req, res, next) => {

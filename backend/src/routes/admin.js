@@ -7,6 +7,7 @@ const Booking = require('../models/Booking');
 const authMiddleware = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
 const { reviewView } = require('../services/kycView');
+const { sendPushToUser } = require('../services/push');
 
 router.use(authMiddleware, requireRole('admin'));
 
@@ -74,6 +75,9 @@ router.patch('/kyc/:userId', async (req, res, next) => {
       status: user.kycStatus,
       reason: user.kycRejectionReason,
     });
+    await sendPushToUser(user._id, user.kycStatus === 'approved'
+      ? { title: 'Identity verified', body: 'Your identity verification was approved', data: { type: 'kyc' } }
+      : { title: 'Verification needs changes', body: user.kycRejectionReason, data: { type: 'kyc' } });
 
     res.json({
       success: true,

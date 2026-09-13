@@ -89,6 +89,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // One token per account: a login on a new device overwrites it, and
+    // logout clears it, so a device only ever receives push for whoever is
+    // currently signed in on it.
+    pushToken: String,
   },
   { timestamps: true }
 );

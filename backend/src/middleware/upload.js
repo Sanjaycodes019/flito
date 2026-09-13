@@ -5,6 +5,9 @@ const DOCUMENT_TYPES = [...IMAGE_TYPES, 'application/pdf'];
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+// A drawn signature is a small canvas PNG — generous for that, tiny next to a
+// photo, so a much lower limit still can't be used to smuggle in a real image.
+const MAX_SIGNATURE_BYTES = 1 * 1024 * 1024;
 
 const onlyTypes = (allowed, message) => (req, file, cb) => {
   if (allowed.includes(file.mimetype)) return cb(null, true);
@@ -33,4 +36,13 @@ const photos = (max) => imageUpload.array('photos', max);
 // One image or PDF in the multipart field "document".
 const document = () => documentUpload.single('document');
 
-module.exports = { photos, document, MAX_IMAGE_BYTES, MAX_DOCUMENT_BYTES };
+const signatureUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_SIGNATURE_BYTES, files: 1 },
+  fileFilter: onlyTypes(IMAGE_TYPES, 'Only JPEG, PNG, WebP or HEIC images are allowed'),
+});
+
+// One image in the multipart field "signature".
+const signature = () => signatureUpload.single('signature');
+
+module.exports = { photos, document, signature, MAX_IMAGE_BYTES, MAX_DOCUMENT_BYTES, MAX_SIGNATURE_BYTES };

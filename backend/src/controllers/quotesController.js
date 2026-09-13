@@ -1,12 +1,14 @@
 const Load = require('../models/Load');
 const Quote = require('../models/Quote');
 const Booking = require('../models/Booking');
+const { sendPushToUser, sendPushToUsers } = require('../services/push');
 const {
   QUOTE_TTL_MS,
   BIDDABLE_LOAD_STATUSES,
   OPEN_QUOTE_STATUSES,
   isExpired,
 } = require('../services/expiry');
+const { formatCurrency } = require('../utils/format');
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 
@@ -55,6 +57,11 @@ exports.createQuote = async (req, res, next) => {
     const populated = await quote.populate('ownerId', 'firstName lastName companyName rating');
 
     req.io?.to(`user-${load.shipperId}`).emit('new-quote', { load: updatedLoad, quote: populated });
+    await sendPushToUser(load.shipperId, {
+      title: 'New quote received',
+      body: `${populated.ownerId.companyName || populated.ownerId.firstName} quoted ${formatCurrency(quotedPrice)} on your ${load.goodsType} load`,
+      data: { type: 'load', loadId: String(load._id) },
+    });
 
     res.status(201).json({ success: true, quote: populated });
   } catch (error) {
@@ -136,8 +143,13 @@ exports.counterQuote = async (req, res, next) => {
 
     await Load.updateOne({ _id: load._id, status: { $in: ['open', 'quoted'] } }, { status: 'negotiating' });
 
-    const notifyRoom = side === 'shipper' ? `user-${quote.ownerId}` : `user-${load.shipperId}`;
-    req.io?.to(notifyRoom).emit('quote-updated', { quote: updated });
+    const notifyUserId = side === 'shipper' ? quote.ownerId : load.shipperId;
+    req.io?.to(`user-${notifyUserId}`).emit('quote-updated', { quote: updated });
+    await sendPushToUser(notifyUserId, {
+      title: 'Counter-offer received',
+      body: `New offer of ${formatCurrency(req.body.counterOfferPrice)} on ${load.goodsType}`,
+      data: { type: 'load', loadId: String(load._id) },
+    });
 
     res.json({ success: true, quote: updated });
   } catch (error) {
@@ -197,10 +209,20 @@ exports.acceptQuote = async (req, res, next) => {
       await Quote.updateMany({ _id: { $in: losing.map((q) => q._id) } }, { status: 'rejected' });
       losing.forEach((q) => req.io?.to(`user-${q.ownerId}`)
         .emit('quote-updated', { quote: { _id: q._id, loadId: load._id, status: 'rejected' } }));
+      await sendPushToUsers(losing.map((q) => q.ownerId), {
+        title: 'Load no longer available',
+        body: `${load.goodsType} was booked with another quote`,
+        data: { type: 'load', loadId: String(load._id) },
+      });
     }
 
-    req.io?.to(`user-${side === 'shipper' ? accepted.ownerId : load.shipperId}`)
-      .emit('quote-accepted', { quote: accepted, booking });
+    const otherPartyId = side === 'shipper' ? accepted.ownerId : load.shipperId;
+    req.io?.to(`user-${otherPartyId}`).emit('quote-accepted', { quote: accepted, booking });
+    await sendPushToUser(otherPartyId, {
+      title: 'Offer accepted!',
+      body: `Your ${formatCurrency(finalPrice)} offer on ${load.goodsType} was accepted`,
+      data: { type: 'booking', bookingId: String(booking._id) },
+    });
 
     res.json({ success: true, quote: accepted, booking });
   } catch (error) {
@@ -232,8 +254,13 @@ exports.rejectQuote = async (req, res, next) => {
       await Load.updateOne({ _id: load._id, status: { $in: ['quoted', 'negotiating'] } }, { status: 'open' });
     }
 
-    const notifyRoom = side === 'shipper' ? `user-${quote.ownerId}` : `user-${load.shipperId}`;
-    req.io?.to(notifyRoom).emit('quote-updated', { quote: rejected });
+    const notifyUserId = side === 'shipper' ? quote.ownerId : load.shipperId;
+    req.io?.to(`user-${notifyUserId}`).emit('quote-updated', { quote: rejected });
+    await sendPushToUser(notifyUserId, {
+      title: 'Offer declined',
+      body: `Your offer on ${load.goodsType} was declined`,
+      data: { type: 'load', loadId: String(load._id) },
+    });
 
     res.json({ success: true, quote: rejected });
   } catch (error) {

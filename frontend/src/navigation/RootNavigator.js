@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import AuthNavigator from './AuthNavigator';
 import TabNavigator from './TabNavigator';
 import Spinner from '../components/common/Spinner';
+import { navigationRef } from './navigationRef';
 
 const RootNavigator = () => {
   const { token, hydrated } = useSelector((state) => state.auth);
@@ -13,7 +14,7 @@ const RootNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       {token ? <TabNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
