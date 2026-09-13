@@ -27,7 +27,7 @@ exports.createTruck = async (req, res, next) => {
 exports.listMyTrucks = async (req, res, next) => {
   try {
     const trucks = await Truck.find({ ownerId: req.user.userId })
-      .populate('assignedDriverId', 'firstName lastName phone rating')
+      .populate('assignedDriverId', 'firstName lastName phone rating kycStatus')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, trucks });
@@ -90,7 +90,7 @@ exports.assignDriver = async (req, res, next) => {
     truck.assignedDriverId = driver._id;
     await truck.save();
 
-    const populated = await truck.populate('assignedDriverId', 'firstName lastName phone rating');
+    const populated = await truck.populate('assignedDriverId', 'firstName lastName phone rating kycStatus');
     res.json({ success: true, truck: populated });
   } catch (error) {
     next(error);

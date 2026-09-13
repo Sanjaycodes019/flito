@@ -29,7 +29,7 @@ const PNG = Buffer.from(
   'base64',
 );
 
-const newUser = (role) => signUp({ phone: uniquePhone(), role, firstName: 'Ram', lastName: 'Shrestha' });
+const newUser = (role) => signUp({ phone: uniquePhone(), role, firstName: 'Ram', lastName: 'Shrestha', verified: false });
 const patchMe = (actor, body) => as(actor.token).patch('/api/users/me').send(body);
 const me = async (actor) => (await as(actor.token).get('/api/auth/me').expect(200)).body.user;
 

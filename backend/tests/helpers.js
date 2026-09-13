@@ -36,8 +36,10 @@ let phoneCounter = 0;
 const uniquePhone = () => `+9779${String(800000000 + (phoneCounter += 1)).padStart(9, '0')}`;
 
 // Signs a user up through the real OTP flow and returns their token/ids, so
-// tests exercise the same auth path the app uses.
-const signUp = async ({ phone, role, firstName = 'Test', lastName = 'User' }) => {
+// tests exercise the same auth path the app uses. Accounts are identity-
+// verified by default because most suites test rules that assume a verified
+// owner or driver; pass `verified: false` to test verification itself.
+const signUp = async ({ phone, role, firstName = 'Test', lastName = 'User', verified = true }) => {
   const agent = request(app());
   await agent.post('/api/auth/send-otp').send({ phone }).expect(200);
 
@@ -46,7 +48,12 @@ const signUp = async ({ phone, role, firstName = 'Test', lastName = 'User' }) =>
     .send({ phone, otp: '123456', role, firstName, lastName })
     .expect(201);
 
-  return { token: res.body.token, user: res.body.user, id: res.body.user._id };
+  const id = res.body.user._id;
+  if (verified) {
+    await mongoose.model('User').updateOne({ _id: id }, { kycStatus: 'approved' });
+  }
+
+  return { token: res.body.token, user: res.body.user, id };
 };
 
 // Convenience: an authenticated supertest agent for a given token.

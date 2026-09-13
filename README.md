@@ -150,6 +150,8 @@ npm run create-admin -- +9779800000000 Sita Sharma
 
 **Identity verification (KYC):** every account uploads both sides of its citizenship card; owners add a PAN certificate (company registration optional) and drivers add a driving license. Documents are stored privately in Cloudinary and shown only through links that expire after 10 minutes. Once submitted they're frozen; an admin approves, or rejects with a reason the user sees, and the user can fix and resubmit. A verified name can't be edited.
 
+**What verification unlocks:** owners must be verified to submit, counter or accept quotes, and drivers must be verified before an owner can assign them to a booking. Shippers, browsing and posting loads need no verification. The rule lives in `backend/src/services/kycPolicy.js`.
+
 ---
 
 ## API reference
@@ -265,7 +267,6 @@ Set the production `EXPO_PUBLIC_*` values per-profile in `eas.json` — EAS buil
 These are deliberate MVP scope cuts, not oversights:
 
 - **SMS needs an account.** The gateway integration is built (`src/services/sms.js`, Sparrow SMS), but until `SPARROW_SMS_TOKEN`/`SPARROW_SMS_FROM` are set, OTPs are only logged to the server console. Production refuses to boot without them, since undelivered codes mean nobody can log in. **This is the remaining hard blocker for a public launch.**
-- **Verification isn't required for anything yet.** Users can complete KYC, but an unverified account can still post loads, quote and take jobs. What verification should unlock is a product decision still to be made.
 - **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up. Needs a merchant account.
 - **Redis is optional, not required.** OTPs default to an in-memory `Map`, which is fine on a single instance but resets on redeploy. Set `REDIS_URL` to switch to the Redis backend (`src/services/otpStore.js`) before running more than one instance — you'll need to `npm install redis`.
 - **Frontend has no automated tests.** The backend suite covers auth, permissions and negotiation; UI verification is still manual.

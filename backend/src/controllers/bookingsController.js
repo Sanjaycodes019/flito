@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const { requiresVerification } = require('../services/kycPolicy');
 
 // A ref may be a raw ObjectId or, on populated queries, a full user document —
 // normalize both to the id string before comparing.
@@ -49,7 +50,9 @@ exports.getBooking = async (req, res, next) => {
   }
 };
 
-// Owner assigns a driver to a confirmed booking
+// A driver can join a booking only before the trip is under way.
+const DRIVER_ASSIGNABLE_STATUSES = ['pending', 'confirmed'];
+
 exports.assignDriver = async (req, res, next) => {
   try {
     const { driverId } = req.body;
@@ -58,12 +61,35 @@ exports.assignDriver = async (req, res, next) => {
     if (idOf(booking.ownerId) !== req.user.userId) {
       return res.status(403).json({ success: false, message: 'Only the owner can assign a driver' });
     }
+    if (!DRIVER_ASSIGNABLE_STATUSES.includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `A driver can't be assigned to a booking that is ${booking.status.replace('_', ' ')}`,
+      });
+    }
 
-    booking.driverId = driverId;
+    // Must be a real, active driver account — any id used to be accepted,
+    // including a shipper's or one that doesn't exist.
+    const driver = driverId
+      ? await User.findOne({ _id: driverId, role: 'driver' }).select('firstName kycStatus status')
+      : null;
+    if (!driver) return res.status(404).json({ success: false, message: 'Driver not found' });
+    if (driver.status !== 'active') {
+      return res.status(400).json({ success: false, message: `${driver.firstName}'s account is ${driver.status}` });
+    }
+    if (requiresVerification('beAssignedToBooking', 'driver') && driver.kycStatus !== 'approved') {
+      return res.status(400).json({
+        success: false,
+        code: 'DRIVER_NOT_VERIFIED',
+        message: `${driver.firstName} hasn't completed identity verification, so they can't be assigned to a booking yet`,
+      });
+    }
+
+    booking.driverId = driver._id;
     if (booking.status === 'pending') booking.status = 'confirmed';
     await booking.save();
 
-    req.io?.to(`user-${driverId}`).emit('booking-assigned', { booking });
+    req.io?.to(`user-${driver._id}`).emit('booking-assigned', { booking });
     req.io?.to(`user-${booking.shipperId}`).emit('booking-status-changed', { booking });
 
     res.json({ success: true, booking });

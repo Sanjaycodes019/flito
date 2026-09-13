@@ -188,7 +188,10 @@ const TruckCard = ({ truck, busy, onAssignDriver, onSetStatus, onDelete }) => {
       <View style={styles.detailRow}>
         <Text style={styles.detailLabel}>Driver</Text>
         <Text style={styles.detailValue}>
-          {driver ? `${driver.firstName} ${driver.lastName}` : 'Unassigned'}
+          {driver
+            // Unverified drivers can be on a truck but can't be put on a booking yet.
+            ? `${driver.firstName} ${driver.lastName}${driver.kycStatus === 'approved' ? '' : ' (not verified)'}`
+            : 'Unassigned'}
         </Text>
       </View>
 

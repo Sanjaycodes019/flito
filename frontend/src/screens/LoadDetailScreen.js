@@ -5,6 +5,7 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
+import VerificationPrompt from '../components/kyc/VerificationPrompt';
 import { FLITO_COLORS } from '../utils/colors';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
@@ -180,6 +181,7 @@ const LoadDetailScreen = ({ route, navigation }) => {
         <OwnerQuoteSection
           load={load}
           myQuote={myQuote}
+          kycStatus={user?.kycStatus}
           busy={busy}
           onSubmitted={fetchAll}
           onAccept={handleAccept}
@@ -193,8 +195,9 @@ const LoadDetailScreen = ({ route, navigation }) => {
 
 // One quote in a negotiation, from either side's point of view. Only the party
 // who did NOT make the standing offer can accept or counter it — the other side
-// is waiting for a response.
-const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, showOwner = true }) => {
+// is waiting for a response. `canRespond` is false for an owner who isn't
+// verified: they can still reject, but not make or accept an offer.
+const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, showOwner = true, canRespond = true }) => {
   const [countering, setCountering] = useState(false);
   const [counterPrice, setCounterPrice] = useState('');
 
@@ -239,7 +242,18 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, sho
         <Text style={styles.waitingNote}>Waiting for the other party to respond to your offer.</Text>
       )}
 
-      {myTurn && !countering && (
+      {myTurn && !canRespond && (
+        <>
+          <Text style={styles.waitingNote}>
+            Verify your identity to accept or counter this offer. You can still reject it.
+          </Text>
+          <View style={styles.actionsRow}>
+            <Button title="Reject" variant="outline" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
+          </View>
+        </>
+      )}
+
+      {myTurn && canRespond && !countering && (
         <View style={styles.actionsRow}>
           <Button title="Accept" onPress={() => onAccept(quote._id)} loading={busy} style={styles.actionButton} />
           <Button title="Counter" variant="secondary" onPress={() => setCountering(true)} style={styles.actionButton} />
@@ -247,7 +261,7 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, sho
         </View>
       )}
 
-      {myTurn && countering && (
+      {myTurn && canRespond && countering && (
         <View>
           <Text style={styles.label}>Your Counter-Offer (Rs.)</Text>
           <TextInput
@@ -279,11 +293,13 @@ const Detail = ({ label, value }) => (
   </View>
 );
 
-const OwnerQuoteSection = ({ load, myQuote, busy, onSubmitted, onAccept, onReject, onCounter }) => {
+const OwnerQuoteSection = ({ load, myQuote, kycStatus, busy, onSubmitted, onAccept, onReject, onCounter }) => {
   const [price, setPrice] = useState('');
   const [truckType, setTruckType] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Mirrors the server: owners must be verified to make or accept offers.
+  const verified = kycStatus === 'approved';
   const canQuote = ['open', 'quoted', 'negotiating'].includes(load.status) && !myQuote;
 
   const handleSubmit = async () => {
@@ -312,12 +328,22 @@ const OwnerQuoteSection = ({ load, myQuote, busy, onSubmitted, onAccept, onRejec
           onReject={onReject}
           onCounter={onCounter}
           showOwner={false}
+          canRespond={verified}
         />
       </View>
     );
   }
 
   if (!canQuote) return null;
+
+  if (!verified) {
+    return (
+      <VerificationPrompt
+        kycStatus={kycStatus}
+        message="Verify your identity to submit a quote on this load."
+      />
+    );
+  }
 
   return (
     <Card>

@@ -4,10 +4,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import VerificationPrompt from '../components/kyc/VerificationPrompt';
 import { FLITO_COLORS } from '../utils/colors';
 import { ROLES } from '../utils/constants';
 import api from '../services/api';
+import { authService } from '../services/auth';
 import socketService from '../services/socket';
+import { setUser } from '../redux/slices/authSlice';
 import { fetchLoadsStart, fetchLoadsSuccess, fetchLoadsError, updateLoad } from '../redux/slices/loadsSlice';
 import { fetchBookingsStart, fetchBookingsSuccess, fetchBookingsError, updateBooking } from '../redux/slices/bookingSlice';
 import { formatCurrency, getErrorMessage } from '../utils/helpers';
@@ -21,6 +24,7 @@ const HomeScreen = ({ navigation }) => {
   const [myQuotes, setMyQuotes] = useState([]);
 
   const isOwner = user?.role === ROLES.OWNER;
+  const isDriver = user?.role === ROLES.DRIVER;
 
   const loadData = useCallback(async () => {
     dispatch(fetchLoadsStart());
@@ -43,11 +47,13 @@ const HomeScreen = ({ navigation }) => {
 
   // Home is the stack root, so it stays mounted while the user works in
   // pushed screens. Refetch whenever it regains focus so the dashboard counts
-  // reflect loads posted, quotes accepted, and bookings updated elsewhere.
+  // reflect loads posted, quotes accepted, and bookings updated elsewhere —
+  // and so a verification decided in the meantime shows up.
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData])
+      authService.me().then(({ user: fresh }) => dispatch(setUser(fresh))).catch(() => {});
+    }, [loadData, dispatch])
   );
 
   useEffect(() => {
@@ -75,6 +81,7 @@ const HomeScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  const needsVerification = (isOwner || isDriver) && user?.kycStatus !== 'approved';
   const activeBookings = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status));
   // Quotes where the shipper has countered are waiting on the owner to reply.
   const awaitingMyResponse = myQuotes.filter(
@@ -93,6 +100,15 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.greeting}>Hello, {user?.firstName}</Text>
         <Text style={styles.role}>Role: {user?.role}</Text>
       </View>
+
+      {needsVerification && (
+        <VerificationPrompt
+          kycStatus={user?.kycStatus}
+          message={isOwner
+            ? 'Owners need a verified identity to submit quotes and win bookings. You can still browse loads.'
+            : 'Drivers need a verified identity before an owner can assign them to a job.'}
+        />
+      )}
 
       {user?.role === ROLES.SHIPPER && (
         <>
@@ -116,7 +132,7 @@ const HomeScreen = ({ navigation }) => {
         </>
       )}
 
-      {user?.role === ROLES.OWNER && (
+      {isOwner && (
         <>
           <Card>
             <Text style={styles.cardTitle}>Available Loads ({loads.length})</Text>
@@ -145,7 +161,7 @@ const HomeScreen = ({ navigation }) => {
         </>
       )}
 
-      {user?.role === ROLES.DRIVER && (
+      {isDriver && (
         <>
           <Card>
             <Text style={styles.cardTitle}>Active Jobs ({activeBookings.length})</Text>

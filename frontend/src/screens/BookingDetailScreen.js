@@ -67,6 +67,14 @@ const BookingDetailScreen = ({ route }) => {
       return;
     }
     const { data: lookup } = await api.get('/users/lookup', { params: { phone: driverPhone } });
+    // The server enforces this too; checking first gives a clearer message.
+    if (lookup.driver.kycStatus !== 'approved') {
+      notify(
+        'Driver not verified',
+        `${lookup.driver.firstName} hasn't completed identity verification yet, so they can't be assigned to a booking.`
+      );
+      return;
+    }
     await api.patch(`/bookings/${bookingId}/assign-driver`, { driverId: lookup.driver._id });
     notify('Driver assigned', `${lookup.driver.firstName} has been assigned to this booking`);
   });

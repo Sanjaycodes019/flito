@@ -41,7 +41,8 @@ const PNG = Buffer.from(
 );
 
 const User = () => mongoose.model('User');
-const newUser = (role) => signUp({ phone: uniquePhone(), role });
+// These tests drive verification themselves, so accounts start unverified.
+const newUser = (role) => signUp({ phone: uniquePhone(), role, verified: false });
 
 // Admins can't sign up publicly, so the suite creates one directly.
 const newAdmin = async () => {
