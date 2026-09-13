@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { FLITO_COLORS } from '../../utils/colors';
+import { colors } from '../../theme/tokens';
 
-const Spinner = ({ size = 'large', color = FLITO_COLORS.primary, style }) => (
+const Spinner = ({ size = 'large', color = colors.primary, style }) => (
   <View style={[styles.container, style]}>
     <ActivityIndicator size={size} color={color} />
   </View>

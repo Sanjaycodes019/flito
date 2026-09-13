@@ -1,20 +1,60 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { FLITO_COLORS } from '../../utils/colors';
+import React, { useRef, useState } from 'react';
+import { View, Pressable, StyleSheet, Animated } from 'react-native';
+import { colors, spacing, radius, shadow, motion } from '../../theme/tokens';
 
-const Card = ({ children, style }) => <View style={[styles.card, style]}>{children}</View>;
+// A plain Card is a static surface. Passing `onPress` turns it into an
+// interactive card with hover/press/focus feedback, for list rows that
+// navigate somewhere (a load, a booking, a truck).
+const Card = ({ children, style, onPress, accessibilityLabel, elevation = 'level1' }) => {
+  if (!onPress) {
+    return <View style={[styles.card, shadow[elevation], style]}>{children}</View>;
+  }
+
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const scale = useRef(new Animated.Value(1)).current;
+  const animateTo = (toValue) => Animated.timing(scale, { toValue, duration: motion.fast, useNativeDriver: true }).start();
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => animateTo(0.985)}
+        onPressOut={() => animateTo(1)}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        style={[
+          styles.card,
+          shadow[hovered ? 'level2' : elevation],
+          hovered && styles.hovered,
+          focused && styles.focusRing,
+          style,
+        ]}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: FLITO_COLORS.bgLight,
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginVertical: spacing.sm,
+  },
+  hovered: {
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  focusRing: {
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
 });
 

@@ -1,43 +1,52 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, ScrollView, Text } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import Input from '../components/common/Input';
+import OtpInput from '../components/auth/OtpInput';
+import ResendCode from '../components/auth/ResendCode';
+import Icon from '../theme/icons';
+import { colors, spacing, type, iconSize } from '../theme/tokens';
 import { authService } from '../services/auth';
-import { FLITO_COLORS } from '../utils/colors';
 import { isValidPhone, getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
 
 const LoginScreen = ({ navigation }) => {
   const [phone, setPhone] = useState('+977');
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [sentAt, setSentAt] = useState(null);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const dispatch = useDispatch();
 
-  const handleSendOtp = async () => {
+  const phoneError = phoneTouched && !isValidPhone(phone) ? 'Enter a valid number as +977XXXXXXXXXX' : null;
+  const canSendOtp = isValidPhone(phone) && !sendingOtp;
+
+  const sendOtp = async () => {
     if (!isValidPhone(phone)) {
-      notify('Invalid phone', 'Enter a valid number as +977XXXXXXXXXX');
+      setPhoneTouched(true);
       return;
     }
-    setLoading(true);
+    setSendingOtp(true);
     try {
       const data = await authService.sendOtp(phone);
       setOtpSent(true);
-      notify('OTP sent', data.otp ? `Dev OTP: ${data.otp}` : 'Check your phone for the code');
+      setSentAt(Date.now());
+      setOtp('');
+      if (data.otp) notify('Dev mode', `OTP for testing: ${data.otp}`);
     } catch (error) {
-      notify('Error', getErrorMessage(error));
+      notify('Could not send code', getErrorMessage(error));
     }
-    setLoading(false);
+    setSendingOtp(false);
   };
 
   const handleLogin = async () => {
-    if (!otp) {
-      notify('Missing OTP', 'Enter the OTP sent to your phone');
-      return;
-    }
-    setLoading(true);
+    if (otp.length < 6) return;
+    setVerifying(true);
     dispatch(loginStart());
     try {
       const data = await authService.login(phone, otp);
@@ -45,76 +54,105 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       dispatch(loginError(getErrorMessage(error)));
       notify('Login failed', getErrorMessage(error));
+      setOtp('');
     }
-    setLoading(false);
+    setVerifying(false);
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>FLITO</Text>
-        <Text style={styles.subtitle}>Freight & Load Interchange</Text>
-      </View>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.header}>
+          <View style={styles.logoMark}>
+            <Icon name="truck" size={iconSize.xl} color={colors.primary} />
+          </View>
+          <Text style={styles.title}>FLITO</Text>
+          <Text style={styles.subtitle}>Freight & Load Interchange</Text>
+        </View>
 
-      <Card>
-        <Text style={styles.label}>Phone Number</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="+9779841234567"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          editable={!otpSent}
-        />
+        <Card>
+          {!otpSent ? (
+            <>
+              <Input
+                label="Phone Number"
+                value={phone}
+                onChangeText={setPhone}
+                onBlur={() => setPhoneTouched(true)}
+                placeholder="+9779841234567"
+                keyboardType="phone-pad"
+                icon="phone"
+                error={phoneError}
+                required
+                testID="login-phone-input"
+              />
+              <Button
+                title="Send OTP"
+                icon="send"
+                onPress={sendOtp}
+                loading={sendingOtp}
+                disabled={!canSendOtp}
+              />
+            </>
+          ) : (
+            <>
+              <Text style={styles.otpPrompt}>
+                Enter the 6-digit code sent to <Text style={styles.otpPhone}>{phone}</Text>
+              </Text>
+              <View style={styles.otpWrap}>
+                <OtpInput value={otp} onChange={setOtp} editable={!verifying} />
+              </View>
+              <ResendCode sentAt={sentAt} onResend={sendOtp} disabled={sendingOtp} />
 
-        {!otpSent ? (
-          <Button title="Send OTP" onPress={handleSendOtp} loading={loading} />
-        ) : (
-          <>
-            <Text style={styles.label}>Enter OTP</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="123456"
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="number-pad"
-              maxLength={6}
-            />
-            <Button title="Login" onPress={handleLogin} loading={loading} />
-            <Button
-              title="Send OTP Again"
-              variant="outline"
-              onPress={() => { setOtpSent(false); setOtp(''); }}
-            />
-          </>
-        )}
+              <Button
+                title="Log In"
+                icon="checkmark"
+                onPress={handleLogin}
+                loading={verifying}
+                disabled={otp.length < 6}
+                style={styles.loginButton}
+              />
+              <Button
+                title="Use a Different Number"
+                variant="ghost"
+                onPress={() => { setOtpSent(false); setOtp(''); setSentAt(null); }}
+              />
+            </>
+          )}
 
-        <Button
-          title="Create Account"
-          variant="secondary"
-          onPress={() => navigation.navigate('Signup')}
-        />
-      </Card>
-    </ScrollView>
+          <View style={styles.divider} />
+
+          <Button
+            title="Create Account"
+            variant="tertiary"
+            icon="add"
+            onPress={() => navigation.navigate('Signup')}
+          />
+        </Card>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: FLITO_COLORS.background },
-  content: { padding: 16, flexGrow: 1, justifyContent: 'center' },
-  header: { alignItems: 'center', marginVertical: 32 },
-  title: { fontSize: 32, fontWeight: 'bold', color: FLITO_COLORS.primary },
-  subtitle: { fontSize: 14, color: FLITO_COLORS.textMuted, marginTop: 8 },
-  label: { fontSize: 14, fontWeight: '600', color: FLITO_COLORS.secondary, marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-    fontSize: 14,
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg, flexGrow: 1, justifyContent: 'center' },
+  header: { alignItems: 'center', marginVertical: spacing.xxxl },
+  logoMark: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: colors.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
+  title: { ...type.display, color: colors.primary, letterSpacing: 1 },
+  subtitle: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
+  otpPrompt: { ...type.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
+  otpPhone: { fontWeight: '700', color: colors.textPrimary },
+  otpWrap: { marginBottom: spacing.sm },
+  loginButton: { marginTop: spacing.md },
+  divider: { height: 1, backgroundColor: colors.divider, marginVertical: spacing.lg },
 });
 
 export default LoginScreen;

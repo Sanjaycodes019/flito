@@ -50,6 +50,17 @@ jest.mock('expo-notifications', () => ({
 jest.mock('expo-device', () => ({ isDevice: false }));
 jest.mock('expo-constants', () => ({ expoConfig: { extra: {} } }));
 
+// @expo/vector-icons pulls in expo-font/expo-asset, which reach for native
+// module globals that don't exist under plain Jest (no real Expo runtime).
+// Screens only need an icon to render as *something* identifiable; a plain
+// stub avoids loading that machinery at all.
+jest.mock('@expo/vector-icons', () => {
+  const { Text } = require('react-native');
+  const IconStub = ({ name, ...props }) =>
+    require('react').createElement(Text, { ...props, testID: `icon-${name}` }, null);
+  return new Proxy({}, { get: () => IconStub });
+});
+
 // react-native-webview is only used inside MapCanvas.native.js; jest-expo
 // resolves to the .native variant by default, same as it would on Android.
 jest.mock('react-native-webview', () => {
