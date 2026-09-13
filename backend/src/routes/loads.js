@@ -13,5 +13,6 @@ router.get('/', loadsController.listLoads);
 router.get('/:id', loadsController.getLoad);
 router.get('/:id/quotes', requireRole('shipper'), loadsController.listQuotesForLoad);
 router.patch('/:id/cancel', requireRole('shipper'), loadsController.cancelLoad);
+router.patch('/:id/relist', requireRole('shipper'), loadsController.relistLoad);
 
 module.exports = router;

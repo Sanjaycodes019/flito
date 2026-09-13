@@ -1,4 +1,5 @@
 const Booking = require('../models/Booking');
+const User = require('../models/User');
 
 // A ref may be a raw ObjectId or, on populated queries, a full user document —
 // normalize both to the id string before comparing.
@@ -162,25 +163,55 @@ exports.updateLocation = async (req, res, next) => {
 };
 
 // Shipper or owner rates the other party after completion
+// The shipper rates the owner and the owner rates the shipper, once each, after
+// the job is done. The score is rolled into the rated user's average rating.
 exports.rateBooking = async (req, res, next) => {
   try {
     const { rating, review } = req.body;
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    const party = partyOf(booking, req.user.userId);
+    if (party !== 'shipper' && party !== 'owner') {
+      return res.status(403).json({ success: false, message: 'Only the shipper or owner can rate this booking' });
+    }
     if (booking.status !== 'completed') {
       return res.status(400).json({ success: false, message: 'Can only rate a completed booking' });
     }
 
-    if (idOf(booking.shipperId) === req.user.userId) {
-      booking.ownerRating = { rating, review, ratedAt: new Date() };
-    } else if (idOf(booking.ownerId) === req.user.userId) {
-      booking.shipperRating = { rating, review, ratedAt: new Date() };
-    } else {
-      return res.status(403).json({ success: false, message: 'Not part of this booking' });
+    const field = party === 'shipper' ? 'ownerRating' : 'shipperRating';
+    const ratedUserId = party === 'shipper' ? booking.ownerId : booking.shipperId;
+
+    // Conditional on the rating still being unset, so a retry or double tap
+    // can't record — and count — a second score.
+    const updated = await Booking.findOneAndUpdate(
+      { _id: booking._id, [`${field}.rating`]: { $exists: false } },
+      { $set: { [field]: { rating, review, ratedAt: new Date() } } },
+      { new: true },
+    );
+    if (!updated) {
+      return res.status(400).json({ success: false, message: 'You have already rated this booking' });
     }
 
-    await booking.save();
-    res.json({ success: true, booking });
+    // One pipeline update computes the new running average from the stored
+    // values, so ratings landing at the same time from different bookings
+    // can't overwrite each other.
+    const total = { $ifNull: ['$totalRatings', 0] };
+    await User.updateOne({ _id: ratedUserId }, [
+      {
+        $set: {
+          rating: {
+            $divide: [
+              { $add: [{ $multiply: [{ $ifNull: ['$rating', 0] }, total] }, rating] },
+              { $add: [total, 1] },
+            ],
+          },
+          totalRatings: { $add: [total, 1] },
+        },
+      },
+    ]);
+
+    res.json({ success: true, booking: updated });
   } catch (error) {
     next(error);
   }

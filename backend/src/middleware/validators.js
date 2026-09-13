@@ -69,7 +69,19 @@ const validateCreateTruck = (req, res, next) => {
   next();
 };
 
+const validateRating = (req, res, next) => {
+  const { rating, review } = req.body;
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ success: false, message: 'rating must be a whole number from 1 to 5' });
+  }
+  if (review !== undefined && (typeof review !== 'string' || review.length > 1000)) {
+    return res.status(400).json({ success: false, message: 'review must be text of at most 1000 characters' });
+  }
+  next();
+};
+
 module.exports = {
+  validateRating,
   isValidPhone,
   validateSendOtp,
   validateSignup,

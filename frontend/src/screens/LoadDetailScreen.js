@@ -104,6 +104,18 @@ const LoadDetailScreen = ({ route, navigation }) => {
     setBusy(false);
   };
 
+  const handleRelist = async () => {
+    setBusy(true);
+    try {
+      await api.patch(`/loads/${loadId}/relist`);
+      await fetchAll();
+      notify('Load relisted', 'Your load is open for quotes again for the next 24 hours');
+    } catch (error) {
+      notify('Error', getErrorMessage(error));
+    }
+    setBusy(false);
+  };
+
   if (loading) return <Spinner />;
   if (!load) return <Text style={styles.empty}>Load not found</Text>;
 
@@ -127,7 +139,14 @@ const LoadDetailScreen = ({ route, navigation }) => {
         {load.budgetEstimate ? <Detail label="Budget Estimate" value={formatCurrency(load.budgetEstimate)} /> : null}
         <Detail label="Posted" value={formatDate(load.createdAt)} />
 
-        {isMyLoad && ['open', 'quoted', 'negotiating'].includes(load.status) && (
+        {isMyLoad && load.status === 'expired' && (
+          <>
+            <Text style={styles.expiredNote}>No booking was made before this load expired.</Text>
+            <Button title="Relist Load" onPress={handleRelist} loading={busy} />
+          </>
+        )}
+
+        {isMyLoad && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status) && (
           <Button title="Cancel Load" variant="outline" onPress={handleCancelLoad} loading={busy} />
         )}
       </Card>
@@ -319,6 +338,7 @@ const styles = StyleSheet.create({
   price: { fontSize: 18, fontWeight: '700', color: FLITO_COLORS.primary, marginVertical: 6 },
   counterNote: { fontSize: 12, color: FLITO_COLORS.textMuted, marginBottom: 6 },
   waitingNote: { fontSize: 12, color: FLITO_COLORS.textMuted, fontStyle: 'italic', marginTop: 8 },
+  expiredNote: { fontSize: 13, color: FLITO_COLORS.textMuted, marginTop: 12 },
   actionsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   actionButton: { flex: 1 },
   label: { fontSize: 14, fontWeight: '600', color: FLITO_COLORS.secondary, marginBottom: 8, marginTop: 8 },

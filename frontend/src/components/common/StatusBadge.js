@@ -15,6 +15,7 @@ const STATUS_COLORS = {
   rejected: FLITO_COLORS.error,
   accepted: FLITO_COLORS.success,
   countered: FLITO_COLORS.warning,
+  expired: FLITO_COLORS.textMuted,
 };
 
 const StatusBadge = ({ status }) => {

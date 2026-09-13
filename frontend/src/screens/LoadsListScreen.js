@@ -20,7 +20,8 @@ const LoadsListScreen = ({ navigation }) => {
   const load = useCallback(async () => {
     dispatch(fetchLoadsStart());
     try {
-      const query = isShipper ? '?mine=true' : '?status=open';
+      // Owners get the server's default browse: every load still taking bids.
+      const query = isShipper ? '?mine=true' : '';
       const { data } = await api.get(`/loads${query}`);
       dispatch(fetchLoadsSuccess(data.loads));
     } catch (error) {

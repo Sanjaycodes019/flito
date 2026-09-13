@@ -47,7 +47,7 @@ const loadSchema = new mongoose.Schema(
     budgetEstimate: Number,
     status: {
       type: String,
-      enum: ['open', 'quoted', 'negotiating', 'booked', 'completed', 'cancelled'],
+      enum: ['open', 'quoted', 'negotiating', 'booked', 'completed', 'cancelled', 'expired'],
       default: 'open',
     },
 

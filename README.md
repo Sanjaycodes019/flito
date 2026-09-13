@@ -82,7 +82,18 @@ cd backend
 npm test
 ```
 
-46 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering auth and OTP handling, booking permissions, quote negotiation turn-taking, and fleet ownership scoping.
+67 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering auth and OTP handling, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, and fleet ownership scoping.
+
+### Demo data
+
+Once `MONGODB_URI` points at a real database, load a demo account for every role plus a few loads with competing quotes:
+
+```bash
+cd backend
+npm run seed
+```
+
+Every demo account logs in with OTP `123456` in development: admin `+9779800000000`, shipper `+9779800000001`, owners `+9779800000002` and `+9779800000003`, driver `+9779800000004`. Re-running is safe; nothing is duplicated.
 
 ### Signing in during development
 
@@ -125,7 +136,14 @@ The backend validates its config at boot and exits with a clear message if somet
 
 **Happy path:** shipper posts a load → owner submits a quote → shipper accepts → **booking created** → owner assigns a driver by phone → driver marks picked up → delivered → booking completes → both parties rate each other.
 
-Admins cannot be created through public signup (the signup validator only accepts shipper/owner/driver) — promote a user directly in the database.
+**Bidding rules:** several owners can bid on the same load, each with one live quote. Accepting one books the load exactly once and closes the competing bids. Loads take bids for 24 hours and quotes stay open for 48 (a counter-offer restarts the quote's window); a shipper can relist an expired load.
+
+Admins cannot be created through public signup (the signup validator only accepts shipper/owner/driver). Use the script instead:
+
+```bash
+cd backend
+npm run create-admin -- +9779800000000 Sita Sharma
+```
 
 ---
 
@@ -145,6 +163,7 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 | GET | `/api/loads/:id` | any | Load detail |
 | GET | `/api/loads/:id/quotes` | shipper | Quotes on own load |
 | PATCH | `/api/loads/:id/cancel` | shipper | Cancel own load |
+| PATCH | `/api/loads/:id/relist` | shipper | Reopen an expired load for 24h |
 | POST | `/api/quotes` | owner | Submit a quote |
 | GET | `/api/quotes/mine` | owner | Own submitted quotes |
 | PATCH | `/api/quotes/:id/accept` | party without the standing offer | Accept → creates booking |

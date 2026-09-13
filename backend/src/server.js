@@ -6,6 +6,7 @@ const validateEnv = require('./config/validateEnv');
 const connectDB = require('./config/database');
 const createApp = require('./app');
 const setupSocketHandlers = require('./socket/handlers');
+const { startExpirySweep } = require('./services/expiry');
 
 validateEnv();
 
@@ -29,6 +30,7 @@ const bootstrap = async () => {
   server.on('request', createApp({ io }));
 
   await connectDB();
+  startExpirySweep();
 
   const PORT = process.env.PORT || 5000;
   server.listen(PORT, () => console.log(`FLITO backend running on port ${PORT}`));
