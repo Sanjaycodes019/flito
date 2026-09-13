@@ -25,3 +25,7 @@ export const BOOKING_STATUS = {
 };
 
 export const PHONE_REGEX = /^\+977\d{10}$/;
+
+// Mirror the server's limits so the app stops offering "Add" at the cap.
+export const MAX_LOAD_PHOTOS = 6;
+export const MAX_DELIVERY_PHOTOS = 5;

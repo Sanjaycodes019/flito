@@ -3,10 +3,12 @@ import { View, Text, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { useDispatch } from 'react-redux';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
+import PhotoStrip from '../../components/common/PhotoStrip';
 import { FLITO_COLORS } from '../../utils/colors';
-import { TRUCK_TYPES } from '../../utils/constants';
+import { TRUCK_TYPES, MAX_LOAD_PHOTOS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
 import api from '../../services/api';
+import { pickImages, uploadPhotos } from '../../services/uploads';
 import { notify } from '../../utils/alert';
 import { addLoad } from '../../redux/slices/loadsSlice';
 
@@ -21,7 +23,19 @@ const CreateLoadScreen = ({ navigation }) => {
   const [dropoffPhone, setDropoffPhone] = useState('');
   const [truckType, setTruckType] = useState('any');
   const [budgetEstimate, setBudgetEstimate] = useState('');
+  const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const handleAddPhotos = async () => {
+    try {
+      const assets = await pickImages({ max: MAX_LOAD_PHOTOS - photos.length });
+      if (assets.length) setPhotos((current) => [...current, ...assets].slice(0, MAX_LOAD_PHOTOS));
+    } catch (error) {
+      notify('Could not add photos', getErrorMessage(error));
+    }
+  };
+
+  const removePhoto = (_, index) => setPhotos((current) => current.filter((__, i) => i !== index));
 
   const handleSubmit = async () => {
     if (!goodsType || !pickupAddress || !dropoffAddress) {
@@ -40,10 +54,27 @@ const CreateLoadScreen = ({ navigation }) => {
         truckTypePreference: truckType,
         budgetEstimate: budgetEstimate ? Number(budgetEstimate) : undefined,
       });
-      dispatch(addLoad(data.load));
-      notify('Load posted', 'Truck owners can now submit quotes', () =>
-        navigation.replace('LoadDetail', { loadId: data.load._id })
-      );
+
+      // The load is saved before its photos, so a failed upload never loses
+      // the posting — photos can be retried from the load's page.
+      let load = data.load;
+      let photoError = null;
+      if (photos.length) {
+        try {
+          load = (await uploadPhotos(`/loads/${load._id}/photos`, photos)).load;
+        } catch (error) {
+          photoError = getErrorMessage(error);
+        }
+      }
+
+      dispatch(addLoad(load));
+      const openLoad = () => navigation.replace('LoadDetail', { loadId: load._id });
+
+      if (photoError) {
+        notify('Load posted, but photos failed', `${photoError}. You can add them from the load's page.`, openLoad);
+      } else {
+        notify('Load posted', 'Truck owners can now submit quotes', openLoad);
+      }
     } catch (error) {
       notify('Error', getErrorMessage(error));
     }
@@ -89,6 +120,12 @@ const CreateLoadScreen = ({ navigation }) => {
 
         <Text style={styles.label}>Budget Estimate (Rs.)</Text>
         <TextInput style={styles.input} value={budgetEstimate} onChangeText={setBudgetEstimate} keyboardType="numeric" placeholder="Optional" />
+
+        <Text style={styles.label}>Photos ({photos.length}/{MAX_LOAD_PHOTOS})</Text>
+        <PhotoStrip photos={photos} onRemove={removePhoto} />
+        {photos.length < MAX_LOAD_PHOTOS && (
+          <Button title="Add Photos" variant="outline" onPress={handleAddPhotos} />
+        )}
 
         <Button title="Post Load" onPress={handleSubmit} loading={loading} />
       </Card>

@@ -116,6 +116,9 @@ Phone numbers must match `+977XXXXXXXXXX`.
 | `SPARROW_SMS_TOKEN` | backend `.env`, Render | Sparrow SMS API token (required in production) |
 | `SPARROW_SMS_FROM` | backend `.env`, Render | Approved sender identity (required in production) |
 | `REDIS_URL` | backend `.env`, Render | Optional — switches the OTP store to Redis |
+| `CLOUDINARY_CLOUD_NAME` | backend `.env`, Render | Cloudinary cloud name (file uploads) |
+| `CLOUDINARY_API_KEY` | backend `.env`, Render | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | backend `.env`, Render | Cloudinary API secret — server only, never in the app |
 | `EXPO_PUBLIC_API_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com/api` |
 | `EXPO_PUBLIC_SOCKET_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com` |
 
@@ -164,6 +167,8 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 | GET | `/api/loads/:id/quotes` | shipper | Quotes on own load |
 | PATCH | `/api/loads/:id/cancel` | shipper | Cancel own load |
 | PATCH | `/api/loads/:id/relist` | shipper | Reopen an expired load for 24h |
+| POST | `/api/loads/:id/photos` | shipper | Upload up to 6 photos (multipart field `photos`) |
+| DELETE | `/api/loads/:id/photos/:photoId` | shipper | Remove a photo (also deleted from storage) |
 | POST | `/api/quotes` | owner | Submit a quote |
 | GET | `/api/quotes/mine` | owner | Own submitted quotes |
 | PATCH | `/api/quotes/:id/accept` | party without the standing offer | Accept → creates booking |
@@ -175,6 +180,7 @@ All routes except `/api/health` require `Authorization: Bearer <jwt>`.
 | PATCH | `/api/bookings/:id/status` | party | Update status |
 | PATCH | `/api/bookings/:id/location` | driver | GPS ping |
 | POST | `/api/bookings/:id/rate` | party | Rate after completion |
+| POST | `/api/bookings/:id/delivery-proof` | driver | Upload up to 5 proof-of-delivery photos |
 | GET | `/api/users/lookup?phone=` | owner/admin | Find a driver by phone |
 | POST | `/api/trucks` | owner | Add a truck to your fleet |
 | GET | `/api/trucks` | owner | Your fleet |
@@ -252,7 +258,7 @@ Set the production `EXPO_PUBLIC_*` values per-profile in `eas.json` — EAS buil
 These are deliberate MVP scope cuts, not oversights:
 
 - **SMS needs an account.** The gateway integration is built (`src/services/sms.js`, Sparrow SMS), but until `SPARROW_SMS_TOKEN`/`SPARROW_SMS_FROM` are set, OTPs are only logged to the server console. Production refuses to boot without them, since undelivered codes mean nobody can log in. **This is the remaining hard blocker for a public launch.**
-- **No file uploads.** KYC documents and load photos are modelled as URL strings, but there's no upload endpoint yet (needs Multer + object storage such as Cloudinary or S3, with size and type limits).
+- **KYC documents can't be uploaded yet.** Load photos and proof of delivery upload to Cloudinary (JPEG/PNG/WebP/HEIC, 5 MB each). KYC documents need private storage with time-limited links, which is the next step.
 - **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up. Needs a merchant account.
 - **Redis is optional, not required.** OTPs default to an in-memory `Map`, which is fine on a single instance but resets on redeploy. Set `REDIS_URL` to switch to the Redis backend (`src/services/otpStore.js`) before running more than one instance — you'll need to `npm install redis`.
 - **Frontend has no automated tests.** The backend suite covers auth, permissions and negotiation; UI verification is still manual.

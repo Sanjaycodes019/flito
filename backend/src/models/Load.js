@@ -56,7 +56,13 @@ const loadSchema = new mongoose.Schema(
       default: 0,
     },
 
-    photos: [String],
+    // Kept with the storage public ID so removing a photo also deletes the file.
+    photos: [
+      {
+        url: { type: String, required: true },
+        publicId: { type: String, required: true },
+      },
+    ],
     expiresAt: Date,
   },
   { timestamps: true }

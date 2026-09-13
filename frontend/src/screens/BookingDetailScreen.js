@@ -5,6 +5,7 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
+import DeliveryProofSection from '../components/bookings/DeliveryProofSection';
 import { FLITO_COLORS } from '../utils/colors';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, formatStatus, getErrorMessage } from '../utils/helpers';
@@ -90,6 +91,12 @@ const BookingDetailScreen = ({ route }) => {
 
   const alreadyRated = isShipper ? !!booking.ownerRating?.rating : isOwner ? !!booking.shipperRating?.rating : true;
 
+  // Mirrors the server rule: proof comes from the driver once cargo is picked up.
+  const canAddProof = isDriver && (
+    booking.status === 'completed'
+    || (booking.status === 'in_transit' && booking.pickupStatus === 'picked_up')
+  );
+
   return (
     <ScrollView
       style={styles.container}
@@ -146,6 +153,8 @@ const BookingDetailScreen = ({ route }) => {
           )}
         </Card>
       )}
+
+      <DeliveryProofSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
 
       {isShipper && ['pending', 'confirmed'].includes(booking.status) && (
         <Button title="Cancel Booking" variant="outline" onPress={handleCancel} loading={busy} style={styles.cancelButton} />

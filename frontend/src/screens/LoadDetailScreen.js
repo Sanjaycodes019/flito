@@ -10,6 +10,7 @@ import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
 import { notify } from '../utils/alert';
+import LoadPhotosSection from '../components/loads/LoadPhotosSection';
 
 const LoadDetailScreen = ({ route, navigation }) => {
   const { loadId } = route.params;
@@ -131,6 +132,12 @@ const LoadDetailScreen = ({ route, navigation }) => {
           <StatusBadge status={load.status} />
         </View>
         {load.description ? <Text style={styles.desc}>{load.description}</Text> : null}
+
+        <LoadPhotosSection
+          load={load}
+          canEdit={isMyLoad && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status)}
+          onChanged={fetchAll}
+        />
 
         <Detail label="Pickup" value={load.pickupLocation?.address} />
         <Detail label="Dropoff" value={load.dropoffLocation?.address} />

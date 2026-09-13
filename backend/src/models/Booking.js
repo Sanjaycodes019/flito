@@ -66,7 +66,13 @@ const bookingSchema = new mongoose.Schema(
       lng: Number,
     },
 
-    deliveryPhotos: [String],
+    deliveryPhotos: [
+      {
+        url: { type: String, required: true },
+        publicId: { type: String, required: true },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
     deliverySignature: String,
 
     shipperRating: {
