@@ -30,8 +30,23 @@ const inFuture = (ms) => new Date(Date.now() + ms);
 const upsertUsers = async () => {
   const users = {};
   for (const { key, ...fields } of DEMO_USERS) {
-    users[key] = await User.findOne({ email: fields.email })
-      || await User.create({ ...fields, password: DEMO_PASSWORD });
+    let user = await User.findOne({ email: fields.email });
+
+    if (!user) {
+      // A demo account seeded back when login was phone + OTP has the phone
+      // but no email or password, so it could never sign in now. Give it
+      // the email/password instead of creating a duplicate that would
+      // collide on the phone number.
+      user = await User.findOne({ phone: fields.phone }).select('+password');
+      if (user) {
+        user.email = fields.email;
+        user.password = DEMO_PASSWORD;
+        user.emailVerified = true;
+        await user.save();
+      }
+    }
+
+    users[key] = user || await User.create({ ...fields, password: DEMO_PASSWORD });
   }
   return users;
 };
