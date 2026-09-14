@@ -56,7 +56,10 @@ const LoginScreen = ({ navigation }) => {
       dispatch(loginSuccess(data));
     } catch (err) {
       if (err.response?.data?.code === 'ROLE_REQUIRED') {
-        notify('No account yet', 'Create an account with Google from the signup page first, so we know what kind of account to make.');
+        // No FLITO account for this Google account yet: continue straight
+        // into sign up with the already-verified token, so the user only
+        // picks a role instead of going through Google a second time.
+        navigation.navigate('Signup', { googleIdToken: idToken, googleProfile: err.response.data.profile });
       } else {
         notify('Google sign-in failed', getErrorMessage(err));
       }
@@ -139,8 +142,9 @@ const LoginScreen = ({ navigation }) => {
 
           <View style={styles.spacer} />
 
+          <Text style={styles.switchPrompt}>Don&apos;t have an account?</Text>
           <Button
-            title="Create Account"
+            title="Sign Up"
             variant="tertiary"
             icon="add"
             onPress={() => navigation.navigate('Signup')}
@@ -164,6 +168,7 @@ const styles = StyleSheet.create({
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
   dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },
   spacer: { height: spacing.md },
+  switchPrompt: { ...type.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.xs },
 });
 
 export default LoginScreen;

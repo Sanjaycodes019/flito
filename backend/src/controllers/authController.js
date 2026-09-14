@@ -93,6 +93,7 @@ exports.googleAuth = async (req, res, next) => {
     const { idToken, role, firstName: firstNameOverride, lastName: lastNameOverride } = req.body;
     const profile = await verifyGoogleIdToken(idToken);
 
+    let created = false;
     let user = await User.findOne({ googleId: profile.googleId }).select('+password +googleId');
 
     if (!user) {
@@ -110,12 +111,17 @@ exports.googleAuth = async (req, res, next) => {
 
     if (!user) {
       if (!role || !['shipper', 'owner', 'driver'].includes(role)) {
+        // The token is already verified, so handing back the Google name and
+        // email lets the signup screen show who is signing up while the user
+        // picks a role, without a second trip through Google.
         return res.status(400).json({
           success: false,
-          message: 'Role is required to create a new account',
+          message: 'No account exists for this Google account yet. Choose a role to sign up.',
           code: 'ROLE_REQUIRED',
+          profile: { email: profile.email, firstName: profile.firstName, lastName: profile.lastName },
         });
       }
+      created = true;
       user = await User.create({
         googleId: profile.googleId,
         email: profile.email,
@@ -130,7 +136,7 @@ exports.googleAuth = async (req, res, next) => {
       return res.status(403).json({ success: false, message: `Account is ${user.status}` });
     }
 
-    res.json({ success: true, token: signToken(user), user: publicUser(user) });
+    res.status(created ? 201 : 200).json({ success: true, token: signToken(user), user: publicUser(user), isNewAccount: created });
   } catch (error) {
     if (error.statusCode) {
       return res.status(error.statusCode).json({ success: false, message: error.message });

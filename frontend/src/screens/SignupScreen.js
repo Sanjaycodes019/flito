@@ -6,6 +6,7 @@ import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Input, { InputAction } from '../components/common/Input';
 import GoogleButton from '../components/auth/GoogleButton';
+import GoogleIcon from '../components/auth/GoogleIcon';
 import PasswordStrengthMeter, { passwordScore } from '../components/auth/PasswordStrengthMeter';
 import { useGoogleAuth, isGoogleConfigured } from '../hooks/useGoogleAuth';
 import Icon from '../theme/icons';
@@ -40,7 +41,17 @@ const RoleOption = ({ option, selected, onSelect }) => (
   </Pressable>
 );
 
-const SignupScreen = ({ navigation }) => {
+// Two ways in:
+// - A normal visit: email/password sign up, or "Sign up with Google".
+// - Arriving from the login page's Google button when no FLITO account
+//   exists yet. The Google token is already verified, so the screen only
+//   asks for a role and finishes the sign up with it (no second popup).
+const SignupScreen = ({ navigation, route }) => {
+  const [pendingGoogle, setPendingGoogle] = useState(() => (
+    route?.params?.googleIdToken
+      ? { idToken: route.params.googleIdToken, profile: route.params.googleProfile || {} }
+      : null
+  ));
   const [role, setRole] = useState(ROLES.SHIPPER);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -87,9 +98,28 @@ const SignupScreen = ({ navigation }) => {
       dispatch(loginSuccess(data));
     } catch (error) {
       dispatch(loginError(getErrorMessage(error)));
-      notify('Could not create account', getErrorMessage(error));
+      notify('Could not sign up', getErrorMessage(error));
     }
     setLoading(false);
+  };
+
+  // Shared by "Sign up with Google" and "Finish Sign Up". A Google account
+  // that already has a FLITO account is simply logged in (the server ignores
+  // the role), and says so, rather than failing as a duplicate.
+  const completeGoogleSignup = async (idToken) => {
+    setGoogleLoading(true);
+    try {
+      const data = await authService.googleAuth(idToken, role);
+      if (data.isNewAccount === false) {
+        notify('Welcome back', 'You already have a FLITO account with this Google account, so we logged you in.', () => dispatch(loginSuccess(data)));
+      } else {
+        dispatch(loginSuccess(data));
+      }
+    } catch (err) {
+      setPendingGoogle(null);
+      notify('Google sign up failed', `${getErrorMessage(err)} Tap "Sign up with Google" to try again.`);
+      setGoogleLoading(false);
+    }
   };
 
   const handleGoogleResult = async (idToken, error) => {
@@ -98,130 +128,163 @@ const SignupScreen = ({ navigation }) => {
       if (error === 'not_configured') {
         notify('Not available yet', 'Google sign-in has not been configured for this app yet. Use email and password instead.');
       } else if (error) {
-        notify('Google sign-in failed', error);
+        notify('Google sign up failed', error);
       }
       return;
     }
-    try {
-      const data = await authService.googleAuth(idToken, role);
-      dispatch(loginSuccess(data));
-    } catch (err) {
-      notify('Google sign-in failed', getErrorMessage(err));
-    }
-    setGoogleLoading(false);
+    await completeGoogleSignup(idToken);
   };
 
   const { promptGoogleSignIn } = useGoogleAuth(handleGoogleResult);
+
+  const googleName = [pendingGoogle?.profile?.firstName, pendingGoogle?.profile?.lastName].filter(Boolean).join(' ');
+
+  const rolePicker = (
+    <>
+      <Text style={styles.sectionLabel}>I am a...</Text>
+      <View style={styles.roleRow}>
+        {ROLE_OPTIONS.map((opt) => (
+          <RoleOption key={opt.value} option={opt} selected={role === opt.value} onSelect={() => setRole(opt.value)} />
+        ))}
+      </View>
+    </>
+  );
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Image source={require('../../assets/icon.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join FLITO to book or offer truck capacity</Text>
+          <Text style={styles.title}>Sign Up</Text>
+          <Text style={styles.subtitle}>
+            {pendingGoogle ? 'One more step to finish your account' : 'Join FLITO to book or offer truck capacity'}
+          </Text>
         </View>
 
         <Card>
-          <Text style={styles.sectionLabel}>I am a...</Text>
-          <View style={styles.roleRow}>
-            {ROLE_OPTIONS.map((opt) => (
-              <RoleOption key={opt.value} option={opt} selected={role === opt.value} onSelect={() => setRole(opt.value)} />
-            ))}
-          </View>
+          {pendingGoogle ? (
+            <>
+              <View style={styles.googleBanner}>
+                <GoogleIcon size={22} />
+                <View style={styles.googleBannerText}>
+                  <Text style={styles.googleBannerTitle}>No FLITO account yet</Text>
+                  <Text style={styles.googleBannerBody}>
+                    Signing up with Google as{' '}
+                    <Text style={styles.googleBannerEmail}>{pendingGoogle.profile.email || 'your Google account'}</Text>
+                    {googleName ? ` (${googleName})` : ''}. Choose what kind of account this is.
+                  </Text>
+                </View>
+              </View>
 
-          <Input
-            label="First Name"
-            value={firstName}
-            onChangeText={setFirstName}
-            onBlur={() => setNameTouched(true)}
-            placeholder="Ram"
-            icon="person"
-            error={nameError}
-            required
-          />
-          <Input
-            label="Last Name"
-            value={lastName}
-            onChangeText={setLastName}
-            placeholder="Shrestha"
-            icon="person"
-          />
-          <Input
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            onBlur={() => setEmailTouched(true)}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            icon="email"
-            error={emailError}
-            required
-          />
-          <Input
-            label="Phone Number"
-            value={phone}
-            onChangeText={setPhone}
-            onBlur={() => setPhoneTouched(true)}
-            placeholder="+9779841234567 (optional)"
-            keyboardType="phone-pad"
-            icon="phone"
-            error={phoneError}
-          />
+              {rolePicker}
 
-          <Input
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="At least 8 characters"
-            secureTextEntry={!showPassword}
-            icon="lock"
-            required
-            rightElement={
-              <InputAction
-                icon={showPassword ? 'eyeOff' : 'eye'}
-                onPress={() => setShowPassword((v) => !v)}
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              <Button
+                title="Finish Sign Up"
+                icon="checkmark"
+                onPress={() => completeGoogleSignup(pendingGoogle.idToken)}
+                loading={googleLoading}
               />
-            }
-          />
-          <PasswordStrengthMeter password={password} />
+              <Button title="Use Email Instead" variant="ghost" onPress={() => setPendingGoogle(null)} />
+            </>
+          ) : (
+            <>
+              {rolePicker}
 
-          <Input
-            label="Confirm Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder="Type your password again"
-            secureTextEntry={!showPassword}
-            icon="lock"
-            required
-            error={!passwordsMatch ? 'Passwords do not match' : null}
-          />
+              <Input
+                label="First Name"
+                value={firstName}
+                onChangeText={setFirstName}
+                onBlur={() => setNameTouched(true)}
+                placeholder="Ram"
+                icon="person"
+                error={nameError}
+                required
+              />
+              <Input
+                label="Last Name"
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Shrestha"
+                icon="person"
+              />
+              <Input
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                onBlur={() => setEmailTouched(true)}
+                placeholder="you@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                icon="email"
+                error={emailError}
+                required
+              />
+              <Input
+                label="Phone Number"
+                value={phone}
+                onChangeText={setPhone}
+                onBlur={() => setPhoneTouched(true)}
+                placeholder="+9779841234567 (optional)"
+                keyboardType="phone-pad"
+                icon="phone"
+                error={phoneError}
+              />
 
-          <Text style={styles.terms}>
-            By continuing, you agree to FLITO&apos;s Terms of Service and Privacy Policy.
-          </Text>
+              <Input
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="At least 8 characters"
+                secureTextEntry={!showPassword}
+                icon="lock"
+                required
+                rightElement={
+                  <InputAction
+                    icon={showPassword ? 'eyeOff' : 'eye'}
+                    onPress={() => setShowPassword((v) => !v)}
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  />
+                }
+              />
+              <PasswordStrengthMeter password={password} />
 
-          <Button title="Create Account" icon="checkmark" onPress={handleSignup} loading={loading} disabled={!canSubmit} />
+              <Input
+                label="Confirm Password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Type your password again"
+                secureTextEntry={!showPassword}
+                icon="lock"
+                required
+                error={!passwordsMatch ? 'Passwords do not match' : null}
+              />
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+              <Text style={styles.terms}>
+                By continuing, you agree to FLITO&apos;s Terms of Service and Privacy Policy.
+              </Text>
 
-          {/* Never disabled: an unconfigured client still answers the tap with
-              a clear "not available yet" message instead of a dead click. */}
-          <GoogleButton
-            title="Sign up with Google"
-            onPress={() => { setGoogleLoading(isGoogleConfigured()); promptGoogleSignIn(); }}
-            loading={googleLoading}
-          />
+              <Button title="Sign Up" icon="checkmark" onPress={handleSignup} loading={loading} disabled={!canSubmit} />
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Never disabled: an unconfigured client still answers the tap with
+                  a clear "not available yet" message instead of a dead click. */}
+              <GoogleButton
+                title="Sign up with Google"
+                onPress={() => { setGoogleLoading(isGoogleConfigured()); promptGoogleSignIn(); }}
+                loading={googleLoading}
+              />
+            </>
+          )}
 
           <View style={styles.spacer} />
-          <Button title="Back to Login" variant="tertiary" onPress={() => navigation.navigate('Login')} />
+          <Text style={styles.switchPrompt}>Already have an account?</Text>
+          <Button title="Log In" variant="tertiary" onPress={() => navigation.navigate('Login')} />
         </Card>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -251,11 +314,25 @@ const styles = StyleSheet.create({
   roleLabelSelected: { color: colors.primaryText },
   roleDesc: { ...type.small, fontSize: 10, lineHeight: 13, color: colors.textMuted, textAlign: 'center', marginTop: 2 },
   roleCheck: { position: 'absolute', top: 6, right: 6 },
+  googleBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  googleBannerText: { flex: 1 },
+  googleBannerTitle: { ...type.bodyMedium, color: colors.textPrimary },
+  googleBannerBody: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs },
+  googleBannerEmail: { fontWeight: '700', color: colors.textPrimary },
   terms: { ...type.small, color: colors.textMuted, marginBottom: spacing.md, textAlign: 'center' },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
   dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },
   spacer: { height: spacing.md },
+  switchPrompt: { ...type.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.xs },
 });
 
 export default SignupScreen;

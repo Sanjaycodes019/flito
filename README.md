@@ -109,7 +109,10 @@ Auth is **email + password** (or **Continue with Google**), issuing a JWT. Phone
 - **Passwords** need 8+ characters with at least one letter and one digit. The signup screen shows a live strength meter against that same rule.
 - **Email verification** and **password reset** both use a 6-digit code sent by email (Brevo) and typed into the app. A code expires after 15 minutes. A new account can use the app right away; Home shows a "Verify your email" prompt until it's confirmed. Changing your email in Edit Profile resets verification.
 - In development (`NODE_ENV !== production`) every code is **`123456`**. It is also returned in the API response and shown in the app as a "Dev mode" notice, so no email account is needed to test. With no `BREVO_API_KEY` set, the email is logged to the server console instead of sent.
-- **Google sign-in** needs a Google OAuth client ID (see [Google sign-in setup](#google-sign-in-setup)). Until one is set, tapping the Google button explains it isn't available yet rather than failing.
+- **Google sign-in** needs a Google OAuth client ID (see [Google sign-in setup](#google-sign-in-setup)). Until one is set, tapping the Google button explains it isn't available yet rather than failing. Once set, both pages handle either case:
+  - **Log In page, "Continue with Google":** an existing account logs straight in. If that Google account has no FLITO account yet, the app moves to the Sign Up page with the Google sign-in already done, and only asks for a role before creating the account.
+  - **Sign Up page, "Sign up with Google":** creates the account with the role picked on the page. If that Google account already has a FLITO account, it logs in and says "Welcome back" instead of failing.
+  - A Google account whose email already belongs to an email/password account is linked to that account rather than duplicated.
 
 Phone numbers, when given, must match `+977XXXXXXXXXX`.
 
