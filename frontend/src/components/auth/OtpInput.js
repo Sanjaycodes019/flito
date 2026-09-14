@@ -1,5 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, TextInput, StyleSheet } from 'react-native';
+import { webInputReset } from '../common/Input';
 import { colors, spacing, radius, type } from '../../theme/tokens';
 
 // A six-box OTP field. Controlled: `value` is the digit string typed so
@@ -7,6 +8,7 @@ import { colors, spacing, radius, type } from '../../theme/tokens';
 // including a pasted code landing across every box at once.
 const OtpInput = ({ length = 6, value = '', onChange, error, editable = true, autoFocus = true }) => {
   const inputs = useRef([]);
+  const [focusedIndex, setFocusedIndex] = useState(null);
 
   const digits = Array.from({ length }, (_, i) => value[i] || '');
 
@@ -41,13 +43,20 @@ const OtpInput = ({ length = 6, value = '', onChange, error, editable = true, au
             value={digit}
             onChangeText={(text) => setDigit(index, text)}
             onKeyPress={(e) => handleKeyPress(index, e)}
+            onFocus={() => setFocusedIndex(index)}
+            onBlur={() => setFocusedIndex((current) => (current === index ? null : current))}
             keyboardType="number-pad"
             maxLength={length} // allows the whole pasted code to land in one box
             editable={editable}
             autoFocus={autoFocus && index === 0}
+            // Same border width in every state (only the color changes), so a
+            // box never resizes as focus moves along the row. The browser's
+            // own outline is off; the colored border is the focus indicator.
             style={[
               styles.box,
+              webInputReset,
               digit && styles.boxFilled,
+              focusedIndex === index && styles.boxFocused,
               error && styles.boxError,
               !editable && styles.boxDisabled,
             ]}
@@ -71,7 +80,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     height: 52,
     borderRadius: radius.md,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     textAlign: 'center',
@@ -79,6 +88,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   boxFilled: { borderColor: colors.accentText },
+  // Listed after boxFilled so the box being typed in always shows the ring.
+  boxFocused: { borderColor: colors.focusRing, backgroundColor: colors.surface },
   boxError: { borderColor: colors.error },
   boxDisabled: { backgroundColor: colors.surfaceMuted, color: colors.disabledText },
 });

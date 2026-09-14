@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Platform } from 'react-native';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 import Icon from '../../theme/icons';
+
+// On web the native <input> draws the browser's own focus outline inside the
+// field, a second box on top of the field's teal focus ring. The ring is the
+// one focus indicator, so the inner outline is switched off. `outlineStyle`
+// isn't a style React Native validates, hence a plain object outside
+// StyleSheet.create, which react-native-web passes straight to CSS.
+export const webInputReset = Platform.OS === 'web' ? { outlineStyle: 'none' } : null;
+
+const BORDER = 1;
+const RING = 2;
 
 // The single text input used across every form in the app: label, optional
 // leading icon, focus ring, inline error/helper text, and an optional
@@ -27,6 +37,7 @@ const Input = ({
 }) => {
   const [focused, setFocused] = useState(false);
   const hasError = !!error;
+  const ringed = focused || hasError;
 
   const borderColor = hasError
     ? colors.error
@@ -46,7 +57,14 @@ const Input = ({
       <View
         style={[
           styles.field,
-          { borderColor, borderWidth: focused || hasError ? 2 : 1 },
+          {
+            borderColor,
+            borderWidth: ringed ? RING : BORDER,
+            // The thicker ring would push the icon and text inward by the
+            // extra border width; taking it back out of the padding keeps
+            // everything inside the field exactly where it was while typing.
+            paddingHorizontal: spacing.md - (ringed ? RING - BORDER : 0),
+          },
           !editable && styles.fieldDisabled,
         ]}
       >
@@ -58,7 +76,7 @@ const Input = ({
           placeholder={placeholder}
           placeholderTextColor={colors.textMuted}
           editable={editable}
-          style={[styles.input, !editable && styles.inputDisabled, style]}
+          style={[styles.input, webInputReset, !editable && styles.inputDisabled, style]}
           onFocus={(e) => { setFocused(true); onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
           accessibilityLabel={label}
