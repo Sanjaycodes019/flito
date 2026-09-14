@@ -30,6 +30,11 @@ export const useGoogleAuth = (onResult) => {
       scopes: ['openid', 'profile', 'email'],
       redirectUri,
       responseType: AuthSession.ResponseType.IdToken,
+      // expo-auth-session adds a PKCE code_challenge by default. PKCE belongs
+      // to the authorization-code flow; on an ID-token request Google rejects
+      // it outright ("Error 400: invalid_request"). The nonce below is this
+      // flow's replay protection instead.
+      usePKCE: false,
       extraParams: { nonce },
     },
     GOOGLE_DISCOVERY
