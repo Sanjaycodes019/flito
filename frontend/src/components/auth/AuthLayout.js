@@ -7,6 +7,15 @@ import useBreakpoint from '../../hooks/useBreakpoint';
 
 const LOGO = require('../../../assets/icon.png');
 
+// When the form is taller than the window, desktop browsers (Windows in
+// particular) draw a full-width gray scrollbar track down the page edge.
+// It stays, since it is how a mouse user sees the page scrolls, but thin and
+// in the app's own border tone instead of the heavy default. Passed as a
+// plain object: these are CSS properties react-native-web forwards as-is.
+const webScrollbar = Platform.OS === 'web'
+  ? { scrollbarWidth: 'thin', scrollbarColor: `${colors.borderStrong} transparent` }
+  : null;
+
 const FEATURES = [
   { icon: 'load', text: 'Post a load and get competing quotes from truck owners' },
   { icon: 'verified', text: 'Verified owners and drivers on every booking' },
@@ -52,18 +61,18 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
 
   const formColumn = (
     <ScrollView
-      style={styles.scroll}
+      style={[styles.scroll, webScrollbar]}
       contentContainerStyle={[styles.scrollContent, isPhone ? styles.scrollPhone : styles.scrollWide]}
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.column, { maxWidth }]}>
         <View style={[styles.header, !isPhone && styles.headerWide]}>
-          {/* On desktop the brand panel already carries the logo. */}
+          {/* One heading, not two: the logo mark alone sits above the page
+              title (a "FLITO" wordmark beside it competed with the title on
+              small screens). On desktop the brand panel carries the logo and
+              wordmark, so the form column shows only the title. */}
           {!isDesktop && (
-            <View style={styles.brandRow}>
-              <Image source={LOGO} style={styles.logo} resizeMode="contain" accessible={false} />
-              <Text style={styles.wordmark}>FLITO</Text>
-            </View>
+            <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="FLITO" />
           )}
           <Text style={[styles.title, !isPhone && styles.titleWide]} accessibilityRole="header">{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -126,9 +135,8 @@ const styles = StyleSheet.create({
   column: { width: '100%' },
   header: { alignItems: 'center', marginBottom: spacing.lg },
   headerWide: { marginBottom: spacing.xl },
-  logo: { width: 44, height: 44, borderRadius: radius.md },
-  wordmark: { ...type.h1, color: colors.primary, letterSpacing: 1, marginLeft: spacing.sm },
-  title: { ...type.h1, color: colors.secondary, textAlign: 'center', marginTop: spacing.md },
+  logo: { width: 56, height: 56, borderRadius: radius.lg, marginBottom: spacing.md },
+  title: { ...type.h1, color: colors.secondary, textAlign: 'center' },
   titleWide: { fontSize: 28, lineHeight: 36 },
   subtitle: { ...type.body, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xs },
   card: { marginVertical: 0 },

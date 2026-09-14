@@ -70,7 +70,7 @@ const LoginScreen = ({ navigation }) => {
   const { promptGoogleSignIn } = useGoogleAuth(handleGoogleResult);
 
   return (
-    <AuthLayout title="Log In" subtitle="Welcome back. Log in to manage your loads, quotes and bookings.">
+    <AuthLayout title="Log In" subtitle="Welcome back to FLITO">
       <Input
         label="Email"
         value={email}

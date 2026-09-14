@@ -169,7 +169,7 @@ const SignupScreen = ({ navigation, route }) => {
   return (
     <AuthLayout
       title="Sign Up"
-      subtitle={pendingGoogle ? 'One more step to finish your account.' : 'Join FLITO to book or offer truck capacity.'}
+      subtitle={pendingGoogle ? 'One more step to finish your account' : 'Create your FLITO account'}
       maxWidth={pendingGoogle ? 480 : 560}
     >
       {pendingGoogle ? (
