@@ -42,9 +42,10 @@ beforeEach(() => {
 describe('LoginScreen', () => {
   it('keeps Log In disabled until email and password are both present', async () => {
     const navigation = fakeNavigation();
-    const { findByText } = renderWithProviders(<LoginScreen navigation={navigation} />);
+    const { findByRole } = renderWithProviders(<LoginScreen navigation={navigation} />);
 
-    fireEvent.press(await findByText('Log In'));
+    // The page title and the submit button are both "Log In"; target the button.
+    fireEvent.press(await findByRole('button', { name: 'Log In' }));
     // No email/password yet: the screen should not have attempted a login.
     expect(authService.login).not.toHaveBeenCalled();
   });
@@ -52,11 +53,11 @@ describe('LoginScreen', () => {
   it('logs in with valid credentials', async () => {
     authService.login.mockResolvedValue({ token: 'tok', user: fakeUser('shipper') });
     const navigation = fakeNavigation();
-    const { findByTestId, findByPlaceholderText, findByText } = renderWithProviders(<LoginScreen navigation={navigation} />);
+    const { findByTestId, findByPlaceholderText, findByRole } = renderWithProviders(<LoginScreen navigation={navigation} />);
 
     fireEvent.changeText(await findByTestId('login-email-input'), 'ram@example.com');
     fireEvent.changeText(await findByPlaceholderText('Your password'), 'Password123');
-    fireEvent.press(await findByText('Log In'));
+    fireEvent.press(await findByRole('button', { name: 'Log In' }));
 
     await waitFor(() => expect(authService.login).toHaveBeenCalledWith('ram@example.com', 'Password123'));
   });

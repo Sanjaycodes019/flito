@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
-import Card from '../components/common/Card';
 import Input, { InputAction } from '../components/common/Input';
+import AuthLayout from '../components/auth/AuthLayout';
 import GoogleButton from '../components/auth/GoogleButton';
 import { useGoogleAuth, isGoogleConfigured } from '../hooks/useGoogleAuth';
 import { colors, spacing, type } from '../theme/tokens';
@@ -70,104 +70,91 @@ const LoginScreen = ({ navigation }) => {
   const { promptGoogleSignIn } = useGoogleAuth(handleGoogleResult);
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Image source={require('../../assets/icon.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.title}>FLITO</Text>
-          <Text style={styles.subtitle}>Freight & Load Interchange</Text>
-        </View>
-
-        <Card>
-          <Input
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            onBlur={() => setEmailTouched(true)}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            icon="email"
-            error={emailError}
-            required
-            testID="login-email-input"
+    <AuthLayout title="Log In" subtitle="Welcome back. Log in to manage your loads, quotes and bookings.">
+      <Input
+        label="Email"
+        value={email}
+        onChangeText={setEmail}
+        onBlur={() => setEmailTouched(true)}
+        placeholder="you@example.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="email"
+        icon="email"
+        error={emailError}
+        required
+        testID="login-email-input"
+      />
+      <Input
+        label="Password"
+        value={password}
+        onChangeText={setPassword}
+        placeholder="Your password"
+        secureTextEntry={!showPassword}
+        autoComplete="current-password"
+        icon="lock"
+        required
+        onSubmitEditing={handleLogin}
+        rightElement={
+          <InputAction
+            icon={showPassword ? 'eyeOff' : 'eye'}
+            onPress={() => setShowPassword((v) => !v)}
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
           />
-          <Input
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Your password"
-            secureTextEntry={!showPassword}
-            icon="lock"
-            required
-            rightElement={
-              <InputAction
-                icon={showPassword ? 'eyeOff' : 'eye'}
-                onPress={() => setShowPassword((v) => !v)}
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-              />
-            }
-          />
+        }
+      />
 
-          <Button
-            title="Forgot password?"
-            variant="ghost"
-            size="sm"
-            onPress={() => navigation.navigate('ForgotPassword')}
-            style={styles.forgotButton}
-          />
+      <Button
+        title="Forgot password?"
+        variant="ghost"
+        size="sm"
+        onPress={() => navigation.navigate('ForgotPassword')}
+        style={styles.forgotButton}
+      />
 
-          <Button
-            title="Log In"
-            icon="checkmark"
-            onPress={handleLogin}
-            loading={loading}
-            disabled={!canSubmit}
-            style={styles.loginButton}
-          />
+      <Button
+        title="Log In"
+        icon="checkmark"
+        onPress={handleLogin}
+        loading={loading}
+        disabled={!canSubmit}
+        style={styles.loginButton}
+      />
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
+      </View>
 
-          {/* Never disabled: an unconfigured client still answers the tap with
-              a clear "not available yet" message instead of a dead click. */}
-          <GoogleButton
-            onPress={() => { setGoogleLoading(isGoogleConfigured()); promptGoogleSignIn(); }}
-            loading={googleLoading}
-          />
+      {/* Never disabled: an unconfigured client still answers the tap with
+          a clear "not available yet" message instead of a dead click. */}
+      <GoogleButton
+        onPress={() => { setGoogleLoading(isGoogleConfigured()); promptGoogleSignIn(); }}
+        loading={googleLoading}
+      />
 
-          <View style={styles.spacer} />
-
-          <Text style={styles.switchPrompt}>Don&apos;t have an account?</Text>
-          <Button
-            title="Sign Up"
-            variant="tertiary"
-            icon="add"
-            onPress={() => navigation.navigate('Signup')}
-          />
-        </Card>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <View style={styles.switchRow}>
+        <Text style={styles.switchPrompt}>Don&apos;t have an account?</Text>
+        <Button
+          title="Sign Up"
+          variant="tertiary"
+          icon="add"
+          onPress={() => navigation.navigate('Signup')}
+        />
+      </View>
+    </AuthLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, flexGrow: 1, justifyContent: 'center' },
-  header: { alignItems: 'center', marginVertical: spacing.xxxl },
-  logo: { width: 72, height: 72, marginBottom: spacing.md },
-  title: { ...type.display, color: colors.primary, letterSpacing: 1 },
-  subtitle: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
   forgotButton: { alignSelf: 'flex-end', marginTop: -spacing.sm },
   loginButton: { marginTop: spacing.sm },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
   dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },
-  spacer: { height: spacing.md },
+  switchRow: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.divider },
   switchPrompt: { ...type.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.xs },
 });
 

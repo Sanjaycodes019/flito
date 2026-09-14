@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useDispatch } from 'react-redux';
 import Button from '../components/common/Button';
-import Card from '../components/common/Card';
 import Input, { InputAction } from '../components/common/Input';
+import AuthLayout from '../components/auth/AuthLayout';
 import OtpInput from '../components/auth/OtpInput';
 import ResendCode from '../components/auth/ResendCode';
 import PasswordStrengthMeter, { passwordScore } from '../components/auth/PasswordStrengthMeter';
-import { colors, spacing, type } from '../theme/tokens';
+import { colors, spacing } from '../theme/tokens';
 import { authService } from '../services/auth';
 import { getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
@@ -54,67 +54,56 @@ const ResetPasswordScreen = ({ route, navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>Reset Password</Text>
-          <Text style={styles.subtitle}>
-            Enter the 6-digit code sent to <Text style={styles.emailText}>{email}</Text>
-          </Text>
-        </View>
+    <AuthLayout
+      title="Reset Password"
+      subtitle={<>Enter the 6-digit code sent to <Text style={styles.emailText}>{email}</Text></>}
+    >
+      <View style={styles.otpWrap}>
+        <OtpInput value={code} onChange={setCode} editable={!submitting} />
+      </View>
+      <ResendCode sentAt={sentAt} onResend={handleResend} disabled={resending} />
 
-        <Card>
-          <View style={styles.otpWrap}>
-            <OtpInput value={code} onChange={setCode} editable={!submitting} />
-          </View>
-          <ResendCode sentAt={sentAt} onResend={handleResend} disabled={resending} />
-
-          <Input
-            label="New Password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="At least 8 characters"
-            secureTextEntry={!showPassword}
-            icon="lock"
-            required
-            containerStyle={styles.passwordInput}
-            rightElement={
-              <InputAction
-                icon={showPassword ? 'eyeOff' : 'eye'}
-                onPress={() => setShowPassword((v) => !v)}
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-              />
-            }
+      <Input
+        label="New Password"
+        value={password}
+        onChangeText={setPassword}
+        placeholder="At least 8 characters"
+        secureTextEntry={!showPassword}
+        autoComplete="new-password"
+        icon="lock"
+        required
+        containerStyle={styles.passwordInput}
+        rightElement={
+          <InputAction
+            icon={showPassword ? 'eyeOff' : 'eye'}
+            onPress={() => setShowPassword((v) => !v)}
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
           />
-          <PasswordStrengthMeter password={password} />
+        }
+      />
+      <PasswordStrengthMeter password={password} />
 
-          <Input
-            label="Confirm New Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder="Type it again"
-            secureTextEntry={!showPassword}
-            icon="lock"
-            required
-            error={!passwordsMatch ? 'Passwords do not match' : null}
-          />
+      <Input
+        label="Confirm New Password"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        placeholder="Type it again"
+        secureTextEntry={!showPassword}
+        autoComplete="new-password"
+        icon="lock"
+        required
+        error={!passwordsMatch ? 'Passwords do not match' : null}
+      />
 
-          <Button title="Reset Password" icon="checkmark" onPress={handleSubmit} loading={submitting} disabled={!canSubmit} style={styles.submit} />
-          <Button title="Back to Login" variant="ghost" onPress={() => navigation.navigate('Login')} />
-        </Card>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <Button title="Reset Password" icon="checkmark" onPress={handleSubmit} loading={submitting} disabled={!canSubmit} style={styles.submit} />
+      <Button title="Back to Login" variant="ghost" onPress={() => navigation.navigate('Login')} />
+    </AuthLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, flexGrow: 1, justifyContent: 'center' },
-  header: { alignItems: 'center', marginVertical: spacing.xxl },
-  title: { ...type.h1, color: colors.secondary },
-  subtitle: { ...type.body, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center' },
   emailText: { fontWeight: '700', color: colors.textPrimary },
-  otpWrap: { marginBottom: spacing.sm, marginTop: spacing.sm },
+  otpWrap: { marginBottom: spacing.sm, marginTop: spacing.xs },
   passwordInput: { marginTop: spacing.lg },
   submit: { marginTop: spacing.sm },
 });

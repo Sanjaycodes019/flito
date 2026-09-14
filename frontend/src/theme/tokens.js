@@ -41,6 +41,9 @@ export const colors = {
   // .dark): a Button's secondary variant, an avatar circle's icon.
   textOnDark: '#FFFFFF',
   textInverse: FLITO_COLORS.textLight,
+  // Secondary text on a dark surface (e.g. the auth brand panel), a tint of
+  // FLITO_COLORS.textLight that stays well above 4.5:1 on secondary.
+  textInverseMuted: 'rgba(244, 246, 248, 0.72)',
   // FLITO_COLORS.info itself measures ~3.15:1 as link text on white, under
   // the 4.5:1 AA minimum; infoText (below) is the same hue, dark enough.
   textLink: '#1D6CA1',
@@ -184,4 +187,12 @@ export const motion = {
   slow: 250,
 };
 
-export default { colors, spacing, radius, shadow, type, iconSize, motion };
+// Layout breakpoints, by window width. Phone below `tablet`, tablet up to
+// `desktop`, laptop/desktop at `desktop` and wider. Read through
+// hooks/useBreakpoint rather than comparing widths ad hoc in a screen.
+export const breakpoints = {
+  tablet: 600,
+  desktop: 1024,
+};
+
+export default { colors, spacing, radius, shadow, type, iconSize, motion, breakpoints };

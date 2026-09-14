@@ -63,8 +63,12 @@ const OtpInput = ({ length = 6, value = '', onChange, error, editable = true, au
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center' },
+  // Boxes share the row instead of a fixed 44px each: six fixed boxes plus
+  // gaps (304px) overflowed the form on a 320px phone.
   box: {
-    width: 44,
+    flex: 1,
+    maxWidth: 52,
+    minWidth: 0,
     height: 52,
     borderRadius: radius.md,
     borderWidth: 1.5,

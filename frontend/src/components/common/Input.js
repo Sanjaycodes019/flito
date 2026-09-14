@@ -104,6 +104,9 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...type.body,
+    // 16px, not the 15px body size: iOS Safari zooms the whole page into any
+    // focused field smaller than 16px, which breaks the layout on phones.
+    fontSize: 16,
     color: colors.textPrimary,
     paddingVertical: spacing.sm,
   },
