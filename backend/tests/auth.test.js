@@ -209,6 +209,18 @@ describe('POST /api/auth/google', () => {
     const res = await request(app()).post('/api/auth/google').send({ idToken: 'whatever' });
     expect(res.status).toBe(503);
   });
+
+  // With a client id set, a token that fails verification (here, not even a
+  // JWT, so it fails locally without a network call) is a 401, not a 500.
+  it('rejects an unverifiable token with a 401 once configured', async () => {
+    process.env.GOOGLE_CLIENT_ID = 'test-client-id.apps.googleusercontent.com';
+    try {
+      const res = await request(app()).post('/api/auth/google').send({ idToken: 'not-a-real-token' });
+      expect(res.status).toBe(401);
+    } finally {
+      delete process.env.GOOGLE_CLIENT_ID;
+    }
+  });
 });
 
 describe('protected routes', () => {

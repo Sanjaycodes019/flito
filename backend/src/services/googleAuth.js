@@ -35,7 +35,16 @@ exports.verifyGoogleIdToken = async (idToken) => {
   }
 
   const client = getClient();
-  const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+  let ticket;
+  try {
+    ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+  } catch (err) {
+    // Malformed, expired, wrongly signed, or issued for a different client:
+    // all mean "not a valid sign-in", a 401, never an opaque 500.
+    const error = new Error('Google sign-in could not be verified, please try again');
+    error.statusCode = 401;
+    throw error;
+  }
   const payload = ticket.getPayload();
 
   if (!payload?.email) {

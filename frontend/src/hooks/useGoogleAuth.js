@@ -47,12 +47,21 @@ export const useGoogleAuth = (onResult) => {
     // an error worth surfacing, it is just "changed their mind".
   }, [response]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const promptGoogleSignIn = () => {
+  const promptGoogleSignIn = async () => {
     if (!isGoogleConfigured()) {
       onResult(null, 'not_configured');
       return;
     }
-    promptAsync();
+    try {
+      const result = await promptAsync();
+      // success and error arrive through the effect above. Anything else
+      // (the user closed the popup, or it never opened) must still call
+      // back, or the screen's button would spin forever.
+      if (result?.type !== 'success' && result?.type !== 'error') onResult(null);
+    } catch (err) {
+      // e.g. the browser blocked the popup outright.
+      onResult(null, err?.message || 'Could not open Google sign-in. Allow popups for this site and try again.');
+    }
   };
 
   return { promptGoogleSignIn, ready: Boolean(request) };
