@@ -1,29 +1,84 @@
 const PHONE_REGEX = /^\+977\d{10}$/;
+const EMAIL_AUTH_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const isValidPhone = (phone) => typeof phone === 'string' && PHONE_REGEX.test(phone);
+const isValidEmail = (email) => typeof email === 'string' && EMAIL_AUTH_REGEX.test(email);
 
-// Validate signup/OTP payloads
-const validateSendOtp = (req, res, next) => {
-  const { phone } = req.body;
-  if (!isValidPhone(phone)) {
-    return res.status(400).json({ success: false, message: 'Valid +977 phone number is required' });
-  }
-  next();
-};
+// Length over composition rules (current NIST guidance): 8+ characters,
+// at least one letter and one digit so it isn't purely numeric, nothing
+// more exotic required. The frontend's strength meter grades beyond this
+// minimum; this is only the floor the server actually enforces.
+const isValidPassword = (password) =>
+  typeof password === 'string'
+  && password.length >= 8
+  && /[A-Za-z]/.test(password)
+  && /\d/.test(password);
 
-const validateSignup = (req, res, next) => {
-  const { phone, otp, role, firstName } = req.body;
-  if (!isValidPhone(phone)) {
-    return res.status(400).json({ success: false, message: 'Valid +977 phone number is required' });
+const validateEmailSignup = (req, res, next) => {
+  const { email, password, role, firstName, phone } = req.body;
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ success: false, message: 'Enter a valid email address' });
   }
-  if (!otp) {
-    return res.status(400).json({ success: false, message: 'OTP is required' });
+  if (!isValidPassword(password)) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters and include a letter and a number' });
   }
   if (!['shipper', 'owner', 'driver'].includes(role)) {
     return res.status(400).json({ success: false, message: 'Role must be shipper, owner, or driver' });
   }
-  if (!firstName) {
+  if (!firstName || !String(firstName).trim()) {
     return res.status(400).json({ success: false, message: 'First name is required' });
+  }
+  // Phone is optional, but a value that IS sent must be a real +977 number,
+  // not silently-accepted garbage that breaks later (driver lookup, SMS).
+  if (phone !== undefined && phone !== '' && phone !== null && !isValidPhone(phone)) {
+    return res.status(400).json({ success: false, message: 'Phone number must be a valid +977 number, or left blank' });
+  }
+  next();
+};
+
+const validateEmailLogin = (req, res, next) => {
+  const { email, password } = req.body;
+  if (!isValidEmail(email) || !password) {
+    return res.status(400).json({ success: false, message: 'Email and password are required' });
+  }
+  next();
+};
+
+const validateGoogleAuth = (req, res, next) => {
+  const { idToken, role } = req.body;
+  if (!idToken || typeof idToken !== 'string') {
+    return res.status(400).json({ success: false, message: 'Google idToken is required' });
+  }
+  // Only required for a first-time signup; the controller ignores it for an
+  // account that already exists.
+  if (role !== undefined && !['shipper', 'owner', 'driver'].includes(role)) {
+    return res.status(400).json({ success: false, message: 'Role must be shipper, owner, or driver' });
+  }
+  next();
+};
+
+const validateForgotPassword = (req, res, next) => {
+  if (!isValidEmail(req.body.email)) {
+    return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+  }
+  next();
+};
+
+const validateResetPassword = (req, res, next) => {
+  const { email, code, newPassword } = req.body;
+  if (!isValidEmail(email) || !code) {
+    return res.status(400).json({ success: false, message: 'Email and code are required' });
+  }
+  if (!isValidPassword(newPassword)) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters and include a letter and a number' });
+  }
+  next();
+};
+
+const validateVerifyEmail = (req, res, next) => {
+  const { email, code } = req.body;
+  if (!isValidEmail(email) || !code) {
+    return res.status(400).json({ success: false, message: 'Email and code are required' });
   }
   next();
 };
@@ -93,7 +148,6 @@ const validateRating = (req, res, next) => {
   next();
 };
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PROFILE_TEXT_FIELDS = ['firstName', 'lastName', 'email', 'companyName'];
 
 // Whitelists what a user may change about themselves. Anything else in the
@@ -127,8 +181,17 @@ const validateProfileUpdate = (req, res, next) => {
     return fail('companyName must be at most 100 characters');
   }
   if (update.email) {
-    if (!EMAIL_REGEX.test(update.email)) return fail('Enter a valid email address');
+    if (!isValidEmail(update.email)) return fail('Enter a valid email address');
     update.email = update.email.toLowerCase();
+  }
+
+  // Optional, and separate from PROFILE_TEXT_FIELDS: it needs the +977
+  // format check, not just a length limit, and an empty string clears it.
+  if (body.phone !== undefined) {
+    if (body.phone !== '' && !isValidPhone(body.phone)) {
+      return fail('Phone number must be a valid +977 number, or left blank');
+    }
+    update.phone = body.phone;
   }
 
   req.body = update;
@@ -163,8 +226,14 @@ module.exports = {
   validateProfileUpdate,
   validateRating,
   isValidPhone,
-  validateSendOtp,
-  validateSignup,
+  isValidEmail,
+  isValidPassword,
+  validateEmailSignup,
+  validateEmailLogin,
+  validateGoogleAuth,
+  validateForgotPassword,
+  validateResetPassword,
+  validateVerifyEmail,
   validateCreateLoad,
   validateCreateQuote,
   validateCounterOffer,

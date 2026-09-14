@@ -4,22 +4,48 @@ const { KYC_DOCUMENT_TYPES } = require('../services/kycPolicy');
 
 const userSchema = new mongoose.Schema(
   {
+    // Optional: email + password (or Google) is the account identifier now.
+    // `sparse` keeps the unique index from colliding on the many accounts
+    // that never set one.
     phone: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
       match: /^\+977\d{10}$/,
     },
     email: {
       type: String,
-      sparse: true,
       unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     },
     password: {
       type: String,
-      minlength: 6,
+      minlength: 8,
       select: false,
     },
+    // Set only for an account created (or linked) via "Continue with
+    // Google". A Google-only account has no `password`.
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      select: false,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    // A 6-digit code, the same shape as the old phone OTP, emailed via
+    // Brevo. Not hashed: like the phone OTP it lives behind an expiry and
+    // the auth rate limiter, and hashing a 6-digit space adds no real
+    // protection over that.
+    emailVerificationCode: { type: String, select: false },
+    emailVerificationExpires: { type: Date, select: false },
+    passwordResetCode: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
     role: {
       type: String,
       enum: ['shipper', 'owner', 'driver', 'admin'],

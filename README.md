@@ -82,14 +82,14 @@ cd backend
 npm test
 ```
 
-138 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering auth and OTP handling, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, and push notifications (Expo's API is mocked, no real push is ever sent by the suite).
+152 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering email/password signup and login, email verification, password reset, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, and push notifications (Expo's API is mocked, no real push is ever sent by the suite).
 
 ```bash
 cd frontend
 npm test
 ```
 
-33 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, the WebView-based map/signature canvases) are mocked. See `jest.setup.js`.
+43 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: the login, signup, forgot/reset password and email verification screens (`AuthScreens`), counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, Google sign-in, the WebView-based map/signature canvases) are mocked. See `jest.setup.js`.
 
 ### Demo data
 
@@ -100,13 +100,28 @@ cd backend
 npm run seed
 ```
 
-Every demo account logs in with OTP `123456` in development: admin `+9779800000000`, shipper `+9779800000001`, owners `+9779800000002` and `+9779800000003`, driver `+9779800000004`. Re-running is safe; nothing is duplicated.
+Every demo account logs in with password `Demo1234`: `admin@flito.demo`, `shipper@flito.demo`, `owner1@flito.demo`, `owner2@flito.demo`, `driver@flito.demo`. Each also has a phone number (`+9779800000000` to `+9779800000004`) so an owner can assign the demo driver by phone. Re-running is safe; nothing is duplicated.
 
 ### Signing in during development
 
-Auth is phone + OTP. In development (`NODE_ENV !== production`) the OTP is always **`123456`** and is also returned in the `/api/auth/send-otp` response for convenience. In production a random 6-digit code is generated and never returned in the response. Wiring it to an SMS gateway (e.g. Sparrow SMS) is a prerequisite for launch. See [Known gaps](#known-gaps).
+Auth is **email + password** (or **Continue with Google**), issuing a JWT. Phone number is optional: collected at signup or later in Edit Profile, and used only for things like an owner assigning a driver, never to log in.
 
-Phone numbers must match `+977XXXXXXXXXX`.
+- **Passwords** need 8+ characters with at least one letter and one digit. The signup screen shows a live strength meter against that same rule.
+- **Email verification** and **password reset** both use a 6-digit code sent by email (Brevo) and typed into the app. A code expires after 15 minutes. A new account can use the app right away; Home shows a "Verify your email" prompt until it's confirmed. Changing your email in Edit Profile resets verification.
+- In development (`NODE_ENV !== production`) every code is **`123456`**. It is also returned in the API response and shown in the app as a "Dev mode" notice, so no email account is needed to test. With no `BREVO_API_KEY` set, the email is logged to the server console instead of sent.
+- **Google sign-in** needs a Google OAuth client ID (see [Google sign-in setup](#google-sign-in-setup)). Until one is set, tapping the Google button explains it isn't available yet rather than failing.
+
+Phone numbers, when given, must match `+977XXXXXXXXXX`.
+
+#### Google sign-in setup
+
+1. [Google Cloud Console](https://console.cloud.google.com/): create (or pick) a project.
+2. **APIs & Services > OAuth consent screen**: choose **External**, fill in the app name and support email, and add your own Google account under **Test users** while the app is unpublished.
+3. **APIs & Services > Credentials > Create credentials > OAuth client ID > Web application.**
+4. Under **Authorized JavaScript origins** add `http://localhost:8081`. Under **Authorized redirect URIs** add `http://localhost:8081` as well (plus your deployed frontend URL later).
+5. Copy the **Client ID** into both `GOOGLE_CLIENT_ID` (backend `.env`) and `EXPO_PUBLIC_GOOGLE_CLIENT_ID` (frontend `.env`), then restart both servers. The client secret is not needed: the app requests an ID token and the backend verifies it against the client ID.
+
+A standalone Android build (EAS) additionally needs an **Android** OAuth client ID registered with the build's SHA-1 fingerprint. The Web client above covers web and local testing.
 
 ---
 
@@ -120,14 +135,16 @@ Phone numbers must match `+977XXXXXXXXXX`.
 | `NODE_ENV` | backend `.env`, Render | `development` / `production` |
 | `PORT` | backend `.env` | `5000` (Render injects its own, don't hardcode) |
 | `FRONTEND_URL` | backend `.env`, Render | `https://flito.vercel.app` (required in production) |
-| `SPARROW_SMS_TOKEN` | backend `.env`, Render | Sparrow SMS API token (required in production) |
-| `SPARROW_SMS_FROM` | backend `.env`, Render | Approved sender identity (required in production) |
-| `REDIS_URL` | backend `.env`, Render | Optional. Switches the OTP store to Redis |
+| `BREVO_API_KEY` | backend `.env`, Render | Brevo API key for verification and reset emails (required in production) |
+| `BREVO_SENDER_EMAIL` | backend `.env`, Render | A sender address verified in Brevo (required in production) |
+| `BREVO_SENDER_NAME` | backend `.env`, Render | `FLITO` |
+| `GOOGLE_CLIENT_ID` | backend `.env`, Render | Google OAuth Web client ID, used to verify ID tokens. Optional |
 | `CLOUDINARY_CLOUD_NAME` | backend `.env`, Render | Cloudinary cloud name (file uploads) |
 | `CLOUDINARY_API_KEY` | backend `.env`, Render | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | backend `.env`, Render | Cloudinary API secret, server only, never in the app |
 | `EXPO_PUBLIC_API_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com/api` |
 | `EXPO_PUBLIC_SOCKET_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com` |
+| `EXPO_PUBLIC_GOOGLE_CLIENT_ID` | frontend `.env`, Vercel | Same Google OAuth Web client ID as the backend. Optional |
 
 Only `EXPO_PUBLIC_`-prefixed vars are exposed to Expo client code. Never commit real values, only `.env.example` is tracked.
 
@@ -152,7 +169,7 @@ Admins cannot be created through public signup (the signup validator only accept
 
 ```bash
 cd backend
-npm run create-admin -- +9779800000000 Sita Sharma
+npm run create-admin -- admin@example.com SomePassword123 Sita Sharma
 ```
 
 **Identity verification (KYC):** every account uploads both sides of its citizenship card; owners add a PAN certificate (company registration optional) and drivers add a driving license. Documents are stored privately in Cloudinary and shown only through links that expire after 10 minutes. Once submitted they're frozen; an admin approves, or rejects with a reason the user sees, and the user can fix and resubmit. A verified name can't be edited.
@@ -163,14 +180,18 @@ npm run create-admin -- +9779800000000 Sita Sharma
 
 ## API reference
 
-All routes except `/api/health` require `Authorization: Bearer <jwt>`.
+Routes marked `public` need no token; every other route requires `Authorization: Bearer <jwt>`.
 
 | Method | Route | Role | Purpose |
 |---|---|---|---|
 | GET | `/api/health` | public | Health check (used by Render) |
-| POST | `/api/auth/send-otp` | public | Send login/signup OTP |
-| POST | `/api/auth/signup` | public | Verify OTP, create account |
-| POST | `/api/auth/login` | public | Verify OTP, return JWT |
+| POST | `/api/auth/signup` | public | Create an account (email, password, role, name, optional phone), return JWT and email a verification code |
+| POST | `/api/auth/login` | public | Email + password, return JWT |
+| POST | `/api/auth/google` | public | Verify a Google ID token, log in or create the account (`role` needed only for a new one) |
+| POST | `/api/auth/verify-email` | public | Confirm an email with its 6-digit code |
+| POST | `/api/auth/resend-verification` | any | Email a fresh verification code |
+| POST | `/api/auth/forgot-password` | public | Email a reset code (same response whether or not the account exists) |
+| POST | `/api/auth/reset-password` | public | Set a new password with the reset code, return JWT |
 | GET | `/api/auth/me` | any | Current user |
 | POST | `/api/loads` | shipper | Post a load |
 | GET | `/api/loads` | any | Open loads, or `?mine=true` for own |
@@ -299,9 +320,11 @@ Set the production `EXPO_PUBLIC_*` values per-profile in `eas.json`. EAS builds 
 
 These are deliberate MVP scope cuts, not oversights:
 
-- **SMS needs an account.** The gateway integration is built (`src/services/sms.js`, Sparrow SMS), but until `SPARROW_SMS_TOKEN`/`SPARROW_SMS_FROM` are set, OTPs are only logged to the server console. Production refuses to boot without them, since undelivered codes mean nobody can log in. **This is the remaining hard blocker for a public launch.**
+- **Email needs a Brevo account.** Sending is built (`src/services/email.js`), but until `BREVO_API_KEY`/`BREVO_SENDER_EMAIL` are set, verification and reset codes are only logged to the server console. Production refuses to boot without them, since undelivered codes mean nobody can verify an email or recover a password. **This is the remaining hard blocker for a public launch.**
+- **Google sign-in needs an OAuth client ID.** The full flow is built and the backend verifies ID tokens, but it can't be exercised end to end until a client ID exists (see [Google sign-in setup](#google-sign-in-setup)). Signature, audience and expiry are checked; the request `nonce` is not yet compared.
+- **Accounts created before email login can't sign in.** The switch from phone+OTP to email+password left earlier phone-only accounts with no way to log in. The demo seed and `create-admin` script now set emails and passwords; older test accounts would need both set in the database. After deploying, run `npm run migrate-auth-indexes` once so accounts without a phone number don't collide on the old unique index.
+- **Phone/OTP code is retained but unused.** `src/services/sms.js` and `src/services/otpStore.js` are no longer wired to any route, kept in case a later feature (e.g. delivery SMS) wants them.
 - **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up. Needs a merchant account.
-- **Redis is optional, not required.** OTPs default to an in-memory `Map`, which is fine on a single instance but resets on redeploy. Set `REDIS_URL` to switch to the Redis backend (`src/services/otpStore.js`) before running more than one instance. You'll need to `npm install redis`.
 - **Trucks aren't linked to bookings.** A truck carries a default driver, but per-booking driver assignment happens on the booking itself; the specific truck used isn't recorded.
 - **Push receipt-checking is skipped.** Expo's push API has a second async step (check delivery receipts ~15 minutes later) that would catch a token going stale faster; not implemented. A dead token still gets cleared, just on its *next* failed send rather than proactively.
 - **Native push delivery is unverified on a real device.** The full pipeline (registration → backend send → Android banner → tap → deep link) is built and the backend half is tested, but this development environment has no Android device/emulator to confirm a real push actually arrives. Worth a real-device check before relying on it.

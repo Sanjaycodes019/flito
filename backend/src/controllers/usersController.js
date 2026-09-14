@@ -3,6 +3,7 @@ const User = require('../models/User');
 const storage = require('../services/storage');
 const { publicUser } = require('../services/userView');
 const { kycView } = require('../services/kycView');
+const { issueVerificationCode } = require('../services/verification');
 const {
   EDITABLE_KYC_STATUSES,
   NAME_LOCKED_KYC_STATUSES,
@@ -39,10 +40,10 @@ exports.lookupDriver = async (req, res, next) => {
 // Body is already whitelisted and normalized by validateProfileUpdate.
 exports.updateProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId).select('+password +googleId');
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const { firstName, lastName, email, companyName, address } = req.body;
+    const { firstName, lastName, email, phone, companyName, address } = req.body;
 
     const nameChanging = (firstName !== undefined && firstName !== (user.firstName || ''))
       || (lastName !== undefined && lastName !== (user.lastName || ''));
@@ -55,22 +56,48 @@ exports.updateProfile = async (req, res, next) => {
     if (companyName !== undefined && user.role !== 'owner') {
       return res.status(400).json({ success: false, message: 'Only truck owners have a company name' });
     }
+    // Email is how a password (or Google-only) account logs in; clearing it
+    // with no other way in would lock the owner out of their own account.
+    if (email !== undefined && !email && user.password && !user.googleId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is how you log in, so it cannot be removed. Add a phone number first if you want to change it.',
+      });
+    }
 
     if (firstName !== undefined) user.firstName = firstName;
     if (lastName !== undefined) user.lastName = lastName;
-    // An empty value clears the field; for email that also frees the unique slot.
-    if (email !== undefined) user.email = email || undefined;
+    if (phone !== undefined) user.phone = phone || undefined;
     if (companyName !== undefined) user.companyName = companyName || undefined;
     if (address) {
       if (address.street !== undefined) user.address.street = address.street || undefined;
       if (address.city !== undefined) user.address.city = address.city || undefined;
     }
 
+    // A changed email is a new, unverified address until proven otherwise:
+    // carrying over the old `emailVerified: true` would let someone claim an
+    // inbox they don't actually control.
+    const emailChanging = email !== undefined && (email || undefined) !== user.email;
+    if (emailChanging) {
+      user.email = email || undefined;
+      user.emailVerified = false;
+    }
+
     await user.save();
+
+    if (emailChanging && user.email) {
+      try {
+        await issueVerificationCode(user);
+      } catch (err) {
+        console.error('[updateProfile] verification email failed:', err.message);
+      }
+    }
+
     res.json({ success: true, user: publicUser(user) });
   } catch (error) {
-    if (error.code === 11000 && error.keyValue?.email) {
-      return res.status(409).json({ success: false, message: 'That email is already used by another account' });
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyValue || {})[0] || 'field';
+      return res.status(409).json({ success: false, message: `That ${field} is already in use` });
     }
     next(error);
   }

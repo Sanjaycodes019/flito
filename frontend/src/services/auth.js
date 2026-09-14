@@ -2,26 +2,50 @@ import api from './api';
 import storage from './storage';
 import { unregisterPushNotifications } from './pushNotifications';
 
+const storeToken = async (data) => {
+  if (data.token) await storage.setItem('authToken', data.token);
+  return data;
+};
+
 export const authService = {
-  sendOtp: async (phone) => {
-    const response = await api.post('/auth/send-otp', { phone });
+  signup: async ({ email, password, role, firstName, lastName, phone }) => {
+    const response = await api.post('/auth/signup', { email, password, role, firstName, lastName, phone: phone || undefined });
+    return storeToken(response.data);
+  },
+
+  login: async (email, password) => {
+    const response = await api.post('/auth/login', { email, password });
+    return storeToken(response.data);
+  },
+
+  // `role` is only used the first time this Google identity is seen; an
+  // existing account logs in and ignores it. If the backend reports
+  // ROLE_REQUIRED, the caller (the signup screen) already collected a role
+  // before starting the Google flow, so that path should not normally occur
+  // there, only from the login screen's Google button for a brand-new user.
+  googleAuth: async (idToken, role) => {
+    const response = await api.post('/auth/google', { idToken, role });
+    return storeToken(response.data);
+  },
+
+  verifyEmail: async (email, code) => {
+    const response = await api.post('/auth/verify-email', { email, code });
     return response.data;
   },
 
-  signup: async ({ phone, otp, role, firstName, lastName }) => {
-    const response = await api.post('/auth/signup', { phone, otp, role, firstName, lastName });
-    if (response.data.token) {
-      await storage.setItem('authToken', response.data.token);
-    }
+  resendVerification: async () => {
+    const response = await api.post('/auth/resend-verification');
     return response.data;
   },
 
-  login: async (phone, otp) => {
-    const response = await api.post('/auth/login', { phone, otp });
-    if (response.data.token) {
-      await storage.setItem('authToken', response.data.token);
-    }
+  forgotPassword: async (email) => {
+    const response = await api.post('/auth/forgot-password', { email });
     return response.data;
+  },
+
+  resetPassword: async (email, code, newPassword) => {
+    const response = await api.post('/auth/reset-password', { email, code, newPassword });
+    return storeToken(response.data);
   },
 
   me: async () => {

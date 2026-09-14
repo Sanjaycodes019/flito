@@ -1,20 +1,22 @@
-// Create an admin account, or promote an existing one. Public signup cannot
-// create admins, so this is the only way to get one.
+// Create an admin account, or promote an existing one by email. Public
+// signup cannot create admins, so this is the only way to get one.
 //
-//   npm run create-admin -- +9779800000000 Sita Sharma
+//   npm run create-admin -- admin@example.com SomePassword123 Sita Sharma
 //
-// Then log in with that phone number on the normal login screen.
+// Then log in with that email and password on the normal login screen. If an
+// account with that email already exists, the password argument is ignored
+// and only its role is changed.
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../src/models/User');
 
-const PHONE_REGEX = /^\+977\d{10}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const main = async () => {
-  const [phone, firstName = 'Admin', lastName = ''] = process.argv.slice(2);
+  const [email, password, firstName = 'Admin', lastName = ''] = process.argv.slice(2);
 
-  if (!phone || !PHONE_REGEX.test(phone)) {
-    console.error('Usage: npm run create-admin -- +977XXXXXXXXXX [FirstName] [LastName]');
+  if (!email || !EMAIL_REGEX.test(email)) {
+    console.error('Usage: npm run create-admin -- email@example.com Password123 [FirstName] [LastName]');
     process.exit(1);
   }
   if (!process.env.MONGODB_URI) {
@@ -24,29 +26,34 @@ const main = async () => {
 
   await mongoose.connect(process.env.MONGODB_URI);
   try {
-    const existing = await User.findOne({ phone });
+    const existing = await User.findOne({ email: email.toLowerCase() });
 
     if (!existing) {
+      if (!password || password.length < 8) {
+        console.error('A new account needs a password of at least 8 characters as the second argument.');
+        process.exit(1);
+      }
       await User.create({
-        phone,
+        email: email.toLowerCase(),
+        password,
         role: 'admin',
         firstName,
         lastName,
-        isPhoneVerified: true,
+        emailVerified: true,
         kycStatus: 'approved',
       });
-      console.log(`Created admin ${firstName} ${lastName} (${phone}).`);
+      console.log(`Created admin ${firstName} ${lastName} (${email}).`);
     } else if (existing.role === 'admin') {
-      console.log(`${phone} is already an admin.`);
+      console.log(`${email} is already an admin.`);
     } else {
       // Changing role replaces what this account can see and do in the app.
       const previousRole = existing.role;
       existing.role = 'admin';
       await existing.save();
-      console.log(`Promoted ${phone} from ${previousRole} to admin (it no longer has ${previousRole} screens).`);
+      console.log(`Promoted ${email} from ${previousRole} to admin (it no longer has ${previousRole} screens).`);
     }
 
-    console.log('Log in with this number on the normal login screen.');
+    console.log('Log in with this email on the normal login screen.');
   } finally {
     await mongoose.disconnect();
   }

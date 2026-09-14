@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import KycScreen from '../screens/KycScreen';
+import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import { colors, type } from '../theme/tokens';
 
 const Stack = createNativeStackNavigator();
@@ -22,6 +23,7 @@ const ProfileStackNavigator = () => (
     <Stack.Screen name="ProfileHome" component={ProfileScreen} options={{ title: 'Profile' }} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit Profile' }} />
     <Stack.Screen name="Kyc" component={KycScreen} options={{ title: 'Identity Verification' }} />
+    <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ title: 'Verify Email' }} />
   </Stack.Navigator>
 );
 

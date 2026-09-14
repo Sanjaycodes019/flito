@@ -28,14 +28,18 @@ module.exports = function validateEnv() {
       console.error('FRONTEND_URL must be set in production so CORS allows your deployed frontend.');
       process.exit(1);
     }
-    if (!process.env.SPARROW_SMS_TOKEN || !process.env.SPARROW_SMS_FROM) {
-      // Without a gateway, production OTPs are generated but never delivered,
-      // so no real user can ever complete login.
+    if (!process.env.BREVO_API_KEY || !process.env.BREVO_SENDER_EMAIL) {
+      // Without a provider, verification and password-reset codes are
+      // generated but never delivered: nobody can verify their email or
+      // recover a forgotten password.
       console.error(
-        'SPARROW_SMS_TOKEN and SPARROW_SMS_FROM must be set in production. ' +
-        'Without an SMS gateway no user can receive a login code.'
+        'BREVO_API_KEY and BREVO_SENDER_EMAIL must be set in production. ' +
+        'Without an email provider nobody can verify their email or reset a password.'
       );
       process.exit(1);
     }
+    // GOOGLE_CLIENT_ID is intentionally not required: Google sign-in is an
+    // enhancement, and the rest of the app works without it (see
+    // services/googleAuth.js's isConfigured()).
   }
 };

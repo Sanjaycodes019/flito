@@ -1,128 +1,143 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
-import Input from '../components/common/Input';
-import OtpInput from '../components/auth/OtpInput';
-import ResendCode from '../components/auth/ResendCode';
-import Icon from '../theme/icons';
-import { colors, spacing, type, iconSize } from '../theme/tokens';
+import Input, { InputAction } from '../components/common/Input';
+import GoogleButton from '../components/auth/GoogleButton';
+import { useGoogleAuth, isGoogleConfigured } from '../hooks/useGoogleAuth';
+import { colors, spacing, type } from '../theme/tokens';
 import { authService } from '../services/auth';
-import { isValidPhone, getErrorMessage } from '../utils/helpers';
+import { isValidEmail, getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
 
 const LoginScreen = ({ navigation }) => {
-  const [phone, setPhone] = useState('+977');
-  const [phoneTouched, setPhoneTouched] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [sentAt, setSentAt] = useState(null);
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifying, setVerifying] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const dispatch = useDispatch();
 
-  const phoneError = phoneTouched && !isValidPhone(phone) ? 'Enter a valid number as +977XXXXXXXXXX' : null;
-  const canSendOtp = isValidPhone(phone) && !sendingOtp;
-
-  const sendOtp = async () => {
-    if (!isValidPhone(phone)) {
-      setPhoneTouched(true);
-      return;
-    }
-    setSendingOtp(true);
-    try {
-      const data = await authService.sendOtp(phone);
-      setOtpSent(true);
-      setSentAt(Date.now());
-      setOtp('');
-      if (data.otp) notify('Dev mode', `OTP for testing: ${data.otp}`);
-    } catch (error) {
-      notify('Could not send code', getErrorMessage(error));
-    }
-    setSendingOtp(false);
-  };
+  const emailError = emailTouched && !isValidEmail(email) ? 'Enter a valid email address' : null;
+  const canSubmit = isValidEmail(email) && password.length > 0;
 
   const handleLogin = async () => {
-    if (otp.length < 6) return;
-    setVerifying(true);
+    if (!canSubmit) {
+      setEmailTouched(true);
+      return;
+    }
+    setLoading(true);
     dispatch(loginStart());
     try {
-      const data = await authService.login(phone, otp);
+      const data = await authService.login(email.trim().toLowerCase(), password);
       dispatch(loginSuccess(data));
     } catch (error) {
       dispatch(loginError(getErrorMessage(error)));
       notify('Login failed', getErrorMessage(error));
-      setOtp('');
     }
-    setVerifying(false);
+    setLoading(false);
   };
+
+  const handleGoogleResult = async (idToken, error) => {
+    if (!idToken) {
+      setGoogleLoading(false);
+      if (error === 'not_configured') {
+        notify('Not available yet', 'Google sign-in has not been configured for this app yet. Use email and password instead.');
+      } else if (error) {
+        notify('Google sign-in failed', error);
+      }
+      return;
+    }
+    try {
+      const data = await authService.googleAuth(idToken);
+      dispatch(loginSuccess(data));
+    } catch (err) {
+      if (err.response?.data?.code === 'ROLE_REQUIRED') {
+        notify('No account yet', 'Create an account with Google from the signup page first, so we know what kind of account to make.');
+      } else {
+        notify('Google sign-in failed', getErrorMessage(err));
+      }
+    }
+    setGoogleLoading(false);
+  };
+
+  const { promptGoogleSignIn } = useGoogleAuth(handleGoogleResult);
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          {/* The logo mark and wordmark are the one deliberate exception to
-              colors.primaryText: WCAG's contrast minimums do not apply to
-              logotype, so this keeps the true brand amber. */}
-          <View style={styles.logoMark}>
-            <Icon name="truck" size={iconSize.xl} color={colors.primary} />
-          </View>
+          <Image source={require('../../assets/icon.png')} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>FLITO</Text>
           <Text style={styles.subtitle}>Freight & Load Interchange</Text>
         </View>
 
         <Card>
-          {!otpSent ? (
-            <>
-              <Input
-                label="Phone Number"
-                value={phone}
-                onChangeText={setPhone}
-                onBlur={() => setPhoneTouched(true)}
-                placeholder="+9779841234567"
-                keyboardType="phone-pad"
-                icon="phone"
-                error={phoneError}
-                required
-                testID="login-phone-input"
+          <Input
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            onBlur={() => setEmailTouched(true)}
+            placeholder="you@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            icon="email"
+            error={emailError}
+            required
+            testID="login-email-input"
+          />
+          <Input
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Your password"
+            secureTextEntry={!showPassword}
+            icon="lock"
+            required
+            rightElement={
+              <InputAction
+                icon={showPassword ? 'eyeOff' : 'eye'}
+                onPress={() => setShowPassword((v) => !v)}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
               />
-              <Button
-                title="Send OTP"
-                icon="send"
-                onPress={sendOtp}
-                loading={sendingOtp}
-                disabled={!canSendOtp}
-              />
-            </>
-          ) : (
-            <>
-              <Text style={styles.otpPrompt}>
-                Enter the 6-digit code sent to <Text style={styles.otpPhone}>{phone}</Text>
-              </Text>
-              <View style={styles.otpWrap}>
-                <OtpInput value={otp} onChange={setOtp} editable={!verifying} />
-              </View>
-              <ResendCode sentAt={sentAt} onResend={sendOtp} disabled={sendingOtp} />
+            }
+          />
 
-              <Button
-                title="Log In"
-                icon="checkmark"
-                onPress={handleLogin}
-                loading={verifying}
-                disabled={otp.length < 6}
-                style={styles.loginButton}
-              />
-              <Button
-                title="Use a Different Number"
-                variant="ghost"
-                onPress={() => { setOtpSent(false); setOtp(''); setSentAt(null); }}
-              />
-            </>
-          )}
+          <Button
+            title="Forgot password?"
+            variant="ghost"
+            size="sm"
+            onPress={() => navigation.navigate('ForgotPassword')}
+            style={styles.forgotButton}
+          />
 
-          <View style={styles.divider} />
+          <Button
+            title="Log In"
+            icon="checkmark"
+            onPress={handleLogin}
+            loading={loading}
+            disabled={!canSubmit}
+            style={styles.loginButton}
+          />
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Never disabled: an unconfigured client still answers the tap with
+              a clear "not available yet" message instead of a dead click. */}
+          <GoogleButton
+            onPress={() => { setGoogleLoading(isGoogleConfigured()); promptGoogleSignIn(); }}
+            loading={googleLoading}
+          />
+
+          <View style={styles.spacer} />
 
           <Button
             title="Create Account"
@@ -140,22 +155,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, flexGrow: 1, justifyContent: 'center' },
   header: { alignItems: 'center', marginVertical: spacing.xxxl },
-  logoMark: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: colors.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
+  logo: { width: 72, height: 72, marginBottom: spacing.md },
   title: { ...type.display, color: colors.primary, letterSpacing: 1 },
   subtitle: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
-  otpPrompt: { ...type.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
-  otpPhone: { fontWeight: '700', color: colors.textPrimary },
-  otpWrap: { marginBottom: spacing.sm },
-  loginButton: { marginTop: spacing.md },
-  divider: { height: 1, backgroundColor: colors.divider, marginVertical: spacing.lg },
+  forgotButton: { alignSelf: 'flex-end', marginTop: -spacing.sm },
+  loginButton: { marginTop: spacing.sm },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
+  dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },
+  spacer: { height: spacing.md },
 });
 
 export default LoginScreen;

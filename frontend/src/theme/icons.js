@@ -103,6 +103,7 @@ const GLYPHS = {
   chevronDown: 'chevron-down',
   chevronUp: 'chevron-up',
   phone: 'phone-outline',
+  email: 'email-outline',
   lock: 'lock-outline',
   time: 'clock-outline',
   calendar: 'calendar-blank-outline',

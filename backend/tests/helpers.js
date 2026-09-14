@@ -28,24 +28,28 @@ const clearDb = async () => {
 
 const app = () => createApp();
 
-// The OTP store is process-global by design (an in-memory Map), so clearing
-// the database does not clear pending codes. Giving each test its own phone
-// number keeps them independent without adding a test-only reset hook to
-// production code.
+// Counters keep each test's phone/email independent without a test-only
+// reset hook in production code.
 let phoneCounter = 0;
 const uniquePhone = () => `+9779${String(800000000 + (phoneCounter += 1)).padStart(9, '0')}`;
 
-// Signs a user up through the real OTP flow and returns their token/ids, so
-// tests exercise the same auth path the app uses. Accounts are identity-
-// verified by default because most suites test rules that assume a verified
-// owner or driver; pass `verified: false` to test verification itself.
+let emailCounter = 0;
+const uniqueEmail = () => `test${(emailCounter += 1)}@flito.test`;
+
+const TEST_PASSWORD = 'TestPass123';
+
+// Signs a user up through the real email/password flow and returns their
+// token/ids, so tests exercise the same auth path the app uses. `phone` is
+// optional, same as in the real signup, and is set when a test needs a real
+// number to look up later (e.g. assigning a driver by phone). Accounts are
+// identity-verified (KYC) by default because most suites test rules that
+// assume a verified owner or driver; pass `verified: false` to test
+// verification itself.
 const signUp = async ({ phone, role, firstName = 'Test', lastName = 'User', verified = true }) => {
   const agent = request(app());
-  await agent.post('/api/auth/send-otp').send({ phone }).expect(200);
-
   const res = await agent
     .post('/api/auth/signup')
-    .send({ phone, otp: '123456', role, firstName, lastName })
+    .send({ email: uniqueEmail(), password: TEST_PASSWORD, phone, role, firstName, lastName })
     .expect(201);
 
   const id = res.body.user._id;
@@ -68,4 +72,4 @@ const as = (token) => {
   };
 };
 
-module.exports = { setupTestDb, teardownTestDb, clearDb, app, signUp, as, uniquePhone };
+module.exports = { setupTestDb, teardownTestDb, clearDb, app, signUp, as, uniquePhone, uniqueEmail, TEST_PASSWORD };

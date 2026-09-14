@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import DashboardCard from '../components/home/DashboardCard';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
+import EmailVerificationPrompt from '../components/auth/EmailVerificationPrompt';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
@@ -115,6 +116,10 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
       </View>
+
+      {user?.email && !user?.emailVerified && (
+        <EmailVerificationPrompt email={user.email} />
+      )}
 
       {needsVerification && (
         <VerificationPrompt

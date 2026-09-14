@@ -56,7 +56,6 @@ describe('profile editing', () => {
     const shipper = await newUser('shipper');
 
     await patchMe(shipper, {
-      phone: uniquePhone(),
       role: 'admin',
       kycStatus: 'approved',
       rating: 5,
@@ -64,11 +63,21 @@ describe('profile editing', () => {
     }).expect(200);
 
     const user = await me(shipper);
-    expect(user.phone).toBe(shipper.user.phone);
     expect(user.role).toBe('shipper');
     expect(user.kycStatus).toBe('not_submitted');
     expect(user.rating).toBe(0);
     expect(user.firstName).toBe('Ramesh');
+  });
+
+  it('phone is optional and editable, unlike the fields above', async () => {
+    const shipper = await newUser('shipper');
+    const NEW_PHONE = uniquePhone();
+
+    await patchMe(shipper, { phone: NEW_PHONE }).expect(200);
+    expect((await me(shipper)).phone).toBe(NEW_PHONE);
+
+    await patchMe(shipper, { phone: '' }).expect(200);
+    expect((await me(shipper)).phone).toBeUndefined();
   });
 
   it('validates the email address and first name', async () => {
@@ -77,15 +86,31 @@ describe('profile editing', () => {
     expect((await patchMe(shipper, { firstName: '   ' })).status).toBe(400);
   });
 
-  it('refuses an email used by another account, and frees it when cleared', async () => {
+  it('refuses an email used by another account', async () => {
     const alice = await newUser('shipper');
     const bob = await newUser('owner');
 
     await patchMe(alice, { email: 'shared@example.com' }).expect(200);
     expect((await patchMe(bob, { email: 'shared@example.com' })).status).toBe(409);
+  });
 
-    await patchMe(alice, { email: '' }).expect(200);
-    await patchMe(bob, { email: 'shared@example.com' }).expect(200);
+  it('refuses to clear the email that is the only way into a password account', async () => {
+    const alice = await newUser('shipper');
+    const res = await patchMe(alice, { email: '' });
+    expect(res.status).toBe(400);
+    expect((await me(alice)).email).toBe(alice.user.email);
+  });
+
+  it('changing the email resets verification and issues a fresh code', async () => {
+    const alice = await newUser('shipper');
+    // signUp() does not verify the email, so verify it first to prove the
+    // change actually resets a *true* flag back to false.
+    await as(alice.token).post('/api/auth/verify-email').send({ email: alice.user.email, code: '123456' }).expect(200);
+    expect((await me(alice)).emailVerified).toBe(true);
+
+    const res = await patchMe(alice, { email: 'changed@example.com' }).expect(200);
+    expect(res.body.user.emailVerified).toBe(false);
+    expect((await me(alice)).emailVerified).toBe(false);
   });
 
   it('allows a company name only for truck owners', async () => {

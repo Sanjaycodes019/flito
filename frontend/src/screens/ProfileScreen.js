@@ -73,11 +73,31 @@ const ProfileScreen = ({ navigation }) => {
           <Icon name={ROLE_ICON[user?.role] || 'person'} size={iconSize.xl} color={colors.textOnDark} />
         </View>
         <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
-        <Text style={styles.phone}>{user?.phone}</Text>
+        <Text style={styles.phone}>{user?.email}</Text>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{user?.role?.toUpperCase()}</Text>
         </View>
       </Card>
+
+      {user?.email && (
+        <Card>
+          <View style={styles.verifyRow}>
+            <Icon
+              name={user.emailVerified ? 'verified' : 'unverified'}
+              size={iconSize.md}
+              color={user.emailVerified ? colors.successText : colors.warningText}
+              style={styles.rowIcon}
+            />
+            <Text style={styles.rowLabel}>Email Verification</Text>
+            <Text style={[styles.rowValue, { color: user.emailVerified ? colors.successText : colors.warningText }]}>
+              {user.emailVerified ? 'Verified' : 'Not verified'}
+            </Text>
+          </View>
+          {!user.emailVerified && (
+            <Button title="Verify Now" icon="checkmark" variant="tertiary" onPress={() => navigation.navigate('VerifyEmail')} />
+          )}
+        </Card>
+      )}
 
       {verifies && (
         <Card>
@@ -105,7 +125,7 @@ const ProfileScreen = ({ navigation }) => {
           value={user?.rating ? `${user.rating.toFixed(1)} (${user.totalRatings})` : 'No ratings yet'}
         />
         {user?.companyName ? <Row icon="owner" label="Company" value={user.companyName} /> : null}
-        {user?.email ? <Row icon="phone" label="Email" value={user.email} /> : null}
+        {user?.phone ? <Row icon="phone" label="Phone" value={user.phone} /> : null}
         {user?.address?.city ? <Row icon="location" label="City" value={user.address.city} /> : null}
       </Card>
 

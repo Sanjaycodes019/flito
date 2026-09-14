@@ -4,7 +4,9 @@
 //
 //   npm run seed
 //
-// In development every account logs in with OTP 123456.
+// Every account logs in with email + DEMO_PASSWORD below. Phone is also set
+// (and left un-random) so the owner-assigns-driver-by-phone flow has a real
+// number to look up in a demo.
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../src/models/User');
@@ -13,12 +15,14 @@ const Quote = require('../src/models/Quote');
 const Truck = require('../src/models/Truck');
 const { LOAD_TTL_MS, QUOTE_TTL_MS } = require('../src/services/expiry');
 
+const DEMO_PASSWORD = 'Demo1234';
+
 const DEMO_USERS = [
-  { key: 'admin', phone: '+9779800000000', role: 'admin', firstName: 'Sita', lastName: 'Sharma', kycStatus: 'approved' },
-  { key: 'shipper', phone: '+9779800000001', role: 'shipper', firstName: 'Ram', lastName: 'Shrestha' },
-  { key: 'ownerA', phone: '+9779800000002', role: 'owner', firstName: 'Bikash', lastName: 'Thapa', companyName: 'Thapa Transport' },
-  { key: 'ownerB', phone: '+9779800000003', role: 'owner', firstName: 'Anita', lastName: 'Gurung', companyName: 'Gurung Logistics' },
-  { key: 'driver', phone: '+9779800000004', role: 'driver', firstName: 'Hari', lastName: 'Tamang' },
+  { key: 'admin', email: 'admin@flito.demo', phone: '+9779800000000', role: 'admin', firstName: 'Sita', lastName: 'Sharma', kycStatus: 'approved', emailVerified: true },
+  { key: 'shipper', email: 'shipper@flito.demo', phone: '+9779800000001', role: 'shipper', firstName: 'Ram', lastName: 'Shrestha', emailVerified: true },
+  { key: 'ownerA', email: 'owner1@flito.demo', phone: '+9779800000002', role: 'owner', firstName: 'Bikash', lastName: 'Thapa', companyName: 'Thapa Transport', emailVerified: true },
+  { key: 'ownerB', email: 'owner2@flito.demo', phone: '+9779800000003', role: 'owner', firstName: 'Anita', lastName: 'Gurung', companyName: 'Gurung Logistics', emailVerified: true },
+  { key: 'driver', email: 'driver@flito.demo', phone: '+9779800000004', role: 'driver', firstName: 'Hari', lastName: 'Tamang', emailVerified: true },
 ];
 
 const inFuture = (ms) => new Date(Date.now() + ms);
@@ -26,8 +30,8 @@ const inFuture = (ms) => new Date(Date.now() + ms);
 const upsertUsers = async () => {
   const users = {};
   for (const { key, ...fields } of DEMO_USERS) {
-    users[key] = await User.findOne({ phone: fields.phone })
-      || await User.create({ ...fields, isPhoneVerified: true });
+    users[key] = await User.findOne({ email: fields.email })
+      || await User.create({ ...fields, password: DEMO_PASSWORD });
   }
   return users;
 };
@@ -108,8 +112,8 @@ const main = async () => {
     const users = await upsertUsers();
     await seedMarketplace(users);
 
-    console.log('\nDemo accounts (OTP 123456):');
-    console.table(DEMO_USERS.map(({ role, firstName, lastName, phone }) => ({ role, name: `${firstName} ${lastName}`, phone })));
+    console.log(`\nDemo accounts (password: ${DEMO_PASSWORD}):`);
+    console.table(DEMO_USERS.map(({ role, firstName, lastName, email, phone }) => ({ role, name: `${firstName} ${lastName}`, email, phone })));
   } finally {
     await mongoose.disconnect();
   }
