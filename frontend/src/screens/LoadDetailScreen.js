@@ -15,6 +15,7 @@ import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
 import { notify } from '../utils/alert';
 import LoadPhotosSection from '../components/loads/LoadPhotosSection';
+import useScreenLayout from '../hooks/useScreenLayout';
 
 const DETAIL_ICON = {
   Pickup: 'pickup',
@@ -35,6 +36,8 @@ const LoadDetailScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
+  // One readable column below desktop; the load and its quotes side by side above.
+  const layout = useScreenLayout('narrow', 'wide');
 
   const isShipper = user?.role === ROLES.SHIPPER;
   const isOwner = user?.role === ROLES.OWNER;
@@ -134,76 +137,87 @@ const LoadDetailScreen = ({ route, navigation }) => {
   if (loading) return <Spinner />;
   if (!load) return <EmptyState icon="empty" title="Load not found" message="This load may have been removed." />;
 
+  const hasSide = (isShipper && isMyLoad) || isOwner;
+  const twoColumns = layout.isDesktop && hasSide;
+
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={layout.contentStyle}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
-      <Card>
-        <View style={styles.row}>
-          <Text style={styles.title}>{load.goodsType}</Text>
-          <StatusBadge status={load.status} />
-        </View>
-        {load.description ? <Text style={styles.desc}>{load.description}</Text> : null}
+      <View style={twoColumns ? styles.columns : null}>
+        <View style={twoColumns ? styles.mainColumn : null}>
+          <Card>
+            <View style={styles.row}>
+              <Text style={styles.title}>{load.goodsType}</Text>
+              <StatusBadge status={load.status} />
+            </View>
+            {load.description ? <Text style={styles.desc}>{load.description}</Text> : null}
 
-        <LoadPhotosSection
-          load={load}
-          canEdit={isMyLoad && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status)}
-          onChanged={fetchAll}
-        />
-
-        <Detail label="Pickup" value={load.pickupLocation?.address} />
-        <Detail label="Dropoff" value={load.dropoffLocation?.address} />
-        {load.weight ? <Detail label="Weight" value={`${load.weight} kg`} /> : null}
-        <Detail label="Truck Type" value={load.truckTypePreference} />
-        {load.budgetEstimate ? <Detail label="Budget Estimate" value={formatCurrency(load.budgetEstimate)} /> : null}
-        <Detail label="Posted" value={formatDate(load.createdAt)} />
-
-        {isMyLoad && load.status === 'expired' && (
-          <>
-            <Text style={styles.expiredNote}>No booking was made before this load expired.</Text>
-            <Button title="Relist Load" icon="refresh" onPress={handleRelist} loading={busy} />
-          </>
-        )}
-
-        {isMyLoad && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status) && (
-          <Button title="Cancel Load" icon="close" variant="destructive" onPress={handleCancelLoad} loading={busy} />
-        )}
-      </Card>
-
-      {isShipper && isMyLoad && (
-        <View>
-          <Text style={styles.sectionTitle}>Quotes ({quotes.length})</Text>
-          {quotes.length === 0 && (
-            <EmptyState icon="quote" title="No quotes yet" message="Owners will submit offers here as they come in." />
-          )}
-          {quotes.map((q) => (
-            <QuoteCard
-              key={q._id}
-              quote={q}
-              viewerSide="shipper"
-              busy={busy}
-              onAccept={handleAccept}
-              onReject={handleReject}
-              onCounter={handleCounter}
+            <LoadPhotosSection
+              load={load}
+              canEdit={isMyLoad && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status)}
+              onChanged={fetchAll}
             />
-          ))}
-        </View>
-      )}
 
-      {isOwner && (
-        <OwnerQuoteSection
-          load={load}
-          myQuote={myQuote}
-          kycStatus={user?.kycStatus}
-          busy={busy}
-          onSubmitted={fetchAll}
-          onAccept={handleAccept}
-          onReject={handleReject}
-          onCounter={handleCounter}
-        />
-      )}
+            <Detail label="Pickup" value={load.pickupLocation?.address} />
+            <Detail label="Dropoff" value={load.dropoffLocation?.address} />
+            {load.weight ? <Detail label="Weight" value={`${load.weight} kg`} /> : null}
+            <Detail label="Truck Type" value={load.truckTypePreference} />
+            {load.budgetEstimate ? <Detail label="Budget Estimate" value={formatCurrency(load.budgetEstimate)} /> : null}
+            <Detail label="Posted" value={formatDate(load.createdAt)} />
+
+            {isMyLoad && load.status === 'expired' && (
+              <>
+                <Text style={styles.expiredNote}>No booking was made before this load expired.</Text>
+                <Button title="Relist Load" icon="refresh" onPress={handleRelist} loading={busy} />
+              </>
+            )}
+
+            {isMyLoad && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status) && (
+              <Button title="Cancel Load" icon="close" variant="destructive" onPress={handleCancelLoad} loading={busy} />
+            )}
+          </Card>
+        </View>
+
+        {hasSide && (
+          <View style={twoColumns ? styles.sideColumn : null}>
+            {isShipper && isMyLoad && (
+              <View>
+                <Text style={[styles.sectionTitle, twoColumns && styles.sectionTitleSide]}>Quotes ({quotes.length})</Text>
+                {quotes.length === 0 && (
+                  <EmptyState icon="quote" title="No quotes yet" message="Owners will submit offers here as they come in." />
+                )}
+                {quotes.map((q) => (
+                  <QuoteCard
+                    key={q._id}
+                    quote={q}
+                    viewerSide="shipper"
+                    busy={busy}
+                    onAccept={handleAccept}
+                    onReject={handleReject}
+                    onCounter={handleCounter}
+                  />
+                ))}
+              </View>
+            )}
+
+            {isOwner && (
+              <OwnerQuoteSection
+                load={load}
+                myQuote={myQuote}
+                kycStatus={user?.kycStatus}
+                busy={busy}
+                onSubmitted={fetchAll}
+                onAccept={handleAccept}
+                onReject={handleReject}
+                onCounter={handleCounter}
+              />
+            )}
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 };
@@ -381,7 +395,9 @@ const OwnerQuoteSection = ({ load, myQuote, kycStatus, busy, onSubmitted, onAcce
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
+  columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xl },
+  mainColumn: { flex: 3, minWidth: 0 },
+  sideColumn: { flex: 2, minWidth: 0 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { ...type.h2, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
   desc: { ...type.body, color: colors.textMuted, marginTop: spacing.sm },
@@ -398,6 +414,8 @@ const styles = StyleSheet.create({
   detailLabel: { ...type.small, color: colors.textMuted },
   detailValue: { ...type.smallMedium, color: colors.textPrimary },
   sectionTitle: { ...type.h3, color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.sm },
+  // In the side column the title sits level with the top of the load card.
+  sectionTitleSide: { marginTop: spacing.sm },
   ownerName: { ...type.bodyMedium, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
   price: { ...type.h2, color: colors.primaryText, marginVertical: spacing.xs },
   counterNote: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },

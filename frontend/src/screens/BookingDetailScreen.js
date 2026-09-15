@@ -11,6 +11,7 @@ import DeliveryProofSection from '../components/bookings/DeliveryProofSection';
 import DeliverySignatureSection from '../components/bookings/DeliverySignatureSection';
 import LocationSharingToggle from '../components/bookings/LocationSharingToggle';
 import TrackingMap from '../components/map/TrackingMap';
+import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
@@ -41,6 +42,9 @@ const BookingDetailScreen = ({ route }) => {
   const [driverPhone, setDriverPhone] = useState('');
   const [rating, setRating] = useState('5');
   const [review, setReview] = useState('');
+  // One readable column below desktop; the booking and its actions side by side above.
+  const layout = useScreenLayout('narrow', 'wide');
+  const twoColumns = layout.isDesktop;
 
   const isOwner = user?.role === ROLES.OWNER && String(booking?.ownerId?._id || booking?.ownerId) === user?._id;
   const isDriver = user?.role === ROLES.DRIVER && String(booking?.driverId?._id || booking?.driverId) === user?._id;
@@ -140,92 +144,98 @@ const BookingDetailScreen = ({ route }) => {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={layout.contentStyle}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
-      <Card>
-        <View style={styles.row}>
-          <Text style={styles.title}>{booking.loadId?.goodsType || 'Load'}</Text>
-          <StatusBadge status={booking.status} />
+      <View style={twoColumns ? styles.columns : null}>
+        <View style={twoColumns ? styles.mainColumn : null}>
+          <Card>
+            <View style={styles.row}>
+              <Text style={styles.title}>{booking.loadId?.goodsType || 'Load'}</Text>
+              <StatusBadge status={booking.status} />
+            </View>
+            <Detail label="Pickup" value={booking.loadId?.pickupLocation?.address} />
+            <Detail label="Dropoff" value={booking.loadId?.dropoffLocation?.address} />
+            <Detail label="Amount" value={formatCurrency(booking.totalAmount)} />
+            <Detail label="Shipper" value={`${booking.shipperId?.firstName || ''} ${booking.shipperId?.lastName || ''}`} />
+            <Detail label="Owner" value={booking.ownerId?.companyName || `${booking.ownerId?.firstName || ''} ${booking.ownerId?.lastName || ''}`} />
+            <Detail label="Driver" value={booking.driverId ? `${booking.driverId.firstName} ${booking.driverId.lastName}` : 'Not assigned'} />
+            <Detail label="Pickup Status" value={formatStatus(booking.pickupStatus)} />
+            <Detail label="Dropoff Status" value={formatStatus(booking.dropoffStatus)} />
+            <Detail label="Booked" value={formatDate(booking.createdAt)} />
+
+            <TrackingMap
+              pickup={booking.loadId?.pickupLocation?.coordinates?.lat != null ? booking.loadId.pickupLocation.coordinates : null}
+              dropoff={booking.loadId?.dropoffLocation?.coordinates?.lat != null ? booking.loadId.dropoffLocation.coordinates : null}
+              driverLocation={booking.currentLocation?.lat != null ? booking.currentLocation : null}
+            />
+          </Card>
         </View>
-        <Detail label="Pickup" value={booking.loadId?.pickupLocation?.address} />
-        <Detail label="Dropoff" value={booking.loadId?.dropoffLocation?.address} />
-        <Detail label="Amount" value={formatCurrency(booking.totalAmount)} />
-        <Detail label="Shipper" value={`${booking.shipperId?.firstName || ''} ${booking.shipperId?.lastName || ''}`} />
-        <Detail label="Owner" value={booking.ownerId?.companyName || `${booking.ownerId?.firstName || ''} ${booking.ownerId?.lastName || ''}`} />
-        <Detail label="Driver" value={booking.driverId ? `${booking.driverId.firstName} ${booking.driverId.lastName}` : 'Not assigned'} />
-        <Detail label="Pickup Status" value={formatStatus(booking.pickupStatus)} />
-        <Detail label="Dropoff Status" value={formatStatus(booking.dropoffStatus)} />
-        <Detail label="Booked" value={formatDate(booking.createdAt)} />
 
-        <TrackingMap
-          pickup={booking.loadId?.pickupLocation?.coordinates?.lat != null ? booking.loadId.pickupLocation.coordinates : null}
-          dropoff={booking.loadId?.dropoffLocation?.coordinates?.lat != null ? booking.loadId.dropoffLocation.coordinates : null}
-          driverLocation={booking.currentLocation?.lat != null ? booking.currentLocation : null}
-        />
-      </Card>
-
-      {isDriver && booking.status === 'in_transit' && (
-        <LocationSharingToggle bookingId={bookingId} />
-      )}
-
-      {isOwner && !booking.driverId && booking.status !== 'cancelled' && (
-        <Card>
-          <SectionTitle icon="driver" title="Assign a Driver" />
-          <Input
-            value={driverPhone}
-            onChangeText={setDriverPhone}
-            placeholder="+9779841234567"
-            keyboardType="phone-pad"
-            icon="phone"
-          />
-          <Button title="Find & Assign" icon="search" onPress={handleAssignDriver} loading={busy} />
-        </Card>
-      )}
-
-      {isDriver && booking.status !== 'completed' && booking.status !== 'cancelled' && (
-        <Card>
-          <SectionTitle icon="truckDelivery" title="Update Job Status" />
-          {booking.pickupStatus !== 'picked_up' && (
-            <View style={styles.actionsRow}>
-              <Button title="Arrived at Pickup" icon="pickup" variant="tertiary" onPress={() => handlePickupStatus('arrived')} loading={busy} style={styles.actionButton} />
-              <Button title="Picked Up" icon="checkmark" onPress={() => handlePickupStatus('picked_up')} loading={busy} style={styles.actionButton} />
-            </View>
+        <View style={twoColumns ? styles.sideColumn : null}>
+          {isDriver && booking.status === 'in_transit' && (
+            <LocationSharingToggle bookingId={bookingId} />
           )}
-          {booking.pickupStatus === 'picked_up' && booking.dropoffStatus !== 'delivered' && (
-            <View style={styles.actionsRow}>
-              <Button title="Arrived at Dropoff" icon="dropoff" variant="tertiary" onPress={() => handleDropoffStatus('arrived')} loading={busy} style={styles.actionButton} />
-              <Button title="Delivered" icon="checkmark" onPress={() => handleDropoffStatus('delivered')} loading={busy} style={styles.actionButton} />
-            </View>
-          )}
-        </Card>
-      )}
 
-      <DeliveryProofSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
-      <DeliverySignatureSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
-
-      {isShipper && ['pending', 'confirmed'].includes(booking.status) && (
-        <Button title="Cancel Booking" icon="close" variant="destructive" onPress={handleCancel} loading={busy} style={styles.cancelButton} />
-      )}
-
-      {booking.status === 'completed' && !alreadyRated && (
-        <Card>
-          <SectionTitle icon="star" title={`Rate ${isShipper ? 'the Owner' : 'the Shipper'}`} />
-          <View style={styles.chipRow}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <Button
-                key={n}
-                title={String(n)}
-                variant={rating === String(n) ? 'primary' : 'tertiary'}
-                onPress={() => setRating(String(n))}
-                style={styles.ratingChip}
+          {isOwner && !booking.driverId && booking.status !== 'cancelled' && (
+            <Card>
+              <SectionTitle icon="driver" title="Assign a Driver" />
+              <Input
+                value={driverPhone}
+                onChangeText={setDriverPhone}
+                placeholder="+9779841234567"
+                keyboardType="phone-pad"
+                icon="phone"
               />
-            ))}
-          </View>
-          <Input value={review} onChangeText={setReview} placeholder="Optional review" icon="document" />
-          <Button title="Submit Rating" icon="send" onPress={handleRate} loading={busy} />
-        </Card>
-      )}
+              <Button title="Find & Assign" icon="search" onPress={handleAssignDriver} loading={busy} />
+            </Card>
+          )}
+
+          {isDriver && booking.status !== 'completed' && booking.status !== 'cancelled' && (
+            <Card>
+              <SectionTitle icon="truckDelivery" title="Update Job Status" />
+              {booking.pickupStatus !== 'picked_up' && (
+                <View style={styles.actionsRow}>
+                  <Button title="Arrived at Pickup" icon="pickup" variant="tertiary" onPress={() => handlePickupStatus('arrived')} loading={busy} style={styles.actionButton} />
+                  <Button title="Picked Up" icon="checkmark" onPress={() => handlePickupStatus('picked_up')} loading={busy} style={styles.actionButton} />
+                </View>
+              )}
+              {booking.pickupStatus === 'picked_up' && booking.dropoffStatus !== 'delivered' && (
+                <View style={styles.actionsRow}>
+                  <Button title="Arrived at Dropoff" icon="dropoff" variant="tertiary" onPress={() => handleDropoffStatus('arrived')} loading={busy} style={styles.actionButton} />
+                  <Button title="Delivered" icon="checkmark" onPress={() => handleDropoffStatus('delivered')} loading={busy} style={styles.actionButton} />
+                </View>
+              )}
+            </Card>
+          )}
+
+          <DeliveryProofSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
+          <DeliverySignatureSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
+
+          {isShipper && ['pending', 'confirmed'].includes(booking.status) && (
+            <Button title="Cancel Booking" icon="close" variant="destructive" onPress={handleCancel} loading={busy} style={styles.cancelButton} />
+          )}
+
+          {booking.status === 'completed' && !alreadyRated && (
+            <Card>
+              <SectionTitle icon="star" title={`Rate ${isShipper ? 'the Owner' : 'the Shipper'}`} />
+              <View style={styles.chipRow}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Button
+                    key={n}
+                    title={String(n)}
+                    variant={rating === String(n) ? 'primary' : 'tertiary'}
+                    onPress={() => setRating(String(n))}
+                    style={styles.ratingChip}
+                  />
+                ))}
+              </View>
+              <Input value={review} onChangeText={setReview} placeholder="Optional review" icon="document" />
+              <Button title="Submit Rating" icon="send" onPress={handleRate} loading={busy} />
+            </Card>
+          )}
+        </View>
+      </View>
     </ScrollView>
   );
 };
@@ -249,7 +259,9 @@ const Detail = ({ label, value }) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
+  columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xl },
+  mainColumn: { flex: 3, minWidth: 0 },
+  sideColumn: { flex: 2, minWidth: 0 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { ...type.h2, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
   detailRow: {

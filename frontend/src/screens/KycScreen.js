@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import Card from '../components/common/Card';
@@ -8,12 +8,13 @@ import Spinner from '../components/common/Spinner';
 import DocumentTile from '../components/kyc/DocumentTile';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
-import { KYC_DOCUMENT_LABELS, MAX_DOCUMENT_BYTES } from '../utils/constants';
+import { KYC_DOCUMENT_LABELS, KYC_ID_TYPE_OPTIONS, KYC_ID_TYPE_LABELS, MAX_DOCUMENT_BYTES } from '../utils/constants';
 import { formatDate, getErrorMessage } from '../utils/helpers';
 import { notify, confirmAction } from '../utils/alert';
 import api from '../services/api';
 import { pickDocument, uploadFiles } from '../services/uploads';
 import { setUser } from '../redux/slices/authSlice';
+import useScreenLayout from '../hooks/useScreenLayout';
 
 const STATUS_COPY = {
   not_submitted: {
@@ -49,7 +50,9 @@ const KycScreen = () => {
   const [kyc, setKyc] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busyType, setBusyType] = useState(null);
+  const [busyIdType, setBusyIdType] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const layout = useScreenLayout('narrow');
 
   const load = useCallback(async () => {
     try {
@@ -112,6 +115,38 @@ const KycScreen = () => {
     },
   });
 
+  // Switching the identity document drops uploads the new choice doesn't use,
+  // so the user confirms first whenever that would remove something.
+  const handleIdTypeChange = (idType) => {
+    if (idType === kyc.idType || busyIdType) return;
+
+    const keeps = kyc.idTypeDocuments?.[idType] || [];
+    const removed = kyc.documents.filter((doc) => !keeps.includes(doc.type));
+
+    const change = async () => {
+      setBusyIdType(idType);
+      try {
+        const { data } = await api.patch('/users/me/kyc/id-type', { idType });
+        setKyc(data.kyc);
+      } catch (error) {
+        notify('Could not change document', getErrorMessage(error));
+      }
+      setBusyIdType(null);
+    };
+
+    if (!removed.length) {
+      change();
+      return;
+    }
+    confirmAction({
+      title: 'Change identity document',
+      message: `Switching to ${KYC_ID_TYPE_LABELS[idType] || idType} removes your uploaded ${removed.map((doc) => labelFor(doc.type).toLowerCase()).join(' and ')}.`,
+      confirmLabel: 'Switch',
+      destructive: true,
+      onConfirm: change,
+    });
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     let submitted = false;
@@ -131,11 +166,14 @@ const KycScreen = () => {
   const documentsByType = Object.fromEntries(kyc.documents.map((doc) => [doc.type, doc]));
   const types = [...kyc.requiredDocuments, ...kyc.optionalDocuments];
   const ready = kyc.missingDocuments.length === 0;
+  // Only offer choices the server knows about.
+  const idTypeOptions = KYC_ID_TYPE_OPTIONS.filter((option) => !kyc.idTypeDocuments || kyc.idTypeDocuments[option.value]);
+  const idTypeLabel = KYC_ID_TYPE_LABELS[kyc.idType] || kyc.idType;
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={layout.contentStyle}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <Card style={[styles.banner, { borderLeftColor: copy.color }]}>
@@ -149,6 +187,44 @@ const KycScreen = () => {
           <Text style={styles.meta}>Submitted {formatDate(kyc.submittedAt)}</Text>
         ) : null}
       </Card>
+
+      {kyc.idType ? (
+        <Card>
+          <Text style={styles.sectionTitle}>Identity document</Text>
+          {kyc.canEdit ? (
+            <>
+              <Text style={styles.sectionHint}>Choose the document you want to verify with.</Text>
+              <View style={styles.idTypeGrid} accessibilityRole="radiogroup">
+                {idTypeOptions.map((option) => {
+                  const selected = option.value === kyc.idType;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => handleIdTypeChange(option.value)}
+                      disabled={Boolean(busyIdType)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected, checked: selected, disabled: Boolean(busyIdType) }}
+                      aria-checked={selected}
+                      accessibilityLabel={option.label}
+                      style={[styles.idTypeOption, selected && styles.idTypeOptionSelected]}
+                    >
+                      <Icon name={option.icon} size={iconSize.md} color={selected ? colors.primaryText : colors.textMuted} />
+                      <Text style={[styles.idTypeLabel, selected && styles.idTypeLabelSelected]}>{option.label}</Text>
+                      {busyIdType === option.value ? (
+                        <ActivityIndicator size="small" color={colors.primaryText} />
+                      ) : selected ? (
+                        <Icon name="success" size={iconSize.sm} color={colors.primaryText} />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : (
+            <Text style={styles.sectionHint}>Verifying with: {idTypeLabel}</Text>
+          )}
+        </Card>
+      ) : null}
 
       {types.map((type) => {
         const doc = documentsByType[type];
@@ -206,7 +282,6 @@ const KycScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
   banner: { borderLeftWidth: 4 },
   bannerHeader: { flexDirection: 'row', alignItems: 'center' },
   bannerIcon: { marginRight: spacing.sm },
@@ -214,6 +289,28 @@ const styles = StyleSheet.create({
   bannerBody: { ...type.body, color: colors.textSecondary, marginTop: spacing.xs },
   reason: { ...type.smallMedium, color: colors.errorText, marginTop: spacing.sm },
   meta: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
+  sectionTitle: { ...type.bodyMedium, color: colors.textPrimary },
+  sectionHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
+  idTypeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+  // Two per row on most phones; each option wraps to its own row when the
+  // screen is too narrow for two labels side by side.
+  idTypeOption: {
+    flexGrow: 1,
+    flexBasis: 140,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+  idTypeOptionSelected: { borderColor: colors.primaryText, backgroundColor: colors.primaryMuted },
+  idTypeLabel: { ...type.smallMedium, color: colors.textPrimary, flex: 1 },
+  idTypeLabelSelected: { color: colors.primaryText },
   docHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   docHeaderLeft: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   docIcon: { marginRight: spacing.xs },

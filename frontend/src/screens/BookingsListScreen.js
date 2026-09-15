@@ -5,6 +5,7 @@ import Card from '../components/common/Card';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
 import EmptyState from '../components/common/EmptyState';
+import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
 import { colors, spacing, type, iconSize } from '../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
@@ -15,6 +16,8 @@ const BookingsListScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { items: bookings, isLoading, error } = useSelector((state) => state.bookings);
   const [refreshing, setRefreshing] = useState(false);
+  const layout = useScreenLayout('wide');
+  const columns = layout.isPhone ? 1 : layout.isDesktop ? 3 : 2;
 
   const load = useCallback(async () => {
     dispatch(fetchBookingsStart());
@@ -46,8 +49,12 @@ const BookingsListScreen = ({ navigation }) => {
 
   return (
     <FlatList
+      // A mounted list can't change its column count, so a new count remounts it.
+      key={`columns-${columns}`}
+      numColumns={columns}
+      columnWrapperStyle={columns > 1 ? styles.columnRow : undefined}
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, layout.contentStyle]}
       data={bookings}
       keyExtractor={(item) => item._id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
@@ -55,23 +62,30 @@ const BookingsListScreen = ({ navigation }) => {
         <EmptyState icon="truckDelivery" title="No bookings yet" message="Bookings appear here once a quote is accepted." />
       }
       renderItem={({ item }) => (
-        <Card style={styles.card} onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })} accessibilityLabel={`${item.loadId?.goodsType || 'Load'} booking`}>
-          <View style={styles.row}>
-            <Text style={styles.goodsType} numberOfLines={1}>{item.loadId?.goodsType || 'Load'}</Text>
-            <StatusBadge status={item.status} />
-          </View>
-          <View style={styles.routeRow}>
-            <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
-            <Text style={styles.route} numberOfLines={1}>{item.loadId?.pickupLocation?.address}</Text>
-            <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
-            <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
-            <Text style={styles.route} numberOfLines={1}>{item.loadId?.dropoffLocation?.address}</Text>
-          </View>
-          <View style={styles.rowBottom}>
-            <Text style={styles.amount}>{formatCurrency(item.totalAmount)}</Text>
-            <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-          </View>
-        </Card>
+        <View style={columns > 1 ? [styles.cell, { width: `${100 / columns}%` }] : null}>
+          <Card
+            style={[styles.card, columns > 1 && styles.cardInGrid]}
+            containerStyle={columns > 1 ? styles.fill : undefined}
+            onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}
+            accessibilityLabel={`${item.loadId?.goodsType || 'Load'} booking`}
+          >
+            <View style={styles.row}>
+              <Text style={styles.goodsType} numberOfLines={1}>{item.loadId?.goodsType || 'Load'}</Text>
+              <StatusBadge status={item.status} />
+            </View>
+            <View style={styles.routeRow}>
+              <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
+              <Text style={styles.route} numberOfLines={1}>{item.loadId?.pickupLocation?.address}</Text>
+              <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
+              <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
+              <Text style={styles.route} numberOfLines={1}>{item.loadId?.dropoffLocation?.address}</Text>
+            </View>
+            <View style={styles.rowBottom}>
+              <Text style={styles.amount}>{formatCurrency(item.totalAmount)}</Text>
+              <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+            </View>
+          </Card>
+        </View>
       )}
     />
   );
@@ -79,8 +93,13 @@ const BookingsListScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, flexGrow: 1 },
+  content: { flexGrow: 1 },
   card: { marginVertical: spacing.xs },
+  // Grid layout: each cell carries half the gutter on both sides.
+  columnRow: { marginHorizontal: -spacing.sm },
+  cell: { paddingHorizontal: spacing.sm },
+  cardInGrid: { flex: 1, marginVertical: spacing.sm },
+  fill: { flex: 1 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },
   rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },

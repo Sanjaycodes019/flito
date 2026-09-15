@@ -24,6 +24,14 @@ const { notify, confirmAction } = require('../src/utils/alert');
 const DRIVER_KYC = {
   status: 'not_submitted',
   canEdit: true,
+  idType: 'citizenship',
+  // What each identity choice keeps for a driver (their license stays in all).
+  idTypeDocuments: {
+    citizenship: ['citizenship_front', 'citizenship_back', 'driving_license'],
+    nid: ['nid_front', 'nid_back', 'driving_license'],
+    driving_license: ['driving_license'],
+    passport: ['passport', 'driving_license'],
+  },
   requiredDocuments: ['citizenship_front', 'citizenship_back', 'driving_license'],
   optionalDocuments: [],
   missingDocuments: ['citizenship_front', 'citizenship_back', 'driving_license'],
@@ -83,6 +91,53 @@ describe('KYC status banner', () => {
     expect(queryByText('Upload')).toBeNull();
     expect(queryByText('Replace')).toBeNull();
     expect(queryByText('Submit for Review')).toBeNull();
+  });
+});
+
+describe('choosing the identity document', () => {
+  it('offers citizenship, NID, driving license and passport', async () => {
+    const { findByText, getByText } = renderKyc(DRIVER_KYC);
+
+    expect(await findByText('Identity document')).toBeTruthy();
+    for (const label of ['Citizenship', 'National ID (NID)', 'Driving License', 'Passport']) {
+      expect(getByText(label)).toBeTruthy();
+    }
+  });
+
+  it('switches straight away when nothing uploaded would be removed', async () => {
+    api.patch.mockResolvedValue({
+      data: { kyc: { ...DRIVER_KYC, idType: 'passport', requiredDocuments: ['passport', 'driving_license'] } },
+    });
+    const { findByText } = renderKyc(DRIVER_KYC);
+
+    fireEvent.press(await findByText('Passport'));
+
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/users/me/kyc/id-type', { idType: 'passport' }));
+    expect(confirmAction).not.toHaveBeenCalled();
+    expect(await findByText('Passport (photo page)')).toBeTruthy();
+  });
+
+  it('asks first when the switch would remove an uploaded document', async () => {
+    api.patch.mockResolvedValue({ data: { kyc: { ...DRIVER_KYC, idType: 'nid' } } });
+    const { findByText } = renderKyc({
+      ...DRIVER_KYC,
+      documents: [{ _id: 'd1', type: 'citizenship_front', url: 'https://x/1.png', format: 'png' }],
+    });
+
+    fireEvent.press(await findByText('National ID (NID)'));
+
+    expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({
+      destructive: true,
+      message: expect.stringContaining('citizenship card (front)'),
+    }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/users/me/kyc/id-type', { idType: 'nid' }));
+  });
+
+  it('shows the chosen document without options once submitted', async () => {
+    const { findByText, queryByText } = renderKyc({ ...DRIVER_KYC, status: 'pending', canEdit: false, idType: 'passport' });
+
+    expect(await findByText('Verifying with: Passport')).toBeTruthy();
+    expect(queryByText('National ID (NID)')).toBeNull();
   });
 });
 

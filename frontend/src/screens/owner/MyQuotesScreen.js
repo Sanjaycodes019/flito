@@ -9,6 +9,7 @@ import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
 import api from '../../services/api';
+import useScreenLayout from '../../hooks/useScreenLayout';
 
 // Once a load leaves "open" it disappears from the browse list, so this is the
 // owner's only route back to a negotiation they're part of, including ones
@@ -17,6 +18,7 @@ const MyQuotesScreen = ({ navigation }) => {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const layout = useScreenLayout('narrow');
 
   const load = useCallback(async () => {
     try {
@@ -47,7 +49,7 @@ const MyQuotesScreen = ({ navigation }) => {
   return (
     <FlatList
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, layout.contentStyle]}
       data={quotes}
       keyExtractor={(item) => item._id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
@@ -96,7 +98,7 @@ const MyQuotesScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, flexGrow: 1 },
+  content: { flexGrow: 1 },
   card: { marginVertical: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },

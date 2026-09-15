@@ -45,4 +45,13 @@ const signatureUpload = multer({
 // One image in the multipart field "signature".
 const signature = () => signatureUpload.single('signature');
 
-module.exports = { photos, document, signature, MAX_IMAGE_BYTES, MAX_DOCUMENT_BYTES, MAX_SIGNATURE_BYTES };
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_IMAGE_BYTES, files: 1 },
+  fileFilter: onlyTypes(IMAGE_TYPES, 'Only JPEG, PNG, WebP or HEIC images are allowed'),
+});
+
+// One image in the multipart field "avatar" (a profile photo).
+const avatar = () => avatarUpload.single('avatar');
+
+module.exports = { photos, document, signature, avatar, MAX_IMAGE_BYTES, MAX_DOCUMENT_BYTES, MAX_SIGNATURE_BYTES };

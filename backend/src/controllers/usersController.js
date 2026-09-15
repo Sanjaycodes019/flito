@@ -5,14 +5,23 @@ const { publicUser } = require('../services/userView');
 const { kycView } = require('../services/kycView');
 const { issueVerificationCode } = require('../services/verification');
 const {
+  KYC_ID_TYPES,
+  DEFAULT_KYC_ID_TYPE,
   EDITABLE_KYC_STATUSES,
   NAME_LOCKED_KYC_STATUSES,
+  idTypeOf,
   allowedDocumentsFor,
   requiredDocumentsFor,
   missingDocuments,
 } = require('../services/kycPolicy');
 
 const statusPhrase = (status) => (status === 'pending' ? 'under review' : status);
+
+// Matches the identity document choice a user was loaded with, including
+// accounts saved before the choice existed (no field stored, so citizenship).
+const idTypeFilter = (user) => (
+  idTypeOf(user) === DEFAULT_KYC_ID_TYPE ? { $in: [DEFAULT_KYC_ID_TYPE, null] } : idTypeOf(user)
+);
 
 // Owners look up a driver by exact phone match before assigning them to a
 // booking. Restricted to role=driver results and a minimal public shape.
@@ -127,6 +136,55 @@ exports.unregisterPushToken = async (req, res, next) => {
   }
 };
 
+// ── Profile photo ─────────────────────────────────────────────────────────
+
+// Runs before the upload is parsed, so no file bytes are accepted when there
+// is nowhere to store them.
+exports.requireStorage = (req, res, next) => {
+  if (!storage.isConfigured()) {
+    return res.status(503).json({ success: false, message: 'File uploads are not configured on this server' });
+  }
+  next();
+};
+
+// With the fields publicUser needs to report hasPassword / hasGoogle.
+const loadOwnUser = (userId) => User.findById(userId).select('+password +googleId');
+
+exports.uploadAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Attach an image for your profile photo' });
+    }
+
+    const uploaded = await storage.uploadAvatar(req.file, { folder: `flito/avatars/${req.user.userId}` });
+    // Returns the record as it was, so the photo being replaced can be deleted.
+    const before = await User.findByIdAndUpdate(req.user.userId, { avatar: uploaded }, { new: false });
+    if (!before) {
+      await storage.deleteAssets([uploaded.publicId]);
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (before.avatar?.publicId && before.avatar.publicId !== uploaded.publicId) {
+      await storage.deleteAssets([before.avatar.publicId]);
+    }
+
+    res.status(201).json({ success: true, user: publicUser(await loadOwnUser(req.user.userId)) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteAvatar = async (req, res, next) => {
+  try {
+    const before = await User.findByIdAndUpdate(req.user.userId, { $unset: { avatar: '' } }, { new: false });
+    if (!before) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (before.avatar?.publicId) await storage.deleteAssets([before.avatar.publicId]);
+    res.json({ success: true, user: publicUser(await loadOwnUser(req.user.userId)) });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ── KYC ───────────────────────────────────────────────────────────────────
 
 exports.getMyKyc = async (req, res, next) => {
@@ -169,10 +227,10 @@ exports.uploadKycDocument = async (req, res, next) => {
     const user = req.kycUser;
     const { type } = req.body;
 
-    if (!allowedDocumentsFor(user.role).includes(type)) {
+    if (!allowedDocumentsFor(user).includes(type)) {
       return res.status(400).json({
         success: false,
-        message: `type must be one of: ${allowedDocumentsFor(user.role).join(', ')}`,
+        message: `type must be one of: ${allowedDocumentsFor(user).join(', ')}`,
       });
     }
     if (!req.file) {
@@ -184,11 +242,12 @@ exports.uploadKycDocument = async (req, res, next) => {
 
     // One document per type, so a re-upload replaces the old one. A single
     // pipeline update swaps it atomically, and only while the status is still
-    // editable. A document can't slip in after the user has submitted.
+    // editable. A document can't slip in after the user has submitted, or
+    // after they switched to an identity document that doesn't use it.
     let updated;
     try {
       updated = await User.findOneAndUpdate(
-        { _id: user._id, kycStatus: { $in: EDITABLE_KYC_STATUSES } },
+        { _id: user._id, kycStatus: { $in: EDITABLE_KYC_STATUSES }, kycIdType: idTypeFilter(user) },
         [{
           $set: {
             kycDocuments: {
@@ -256,6 +315,50 @@ exports.deleteKycDocument = async (req, res, next) => {
   }
 };
 
+// Chooses which identity document the user verifies with. Uploads the new
+// choice doesn't use come off the record and out of storage, so an abandoned
+// citizenship scan isn't kept after switching to a passport.
+exports.setKycIdType = async (req, res, next) => {
+  try {
+    const { idType } = req.body || {};
+    if (!KYC_ID_TYPES.includes(idType)) {
+      return res.status(400).json({ success: false, message: `idType must be one of: ${KYC_ID_TYPES.join(', ')}` });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (!EDITABLE_KYC_STATUSES.includes(user.kycStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: `Your identity document can't be changed while your verification is ${statusPhrase(user.kycStatus)}`,
+      });
+    }
+
+    const allowed = allowedDocumentsFor(user, idType);
+    // Returns the record as it was, so the files to delete are exactly the
+    // documents this update removed.
+    const before = await User.findOneAndUpdate(
+      { _id: user._id, kycStatus: { $in: EDITABLE_KYC_STATUSES } },
+      { $set: { kycIdType: idType }, $pull: { kycDocuments: { type: { $nin: allowed } } } },
+      { new: false },
+    );
+    if (!before) {
+      return res.status(400).json({ success: false, message: 'Your documents were submitted in the meantime and can no longer be changed' });
+    }
+
+    const removed = (before.kycDocuments || []).filter((doc) => !allowed.includes(doc.type));
+    if (removed.length && storage.isConfigured()) {
+      await storage.deleteAssets(removed.map((doc) => doc.publicId), { type: 'authenticated' });
+    }
+
+    const updated = await User.findById(user._id);
+    res.json({ success: true, kyc: kycView(updated), removedDocuments: removed.map((doc) => doc.type) });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.submitKyc = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.userId);
@@ -274,13 +377,15 @@ exports.submitKyc = async (req, res, next) => {
       });
     }
 
-    // Conditional on the documents still being complete and the status
-    // unchanged, in case a document was removed during the request.
+    // Conditional on the documents still being complete and the status and
+    // identity document choice unchanged, in case either changed during the
+    // request.
     const updated = await User.findOneAndUpdate(
       {
         _id: user._id,
         kycStatus: user.kycStatus,
-        'kycDocuments.type': { $all: requiredDocumentsFor(user.role) },
+        kycIdType: idTypeFilter(user),
+        'kycDocuments.type': { $all: requiredDocumentsFor(user) },
       },
       {
         $set: { kycStatus: 'pending', kycSubmittedAt: new Date() },

@@ -88,6 +88,34 @@ const uploadImages = async (files, { folder }) => {
   return uploaded;
 };
 
+// ── Profile photos ───────────────────────────────────────────────────────
+
+// A profile photo only ever shows as a small circle, so on upload it is
+// cropped to a square around the detected face and capped at 512px.
+const AVATAR_UPLOAD_OPTIONS = {
+  resource_type: 'image',
+  allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
+  transformation: [{ width: 512, height: 512, crop: 'fill', gravity: 'face', quality: 'auto' }],
+};
+
+const uploadAvatar = async (file, { folder }) => {
+  ensureConfigured();
+  const result = await streamUpload(
+    file.buffer,
+    { ...AVATAR_UPLOAD_OPTIONS, folder },
+    'That file could not be read as an image',
+  );
+  // Served with f_auto: Cloudinary picks a format each browser can show, so an
+  // iPhone's HEIC photo still displays on the web. Checked against the live
+  // API: a `format` upload option was ignored and returned the original type.
+  const url = cloudinary.url(result.public_id, {
+    secure: true,
+    version: result.version,
+    fetch_format: 'auto',
+  });
+  return { url, publicId: result.public_id };
+};
+
 // ── Private documents (KYC) ──────────────────────────────────────────────
 
 // Identity documents are stored as "authenticated" assets: their plain delivery
@@ -126,6 +154,7 @@ const privateDocumentUrl = (publicId, format, { ttlSeconds = DOCUMENT_LINK_TTL_S
 module.exports = {
   isConfigured,
   uploadImages,
+  uploadAvatar,
   uploadPrivateDocument,
   privateDocumentUrl,
   deleteAssets,

@@ -8,10 +8,11 @@ import EmptyState from '../components/common/EmptyState';
 import DocumentTile from '../components/kyc/DocumentTile';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
-import { KYC_DOCUMENT_LABELS } from '../utils/constants';
+import { KYC_DOCUMENT_LABELS, KYC_ID_TYPE_LABELS } from '../utils/constants';
 import { formatDate, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
 import { notify } from '../utils/alert';
+import useScreenLayout from '../hooks/useScreenLayout';
 
 // Mirrors the server: a rejection must tell the user what to fix.
 const MIN_REASON_LENGTH = 5;
@@ -30,6 +31,7 @@ const AdminDashboardScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState(null);
+  const layout = useScreenLayout('medium');
 
   const load = useCallback(async () => {
     try {
@@ -75,7 +77,7 @@ const AdminDashboardScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={layout.contentStyle}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <View style={styles.statsGrid}>
@@ -100,8 +102,9 @@ const AdminDashboardScreen = () => {
               <Text style={styles.name}>{u.firstName} {u.lastName}</Text>
             </View>
             <Text style={styles.meta}>
-              {u.phone} · {u.role}{u.companyName ? ` · ${u.companyName}` : ''}
+              {[u.email, u.phone, u.role, u.companyName].filter(Boolean).join(' · ')}
             </Text>
+            {u.idType ? <Text style={styles.meta}>Identity document: {KYC_ID_TYPE_LABELS[u.idType] || u.idType}</Text> : null}
             {u.submittedAt ? <Text style={styles.meta}>Submitted {formatDate(u.submittedAt)}</Text> : null}
 
             <View style={styles.documents}>
@@ -156,7 +159,6 @@ const StatTile = ({ label, value, highlight }) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
   statTile: { width: '47%', alignItems: 'center', paddingVertical: spacing.xl },
   statIconWrap: {

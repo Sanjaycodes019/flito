@@ -1,6 +1,9 @@
 const storage = require('./storage');
 const {
+  KYC_ID_TYPES,
   EDITABLE_KYC_STATUSES,
+  idTypeOf,
+  allowedDocumentsFor,
   requiredDocumentsFor,
   optionalDocumentsFor,
   missingDocuments,
@@ -24,8 +27,12 @@ const kycView = (user) => ({
   submittedAt: user.kycSubmittedAt,
   reviewedAt: user.kycReviewedAt,
   canEdit: EDITABLE_KYC_STATUSES.includes(user.kycStatus),
-  requiredDocuments: requiredDocumentsFor(user.role),
-  optionalDocuments: optionalDocumentsFor(user.role),
+  idType: idTypeOf(user),
+  // For each identity document the user could pick, the uploads it keeps.
+  // Lets the app warn before a switch removes documents already uploaded.
+  idTypeDocuments: Object.fromEntries(KYC_ID_TYPES.map((idType) => [idType, allowedDocumentsFor(user, idType)])),
+  requiredDocuments: requiredDocumentsFor(user),
+  optionalDocuments: optionalDocumentsFor(user),
   missingDocuments: missingDocuments(user),
   documents: (user.kycDocuments || []).map(documentView),
 });
@@ -36,10 +43,12 @@ const reviewView = (user) => ({
   firstName: user.firstName,
   lastName: user.lastName,
   phone: user.phone,
+  email: user.email,
   role: user.role,
   companyName: user.companyName,
   submittedAt: user.kycSubmittedAt,
-  requiredDocuments: requiredDocumentsFor(user.role),
+  idType: idTypeOf(user),
+  requiredDocuments: requiredDocumentsFor(user),
   documents: (user.kycDocuments || []).map(documentView),
 });
 

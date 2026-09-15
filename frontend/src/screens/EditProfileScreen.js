@@ -13,6 +13,7 @@ import { notify } from '../utils/alert';
 import api from '../services/api';
 import { authService } from '../services/auth';
 import { setUser } from '../redux/slices/authSlice';
+import useScreenLayout from '../hooks/useScreenLayout';
 
 // Mirrors the server: a verified name must keep matching the KYC documents.
 const NAME_LOCKED_KYC_STATUSES = ['pending', 'approved'];
@@ -22,6 +23,10 @@ const EditProfileScreen = ({ navigation }) => {
   const [account, setAccount] = useState(null);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const layout = useScreenLayout('narrow');
+  // From tablet width up, paired fields (first/last name, street/city) share a row.
+  const pairStyle = layout.isPhone ? null : styles.fieldRow;
+  const halfStyle = layout.isPhone ? undefined : styles.fieldHalf;
 
   // Load the latest profile rather than trusting whatever was cached at login.
   useEffect(() => {
@@ -77,22 +82,26 @@ const EditProfileScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Card>
-        <Input
-          label="First Name"
-          value={form.firstName}
-          onChangeText={update('firstName')}
-          editable={!namesLocked}
-          icon="person"
-        />
-        <Input
-          label="Last Name"
-          value={form.lastName}
-          onChangeText={update('lastName')}
-          editable={!namesLocked}
-          icon="person"
-        />
+    <ScrollView style={styles.container} contentContainerStyle={layout.contentStyle} keyboardShouldPersistTaps="handled">
+      <Card style={!layout.isPhone && styles.cardWide}>
+        <View style={pairStyle}>
+          <Input
+            label="First Name"
+            value={form.firstName}
+            onChangeText={update('firstName')}
+            editable={!namesLocked}
+            icon="person"
+            containerStyle={halfStyle}
+          />
+          <Input
+            label="Last Name"
+            value={form.lastName}
+            onChangeText={update('lastName')}
+            editable={!namesLocked}
+            icon="person"
+            containerStyle={halfStyle}
+          />
+        </View>
         {namesLocked && (
           <View style={styles.lockNote}>
             <Icon name="lock" size={iconSize.xs} color={colors.textMuted} style={styles.lockIcon} />
@@ -148,15 +157,23 @@ const EditProfileScreen = ({ navigation }) => {
           />
         )}
 
-        <Input label="Street" value={form.street} onChangeText={update('street')} placeholder="Optional" icon="location" />
-        <Input label="City" value={form.city} onChangeText={update('city')} placeholder="Optional" icon="location" />
+        <View style={pairStyle}>
+          <Input label="Street" value={form.street} onChangeText={update('street')} placeholder="Optional" icon="location" containerStyle={halfStyle} />
+          <Input label="City" value={form.city} onChangeText={update('city')} placeholder="Optional" icon="location" containerStyle={halfStyle} />
+        </View>
 
         <View style={styles.readOnlyRow}>
           <Icon name={account.role === 'owner' ? 'owner' : account.role === 'driver' ? 'driver' : 'shipper'} size={iconSize.xs} color={colors.textMuted} style={styles.lockIcon} />
           <Text style={styles.readOnly}>{account.role} account</Text>
         </View>
 
-        <Button title="Save Changes" icon="checkmark" onPress={handleSave} loading={saving} />
+        <Button
+          title="Save Changes"
+          icon="checkmark"
+          onPress={handleSave}
+          loading={saving}
+          style={!layout.isPhone && styles.saveWide}
+        />
       </Card>
     </ScrollView>
   );
@@ -164,7 +181,10 @@ const EditProfileScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
+  cardWide: { padding: spacing.xxl },
+  fieldRow: { flexDirection: 'row', gap: spacing.lg },
+  fieldHalf: { flex: 1 },
+  saveWide: { alignSelf: 'flex-end', minWidth: 220 },
   lockNote: { flexDirection: 'row', alignItems: 'flex-start', marginTop: -spacing.sm, marginBottom: spacing.md },
   lockIcon: { marginRight: spacing.xs, marginTop: 2 },
   note: { ...type.small, color: colors.textMuted, flex: 1 },

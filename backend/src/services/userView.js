@@ -6,6 +6,8 @@ const publicUser = (user) => ({
   role: user.role,
   firstName: user.firstName,
   lastName: user.lastName,
+  // Only the display URL; the storage identifier stays on the server.
+  avatarUrl: user.avatar?.url || null,
   email: user.email,
   emailVerified: user.emailVerified,
   // Whether the account can log in with a password (Google-only accounts

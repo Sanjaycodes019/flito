@@ -11,8 +11,9 @@ const isWeb = Platform.OS === 'web';
 const UPLOAD_TIMEOUT_MS = 60000;
 
 // Picks up to `max` images. With `camera`, takes one photo on devices that
-// have a camera app; the web falls back to choosing a file.
-export const pickImages = async ({ max = 1, camera = false } = {}) => {
+// have a camera app; the web falls back to choosing a file. With `square`, a
+// single photo (a profile photo) opens the phone's square crop step first.
+export const pickImages = async ({ max = 1, camera = false, square = false } = {}) => {
   if (max < 1) return [];
   const useCamera = camera && !isWeb;
 
@@ -27,7 +28,11 @@ export const pickImages = async ({ max = 1, camera = false } = {}) => {
     }
   }
 
-  const options = { mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 };
+  const options = {
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    quality: 0.8,
+    ...(square && max === 1 ? { allowsEditing: true, aspect: [1, 1] } : {}),
+  };
   const result = useCamera
     ? await ImagePicker.launchCameraAsync(options)
     : await ImagePicker.launchImageLibraryAsync({

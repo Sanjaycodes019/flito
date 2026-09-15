@@ -175,7 +175,7 @@ cd backend
 npm run create-admin -- admin@example.com SomePassword123 Sita Sharma
 ```
 
-**Identity verification (KYC):** every account uploads both sides of its citizenship card; owners add a PAN certificate (company registration optional) and drivers add a driving license. Documents are stored privately in Cloudinary and shown only through links that expire after 10 minutes. Once submitted they're frozen; an admin approves, or rejects with a reason the user sees, and the user can fix and resubmit. A verified name can't be edited.
+**Identity verification (KYC):** every account picks one identity document and uploads it: citizenship card (front and back), National ID card (front and back), driving license, or passport (photo page). Owners also add a PAN certificate (company registration optional) and drivers add a driving license; a driver who picks the driving license as identity uploads it once for both. Switching the identity document before submitting removes uploads the new choice doesn't use. Documents are stored privately in Cloudinary and shown only through links that expire after 10 minutes. Once submitted they're frozen; an admin approves, or rejects with a reason the user sees, and the user can fix and resubmit. A verified name can't be edited.
 
 **What verification unlocks:** owners must be verified to submit, counter or accept quotes, and drivers must be verified before an owner can assign them to a booking. Shippers, browsing and posting loads need no verification. The rule lives in `backend/src/services/kycPolicy.js`.
 
@@ -221,7 +221,10 @@ Routes marked `public` need no token; every other route requires `Authorization:
 | PATCH | `/api/users/me` | any | Edit own profile (name locks once KYC is submitted) |
 | PATCH | `/api/users/me/push-token` | any | Register this device's Expo push token |
 | DELETE | `/api/users/me/push-token` | any | Unregister on logout |
+| POST | `/api/users/me/avatar` | any | Upload or replace the profile photo (multipart `avatar`, cropped to a square) |
+| DELETE | `/api/users/me/avatar` | any | Remove the profile photo |
 | GET | `/api/users/me/kyc` | shipper/owner/driver | Own verification status and documents |
+| PATCH | `/api/users/me/kyc/id-type` | shipper/owner/driver | Choose the identity document (citizenship, nid, driving_license, passport) |
 | POST | `/api/users/me/kyc/documents` | shipper/owner/driver | Upload or replace a document (multipart `document` + `type`) |
 | DELETE | `/api/users/me/kyc/documents/:docId` | shipper/owner/driver | Remove a document before submitting |
 | POST | `/api/users/me/kyc/submit` | shipper/owner/driver | Send documents for review |

@@ -5,7 +5,7 @@ const usersController = require('../controllers/usersController');
 const authMiddleware = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
 const { validateProfileUpdate, validatePushToken } = require('../middleware/validators');
-const { document } = require('../middleware/upload');
+const { document, avatar } = require('../middleware/upload');
 
 // Admins don't verify their own identity through this flow.
 const VERIFYING_ROLES = ['shipper', 'owner', 'driver'];
@@ -19,7 +19,12 @@ router.patch('/me', validateProfileUpdate, usersController.updateProfile);
 router.patch('/me/push-token', validatePushToken, usersController.registerPushToken);
 router.delete('/me/push-token', usersController.unregisterPushToken);
 
+// Storage is checked before any file bytes are accepted.
+router.post('/me/avatar', usersController.requireStorage, avatar(), usersController.uploadAvatar);
+router.delete('/me/avatar', usersController.deleteAvatar);
+
 router.get('/me/kyc', requireRole(...VERIFYING_ROLES), usersController.getMyKyc);
+router.patch('/me/kyc/id-type', requireRole(...VERIFYING_ROLES), usersController.setKycIdType);
 // Status and storage are checked before any file bytes are accepted.
 router.post(
   '/me/kyc/documents',

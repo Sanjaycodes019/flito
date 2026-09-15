@@ -3,6 +3,7 @@
 jest.mock('../src/services/storage', () => ({
   isConfigured: jest.fn(),
   uploadImages: jest.fn(),
+  uploadAvatar: jest.fn(),
   deleteAssets: jest.fn(),
 }));
 
@@ -50,6 +51,72 @@ const postLoad = async (shipper, extra = {}) => (await as(shipper.token).post('/
   dropoffLocation: { address: 'Pokhara' },
   ...extra,
 }).expect(201)).body.load;
+
+describe('profile photo', () => {
+  const uploadAvatar = (actor, { contentType = 'image/png', buffer = PNG } = {}) =>
+    as(actor.token).post('/api/users/me/avatar').attach('avatar', buffer, { filename: 'me.png', contentType });
+
+  beforeEach(() => {
+    let counter = 0;
+    storage.uploadAvatar.mockImplementation(async (file, { folder }) => {
+      counter += 1;
+      return {
+        url: `https://res.cloudinary.com/demo/image/upload/${folder}/avatar${counter}.jpg`,
+        publicId: `${folder}/avatar${counter}`,
+      };
+    });
+  });
+
+  it('uploads a photo and shows it on the account, without the storage id', async () => {
+    const shipper = await newUser('shipper');
+
+    const res = await uploadAvatar(shipper).expect(201);
+
+    expect(res.body.user.avatarUrl).toContain(`flito/avatars/${shipper.id}/avatar1`);
+    expect(res.body.user.avatar).toBeUndefined();
+    expect(storage.uploadAvatar).toHaveBeenCalledWith(expect.anything(), { folder: `flito/avatars/${shipper.id}` });
+
+    const me = await as(shipper.token).get('/api/auth/me').expect(200);
+    expect(me.body.user.avatarUrl).toBe(res.body.user.avatarUrl);
+  });
+
+  it('replaces an earlier photo and deletes its file', async () => {
+    const owner = await newUser('owner');
+    await uploadAvatar(owner).expect(201);
+
+    const res = await uploadAvatar(owner).expect(201);
+
+    expect(res.body.user.avatarUrl).toContain('avatar2');
+    expect(storage.deleteAssets).toHaveBeenCalledWith([`flito/avatars/${owner.id}/avatar1`]);
+  });
+
+  it('removes the photo and its file', async () => {
+    const driver = await newUser('driver');
+    await uploadAvatar(driver).expect(201);
+
+    const res = await as(driver.token).delete('/api/users/me/avatar').expect(200);
+
+    expect(res.body.user.avatarUrl).toBeNull();
+    expect(storage.deleteAssets).toHaveBeenCalledWith([`flito/avatars/${driver.id}/avatar1`]);
+  });
+
+  it('refuses a file that is not an image, before storing anything', async () => {
+    const shipper = await newUser('shipper');
+
+    const res = await uploadAvatar(shipper, { contentType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') });
+
+    expect(res.status).toBe(400);
+    expect(storage.uploadAvatar).not.toHaveBeenCalled();
+  });
+
+  it('answers 503 when storage is not configured', async () => {
+    storage.isConfigured.mockReturnValue(false);
+    const shipper = await newUser('shipper');
+
+    expect((await uploadAvatar(shipper)).status).toBe(503);
+    expect(storage.uploadAvatar).not.toHaveBeenCalled();
+  });
+});
 
 describe('load photos', () => {
   const uploadTo = (actor, load, count, options) =>

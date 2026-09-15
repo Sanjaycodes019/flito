@@ -11,6 +11,7 @@ import { authService } from '../services/auth';
 import { getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
 import { setUser } from '../redux/slices/authSlice';
+import useScreenLayout from '../hooks/useScreenLayout';
 
 const VerifyEmailScreen = ({ navigation }) => {
   const { user } = useSelector((state) => state.auth);
@@ -19,6 +20,8 @@ const VerifyEmailScreen = ({ navigation }) => {
   const [sentAt, setSentAt] = useState(() => Date.now());
   const [resending, setResending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // A short code form: kept to a compact centered column on every screen.
+  const layout = useScreenLayout(520);
 
   const handleResend = async () => {
     setResending(true);
@@ -46,7 +49,7 @@ const VerifyEmailScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={layout.contentStyle}>
       <View style={styles.header}>
         <View style={styles.iconWrap}>
           <Icon name="unverified" size={iconSize.xl} color={colors.warningText} />
@@ -71,7 +74,6 @@ const VerifyEmailScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
   header: { alignItems: 'center', marginVertical: spacing.xxl },
   iconWrap: {
     width: 64,

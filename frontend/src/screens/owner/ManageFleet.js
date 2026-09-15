@@ -12,6 +12,7 @@ import { TRUCK_TYPES } from '../../utils/constants';
 import { getErrorMessage, pluralize } from '../../utils/helpers';
 import { notify, confirmAction } from '../../utils/alert';
 import api from '../../services/api';
+import useScreenLayout from '../../hooks/useScreenLayout';
 
 const ManageFleet = () => {
   const [trucks, setTrucks] = useState([]);
@@ -19,6 +20,7 @@ const ManageFleet = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState(null);
+  const layout = useScreenLayout('narrow');
 
   const load = useCallback(async () => {
     try {
@@ -69,7 +71,7 @@ const ManageFleet = () => {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={layout.contentStyle}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <View style={styles.headerRow}>
@@ -255,7 +257,6 @@ const TruckCard = ({ truck, busy, onAssignDriver, onSetStatus, onDelete }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   heading: { ...type.h3, color: colors.textPrimary },
   addButton: { minWidth: 130 },

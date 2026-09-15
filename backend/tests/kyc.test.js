@@ -166,6 +166,84 @@ describe('KYC documents', () => {
   });
 });
 
+describe('KYC identity document choice', () => {
+  const setIdType = (actor, idType) => as(actor.token).patch('/api/users/me/kyc/id-type').send({ idType });
+
+  it('starts on citizenship, front and back', async () => {
+    const shipper = await newUser('shipper');
+    const kyc = await myKyc(shipper);
+
+    expect(kyc.idType).toBe('citizenship');
+    expect(kyc.requiredDocuments).toEqual(['citizenship_front', 'citizenship_back']);
+    expect(Object.keys(kyc.idTypeDocuments)).toEqual(['citizenship', 'nid', 'driving_license', 'passport']);
+  });
+
+  it('lets a shipper verify with a passport alone, and shows the choice to the admin', async () => {
+    const shipper = await newUser('shipper');
+    const admin = await newAdmin();
+
+    const res = await setIdType(shipper, 'passport').expect(200);
+    expect(res.body.kyc.requiredDocuments).toEqual(['passport']);
+
+    await uploadDoc(shipper, 'passport').expect(201);
+    await submit(shipper).expect(200);
+
+    const [queued] = (await as(admin.token).get('/api/admin/kyc/pending').expect(200)).body.users;
+    expect(queued.idType).toBe('passport');
+  });
+
+  it('accepts a National ID card, front and back', async () => {
+    const shipper = await newUser('shipper');
+    const res = await setIdType(shipper, 'nid').expect(200);
+    expect(res.body.kyc.requiredDocuments).toEqual(['nid_front', 'nid_back']);
+
+    await uploadAll(shipper, ['nid_front', 'nid_back']);
+    await submit(shipper).expect(200);
+  });
+
+  it("keeps a role's own documents on top of the identity document", async () => {
+    const owner = await newUser('owner');
+    expect((await setIdType(owner, 'passport').expect(200)).body.kyc.requiredDocuments).toEqual(['passport', 'pan']);
+
+    const driver = await newUser('driver');
+    expect((await setIdType(driver, 'nid').expect(200)).body.kyc.requiredDocuments).toEqual(['nid_front', 'nid_back', 'driving_license']);
+  });
+
+  it('asks a driver who verifies with their driving license to upload it only once', async () => {
+    const driver = await newUser('driver');
+    const res = await setIdType(driver, 'driving_license').expect(200);
+    expect(res.body.kyc.requiredDocuments).toEqual(['driving_license']);
+
+    await uploadDoc(driver, 'driving_license').expect(201);
+    await submit(driver).expect(200);
+  });
+
+  it('removes uploads the new choice does not use, files included, and keeps the rest', async () => {
+    const driver = await newUser('driver');
+    await uploadAll(driver, ['citizenship_front', 'driving_license']);
+
+    const res = await setIdType(driver, 'passport').expect(200);
+
+    expect(res.body.removedDocuments).toEqual(['citizenship_front']);
+    expect(res.body.kyc.documents.map((d) => d.type)).toEqual(['driving_license']);
+    expect(storage.deleteAssets).toHaveBeenCalledWith([`flito/kyc/${driver.id}/doc1`], { type: 'authenticated' });
+    expect((await uploadDoc(driver, 'citizenship_back')).status).toBe(400);
+  });
+
+  it('refuses an unknown choice, and any change once submitted', async () => {
+    const shipper = await newUser('shipper');
+    expect((await setIdType(shipper, 'library_card')).status).toBe(400);
+
+    await uploadAll(shipper, ['citizenship_front', 'citizenship_back']);
+    await submit(shipper).expect(200);
+
+    const blocked = await setIdType(shipper, 'passport');
+    expect(blocked.status).toBe(400);
+    expect(blocked.body.message).toMatch(/under review/);
+    expect((await myKyc(shipper)).idType).toBe('citizenship');
+  });
+});
+
 describe('KYC submission and review', () => {
   it('refuses to submit until every required document is uploaded', async () => {
     const driver = await newUser('driver');

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { KYC_DOCUMENT_TYPES } = require('../services/kycPolicy');
+const { KYC_DOCUMENT_TYPES, KYC_ID_TYPES, DEFAULT_KYC_ID_TYPE } = require('../services/kycPolicy');
 
 const userSchema = new mongoose.Schema(
   {
@@ -53,7 +53,13 @@ const userSchema = new mongoose.Schema(
     },
     firstName: String,
     lastName: String,
-    profilePhoto: String,
+    // A square-cropped photo in public storage, set only through the upload
+    // endpoint (never from a URL the client sends). `publicId` is kept so a
+    // replaced or removed photo's file can be deleted.
+    avatar: {
+      url: String,
+      publicId: String,
+    },
     address: {
       street: String,
       city: String,
@@ -75,6 +81,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['not_submitted', 'pending', 'approved', 'rejected'],
       default: 'not_submitted',
+    },
+    // Which identity document the user verifies with (citizenship, NID,
+    // driving license or passport); decides which uploads are required.
+    kycIdType: {
+      type: String,
+      enum: KYC_ID_TYPES,
+      default: DEFAULT_KYC_ID_TYPE,
     },
     // Identity documents live in private storage. Only storage identifiers are
     // kept here, never a URL that could be shared or leaked.

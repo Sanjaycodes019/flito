@@ -8,11 +8,13 @@ import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage, pluralize } from '../../utils/helpers';
 import api from '../../services/api';
 import { notify } from '../../utils/alert';
+import useScreenLayout from '../../hooks/useScreenLayout';
 
 const EarningsScreen = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const layout = useScreenLayout('narrow');
 
   const load = useCallback(async () => {
     try {
@@ -44,7 +46,7 @@ const EarningsScreen = () => {
   return (
     <FlatList
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, layout.contentStyle]}
       data={bookings}
       keyExtractor={(item) => item._id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
@@ -79,7 +81,7 @@ const EarningsScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, flexGrow: 1 },
+  content: { flexGrow: 1 },
   summaryCard: { alignItems: 'center', paddingVertical: spacing.xxl, marginBottom: spacing.sm },
   summaryIconWrap: {
     width: 56,

@@ -7,6 +7,7 @@ import Spinner from '../components/common/Spinner';
 import EmptyState from '../components/common/EmptyState';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
+import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
 import { colors, spacing, type, iconSize } from '../theme/tokens';
 import { ROLES, TRUCK_TYPES } from '../utils/constants';
@@ -23,6 +24,8 @@ const LoadsListScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
   const [truckType, setTruckType] = useState('all');
+  const layout = useScreenLayout('wide');
+  const columns = layout.isPhone ? 1 : layout.isDesktop ? 3 : 2;
 
   const isShipper = user?.role === ROLES.SHIPPER;
 
@@ -79,22 +82,26 @@ const LoadsListScreen = ({ navigation }) => {
 
   return (
     <FlatList
+      // A mounted list can't change its column count, so a new count remounts it.
+      key={`columns-${columns}`}
+      numColumns={columns}
+      columnWrapperStyle={columns > 1 ? styles.columnRow : undefined}
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, layout.contentStyle]}
       data={filteredLoads}
       keyExtractor={(item) => item._id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       ListHeaderComponent={
         loads.length > 0 && (
-          <View style={styles.filters}>
+          <View style={[styles.filters, !layout.isPhone && styles.filtersWide]}>
             <Input
               value={query}
               onChangeText={setQuery}
               placeholder="Search by goods type or location"
               icon="search"
-              containerStyle={styles.searchInput}
+              containerStyle={[styles.searchInput, !layout.isPhone && styles.searchInputWide]}
             />
-            <View style={styles.chipRow}>
+            <View style={[styles.chipRow, !layout.isPhone && styles.chipRowWide]}>
               {TRUCK_TYPE_FILTERS.map((t) => (
                 <Button
                   key={t}
@@ -125,27 +132,34 @@ const LoadsListScreen = ({ navigation }) => {
         />
       }
       renderItem={({ item }) => (
-        <Card style={styles.card} onPress={() => navigation.navigate('LoadDetail', { loadId: item._id })} accessibilityLabel={`${item.goodsType} load`}>
-          <View style={styles.row}>
-            <Text style={styles.goodsType} numberOfLines={1}>{item.goodsType}</Text>
-            <StatusBadge status={item.status} />
-          </View>
-          <View style={styles.routeRow}>
-            <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
-            <Text style={styles.route} numberOfLines={1}>{item.pickupLocation?.address}</Text>
-            <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
-            <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
-            <Text style={styles.route} numberOfLines={1}>{item.dropoffLocation?.address}</Text>
-          </View>
-          <View style={styles.rowBottom}>
-            <View style={styles.metaRow}>
-              <Icon name="quote" size={iconSize.xs} color={colors.textMuted} />
-              <Text style={styles.meta}>{item.totalQuotes || 0} quotes</Text>
+        <View style={columns > 1 ? [styles.cell, { width: `${100 / columns}%` }] : null}>
+          <Card
+            style={[styles.card, columns > 1 && styles.cardInGrid]}
+            containerStyle={columns > 1 ? styles.fill : undefined}
+            onPress={() => navigation.navigate('LoadDetail', { loadId: item._id })}
+            accessibilityLabel={`${item.goodsType} load`}
+          >
+            <View style={styles.row}>
+              <Text style={styles.goodsType} numberOfLines={1}>{item.goodsType}</Text>
+              <StatusBadge status={item.status} />
             </View>
-            {item.budgetEstimate ? <Text style={styles.budget}>{formatCurrency(item.budgetEstimate)}</Text> : null}
-          </View>
-          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-        </Card>
+            <View style={styles.routeRow}>
+              <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
+              <Text style={styles.route} numberOfLines={1}>{item.pickupLocation?.address}</Text>
+              <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
+              <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
+              <Text style={styles.route} numberOfLines={1}>{item.dropoffLocation?.address}</Text>
+            </View>
+            <View style={styles.rowBottom}>
+              <View style={styles.metaRow}>
+                <Icon name="quote" size={iconSize.xs} color={colors.textMuted} />
+                <Text style={styles.meta}>{item.totalQuotes || 0} quotes</Text>
+              </View>
+              {item.budgetEstimate ? <Text style={styles.budget}>{formatCurrency(item.budgetEstimate)}</Text> : null}
+            </View>
+            <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+          </Card>
+        </View>
       )}
     />
   );
@@ -153,12 +167,21 @@ const LoadsListScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, flexGrow: 1 },
+  content: { flexGrow: 1 },
   filters: { marginBottom: spacing.xs },
+  // From tablet width up the search box and truck filters share one row.
+  filtersWide: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.lg, marginBottom: spacing.md },
   searchInput: { marginBottom: spacing.sm },
+  searchInputWide: { flexGrow: 1, flexBasis: 280, maxWidth: 440, marginBottom: 0 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
+  chipRowWide: { marginBottom: 0 },
   chip: { minWidth: 84 },
   card: { marginVertical: spacing.xs },
+  // Grid layout: each cell carries half the gutter on both sides.
+  columnRow: { marginHorizontal: -spacing.sm },
+  cell: { paddingHorizontal: spacing.sm },
+  cardInGrid: { flex: 1, marginVertical: spacing.sm },
+  fill: { flex: 1 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },
   rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
