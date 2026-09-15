@@ -3,7 +3,15 @@ const Load = require('../models/Load');
 const Truck = require('../models/Truck');
 const User = require('../models/User');
 
-const TRUCK_FIELDS = 'registrationNumber truckType capacity makeModel';
+const { PARTY_FIELDS, withVerification } = require('../services/partyView');
+
+const TRUCK_FIELDS = 'registrationNumber truckType capacity makeModel verificationStatus';
+
+// A booking as its parties see it, with who and what is verified.
+const bookingView = (booking) => withVerification(booking, {
+  people: ['shipperId', 'ownerId', 'driverId'],
+  trucks: ['truckId'],
+});
 const { requiresVerification } = require('../services/kycPolicy');
 const { sendPushToUser, sendPushToUsers } = require('../services/push');
 
@@ -25,13 +33,13 @@ exports.listMyBookings = async (req, res, next) => {
 
     const bookings = await Booking.find(filter)
       .populate('loadId')
-      .populate('shipperId', 'firstName lastName')
-      .populate('ownerId', 'firstName lastName companyName')
-      .populate('driverId', 'firstName lastName')
+      .populate('shipperId', PARTY_FIELDS)
+      .populate('ownerId', PARTY_FIELDS)
+      .populate('driverId', PARTY_FIELDS)
       .populate('truckId', TRUCK_FIELDS)
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, bookings });
+    res.json({ success: true, bookings: bookings.map(bookingView) });
   } catch (error) {
     next(error);
   }
@@ -41,9 +49,9 @@ exports.getBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id)
       .populate('loadId')
-      .populate('shipperId', 'firstName lastName')
-      .populate('ownerId', 'firstName lastName companyName')
-      .populate('driverId', 'firstName lastName')
+      .populate('shipperId', PARTY_FIELDS)
+      .populate('ownerId', PARTY_FIELDS)
+      .populate('driverId', PARTY_FIELDS)
       .populate('truckId', TRUCK_FIELDS);
 
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -51,7 +59,7 @@ exports.getBooking = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not part of this booking' });
     }
 
-    res.json({ success: true, booking });
+    res.json({ success: true, booking: bookingView(booking) });
   } catch (error) {
     next(error);
   }

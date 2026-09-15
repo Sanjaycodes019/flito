@@ -17,11 +17,14 @@ const { formatKg } = require('../utils/format');
 // How much each signal counts, out of 100.
 const WEIGHTS = {
   fit: 30, // how well the load fills the truck
-  proximity: 30, // how close the truck is based to the pickup
+  proximity: 25, // how close the truck is based to the pickup
   reputation: 20, // the owner's rating and completed trips
   price: 15, // the asking price against the cheapest asking price
-  readiness: 5, // a verified driver on the truck, and current insurance
+  readiness: 10, // a verified driver on it, current insurance, and an admin-verified truck
 };
+
+// How readiness splits between its parts.
+const READINESS = { driver: 0.4, insurance: 0.3, verifiedTruck: 0.3 };
 
 // Filling this share of a truck counts as a full fit. A much bigger truck than
 // the load needs still works, but costs more to run, so it scores lower.
@@ -101,7 +104,7 @@ const driverIsReady = (driver) => Boolean(driver)
 
 // The score out of 100 and up to three reasons, strongest first.
 const scoreTruck = ({
-  load, capacity, owner, trips, distanceToPickupKm, askingPrice, lowestAsking, pricedCount, driverReady, insured,
+  load, capacity, owner, trips, distanceToPickupKm, askingPrice, lowestAsking, pricedCount, driverReady, insured, verifiedTruck,
 }) => {
   const fill = load.weight ? load.weight / capacity : null;
   const reviews = owner.totalRatings || 0;
@@ -112,7 +115,9 @@ const scoreTruck = ({
     proximity: distanceToPickupKm == null ? 0.5 : clamp01(1 - distanceToPickupKm / PROXIMITY_RANGE_KM),
     reputation: 0.75 * clamp01((smoothedRating - 1) / 4) + 0.25 * clamp01(trips / TRIPS_FOR_FULL_EXPERIENCE),
     price: askingPrice == null || lowestAsking == null ? 0.5 : clamp01(lowestAsking / askingPrice),
-    readiness: (driverReady ? 0.6 : 0) + (insured ? 0.4 : 0),
+    readiness: (driverReady ? READINESS.driver : 0)
+      + (insured ? READINESS.insurance : 0)
+      + (verifiedTruck ? READINESS.verifiedTruck : 0),
   };
 
   const score = Math.round(Object.entries(WEIGHTS).reduce((sum, [key, weight]) => sum + weight * signals[key], 0));
@@ -134,7 +139,7 @@ const scoreTruck = ({
       strength: WEIGHTS.reputation * signals.reputation,
       text: `Rated ${owner.rating.toFixed(1)} by ${reviews} ${reviews === 1 ? 'shipper' : 'shippers'}`,
     },
-    driverReady && { strength: WEIGHTS.readiness * 0.6, text: 'Driver assigned' },
+    driverReady && { strength: WEIGHTS.readiness * READINESS.driver, text: 'Driver assigned' },
   ]
     .filter(Boolean)
     .sort((a, b) => b.strength - a.strength)
@@ -148,6 +153,7 @@ const scoreTruck = ({
 // offers, never its registration, chassis, engine or insurance numbers.
 const publicTruck = (truck, insured) => ({
   _id: truck._id,
+  verified: truck.verificationStatus === 'approved',
   truckType: truck.truckType,
   bodyType: truck.bodyType || null,
   capacity: capacityOf(truck),
@@ -198,8 +204,9 @@ const findMatches = async (load) => {
       const trips = tripsByOwner.get(String(owner._id)) || 0;
       const driverReady = driverIsReady(truck.assignedDriverId);
       const insured = insuranceIsCurrent(truck);
+      const verifiedTruck = truck.verificationStatus === 'approved';
       const { score, reasons } = scoreTruck({
-        load, capacity, owner, trips, distanceToPickupKm, askingPrice, lowestAsking, pricedCount: prices.length, driverReady, insured,
+        load, capacity, owner, trips, distanceToPickupKm, askingPrice, lowestAsking, pricedCount: prices.length, driverReady, insured, verifiedTruck,
       });
 
       return {
@@ -207,6 +214,7 @@ const findMatches = async (load) => {
         owner: {
           _id: owner._id,
           name: displayName(owner),
+          verified: owner.kycStatus === 'approved',
           rating: owner.rating || 0,
           totalRatings: owner.totalRatings || 0,
           completedTrips: trips,

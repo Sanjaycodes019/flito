@@ -11,6 +11,7 @@ import DeliveryProofSection from '../components/bookings/DeliveryProofSection';
 import DeliverySignatureSection from '../components/bookings/DeliverySignatureSection';
 import LocationSharingToggle from '../components/bookings/LocationSharingToggle';
 import TrackingMap from '../components/map/TrackingMap';
+import VerifiedBadge from '../components/common/VerifiedBadge';
 import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
@@ -158,12 +159,29 @@ const BookingDetailScreen = ({ route }) => {
             <Detail label="Pickup" value={booking.loadId?.pickupLocation?.address} />
             <Detail label="Dropoff" value={booking.loadId?.dropoffLocation?.address} />
             <Detail label="Amount" value={formatCurrency(booking.totalAmount)} />
-            <Detail label="Shipper" value={`${booking.shipperId?.firstName || ''} ${booking.shipperId?.lastName || ''}`} />
-            <Detail label="Owner" value={booking.ownerId?.companyName || `${booking.ownerId?.firstName || ''} ${booking.ownerId?.lastName || ''}`} />
+            <Detail
+              label="Shipper"
+              value={`${booking.shipperId?.firstName || ''} ${booking.shipperId?.lastName || ''}`}
+              verified={booking.shipperId?.verified}
+            />
+            <Detail
+              label="Owner"
+              value={booking.ownerId?.companyName || `${booking.ownerId?.firstName || ''} ${booking.ownerId?.lastName || ''}`}
+              verified={booking.ownerId?.verified}
+            />
             {booking.truckId ? (
-              <Detail label="Truck" value={[truckTypeLabel(booking.truckId.truckType), booking.truckId.registrationNumber].filter(Boolean).join(' · ')} />
+              <Detail
+                label="Truck"
+                value={[truckTypeLabel(booking.truckId.truckType), booking.truckId.registrationNumber].filter(Boolean).join(' · ')}
+                verified={booking.truckId.verified}
+                verifiedLabel="Verified truck"
+              />
             ) : null}
-            <Detail label="Driver" value={booking.driverId ? `${booking.driverId.firstName} ${booking.driverId.lastName}` : 'Not assigned'} />
+            <Detail
+              label="Driver"
+              value={booking.driverId ? `${booking.driverId.firstName} ${booking.driverId.lastName}` : 'Not assigned'}
+              verified={booking.driverId?.verified}
+            />
             <Detail label="Pickup Status" value={formatStatus(booking.pickupStatus)} />
             <Detail label="Dropoff Status" value={formatStatus(booking.dropoffStatus)} />
             <Detail label="Booked" value={formatDate(booking.createdAt)} />
@@ -251,13 +269,16 @@ const SectionTitle = ({ icon, title }) => (
   </View>
 );
 
-const Detail = ({ label, value }) => (
+const Detail = ({ label, value, verified = false, verifiedLabel = 'Verified' }) => (
   <View style={styles.detailRow}>
     <View style={styles.detailLabelRow}>
       {!!DETAIL_ICON[label] && <Icon name={DETAIL_ICON[label]} size={iconSize.xs} color={colors.textMuted} style={styles.detailIcon} />}
       <Text style={styles.detailLabel}>{label}</Text>
     </View>
-    <Text style={styles.detailValue}>{value || '-'}</Text>
+    <View style={styles.detailValueRow}>
+      <Text style={styles.detailValue}>{value || '-'}</Text>
+      {verified && <VerifiedBadge size={14} label={verifiedLabel} />}
+    </View>
   </View>
 );
 
@@ -279,7 +300,8 @@ const styles = StyleSheet.create({
   detailLabelRow: { flexDirection: 'row', alignItems: 'center' },
   detailIcon: { marginRight: spacing.xs },
   detailLabel: { ...type.small, color: colors.textMuted },
-  detailValue: { ...type.smallMedium, color: colors.textPrimary, textTransform: 'capitalize' },
+  detailValueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, flexShrink: 1 },
+  detailValue: { ...type.smallMedium, color: colors.textPrimary, textTransform: 'capitalize', flexShrink: 1, textAlign: 'right' },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   sectionIcon: { marginRight: spacing.xs },
   sectionTitle: { ...type.h3, color: colors.textPrimary },

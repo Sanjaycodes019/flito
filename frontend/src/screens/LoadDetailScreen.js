@@ -8,6 +8,7 @@ import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
 import EmptyState from '../components/common/EmptyState';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
+import VerifiedBadge from '../components/common/VerifiedBadge';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
@@ -307,7 +308,10 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, can
   return (
     <Card>
       <View style={styles.row}>
-        <Text style={styles.ownerName} numberOfLines={1}>{heading}</Text>
+        <View style={styles.headingRow}>
+          <Text style={styles.ownerName} numberOfLines={1}>{heading}</Text>
+          {viewerSide === 'shipper' && quote.ownerId?.verified && <VerifiedBadge size={16} label="Verified owner" />}
+        </View>
         <StatusBadge status={quote.status} />
       </View>
       <Text style={styles.quoteKind}>{kind}</Text>
@@ -319,7 +323,7 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, can
         </View>
       )}
 
-      {truckLine ? <Detail label="Truck" value={truckLine} /> : null}
+      {truckLine ? <Detail label="Truck" value={truckLine} verified={truck?.verified} verifiedLabel="Verified truck" /> : null}
 
       <Text style={styles.price}>{formatCurrency(standing.price)}</Text>
       <Text style={styles.counterNote}>
@@ -405,13 +409,16 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, can
   );
 };
 
-const Detail = ({ label, value }) => (
+const Detail = ({ label, value, verified = false, verifiedLabel = 'Verified' }) => (
   <View style={styles.detailRow}>
     <View style={styles.detailLabelRow}>
       {!!DETAIL_ICON[label] && <Icon name={DETAIL_ICON[label]} size={iconSize.xs} color={colors.textMuted} style={styles.detailIcon} />}
       <Text style={styles.detailLabel}>{label}</Text>
     </View>
-    <Text style={styles.detailValue}>{value || '-'}</Text>
+    <View style={styles.detailValueRow}>
+      <Text style={styles.detailValue}>{value || '-'}</Text>
+      {verified && <VerifiedBadge size={14} label={verifiedLabel} />}
+    </View>
   </View>
 );
 
@@ -462,7 +469,10 @@ const TruckChoice = ({ truck, selected, onPress }) => {
     >
       <Icon name="truck" size={iconSize.md} color={unavailable ? colors.disabledText : selected ? colors.primaryText : colors.textMuted} />
       <View style={styles.truckChoiceText}>
-        <Text style={[styles.truckChoiceTitle, unavailable && styles.truckChoiceMuted]}>{label}</Text>
+        <View style={styles.headingRow}>
+          <Text style={[styles.truckChoiceTitle, unavailable && styles.truckChoiceMuted]}>{label}</Text>
+          {truck.verified && <VerifiedBadge size={14} label="Verified truck" />}
+        </View>
         <Text style={styles.truckChoiceHint}>
           {unavailable
             ? truck.unavailableReason
@@ -596,6 +606,7 @@ const styles = StyleSheet.create({
   detailLabelRow: { flexDirection: 'row', alignItems: 'center' },
   detailIcon: { marginRight: spacing.xs },
   detailLabel: { ...type.small, color: colors.textMuted },
+  detailValueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, flexShrink: 1 },
   detailValue: { ...type.smallMedium, color: colors.textPrimary, flexShrink: 1, textAlign: 'right' },
   sectionTitle: { ...type.h3, color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.sm },
   // In the side column the title sits level with the top of the load card.
@@ -616,7 +627,8 @@ const styles = StyleSheet.create({
   findTitle: { ...type.h3, color: colors.textPrimary },
   findHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
 
-  ownerName: { ...type.bodyMedium, color: colors.textPrimary, flex: 1 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1, minWidth: 0 },
+  ownerName: { ...type.bodyMedium, color: colors.textPrimary, flexShrink: 1 },
   quoteKind: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, marginTop: spacing.xs },
   ratingText: { ...type.small, color: colors.textSecondary },

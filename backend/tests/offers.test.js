@@ -386,7 +386,7 @@ describe('fleet details', () => {
 
     expect(matches[0].truck._id).toBe(insured._id);
     expect(matches[0].truck.insurance).toBe('third-party');
-    expect(matches[0].score - matches.find((m) => m.truck._id === uninsured._id).score).toBe(2);
+    expect(matches[0].score - matches.find((m) => m.truck._id === uninsured._id).score).toBe(3);
     expect(matches.filter((m) => m.truck.insurance === null)).toHaveLength(2);
   });
 

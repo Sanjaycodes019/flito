@@ -11,6 +11,9 @@ import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
 import { StatusPill } from '../../components/common/SettingsList';
 import NepalAddressFields, { emptyPlace } from '../../components/address/NepalAddressFields';
+import VerifiedBadge from '../../components/common/VerifiedBadge';
+import PhotoSourceButtons from '../../components/common/PhotoSourceButtons';
+import DocumentTile from '../../components/kyc/DocumentTile';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 import {
@@ -19,7 +22,9 @@ import {
   FUEL_TYPES,
   INSURANCE_TYPES,
   LEGACY_TRUCK_TYPES,
+  MAX_DOCUMENT_BYTES,
   SERVICE_AREAS,
+  TRUCK_DOCUMENT_LABELS,
   TRUCK_FEATURES,
   TRUCK_MAKES,
 } from '../../utils/constants';
@@ -29,6 +34,8 @@ import {
 import { nepalDay } from '../../utils/nepalDate';
 import { notify, confirmAction } from '../../utils/alert';
 import api from '../../services/api';
+import socketService from '../../services/socket';
+import { pickDocument, takePhoto, uploadFiles } from '../../services/uploads';
 import { fetchLocations } from '../../services/locations';
 import useScreenLayout from '../../hooks/useScreenLayout';
 
@@ -99,6 +106,13 @@ const ManageFleet = () => {
     })();
   }, [load]);
 
+  // An admin's decision on a truck shows up without a manual refresh.
+  useEffect(() => {
+    const onReviewed = () => { load(); };
+    socketService.on('truck-reviewed', onReviewed);
+    return () => socketService.off('truck-reviewed', onReviewed);
+  }, [load]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
@@ -167,6 +181,7 @@ const ManageFleet = () => {
           truck={truck}
           tree={tree}
           busy={busyId === truck._id}
+          onChanged={load}
           onEdit={() => { setEditingId(truck._id); setAdding(false); }}
           onAssignDriver={(driverPhone) =>
             runAction(truck._id, () => api.patch(`/trucks/${truck._id}/driver`, { driverPhone }))
@@ -367,6 +382,14 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
     <Card style={wide && styles.formWide}>
       <Text style={styles.formTitle}>{editing ? `Edit ${truck.registrationNumber}` : 'Add a Truck'}</Text>
       <Text style={styles.formIntro}>Fill this in as it appears on the truck and its bluebook. Fields marked * are required.</Text>
+      {editing && ['approved', 'pending'].includes(truck.verification?.status) && (
+        <View style={styles.warning}>
+          <Icon name="warning" size={iconSize.sm} color={colors.warningText} />
+          <Text style={styles.warningText}>
+            Changing the type, body, capacity, make, model, year, chassis or engine number takes away the verified badge until an admin checks the truck again.
+          </Text>
+        </View>
+      )}
 
       <FormBlock title="Vehicle" first>
         {!editing && (
@@ -648,7 +671,172 @@ const SERVICE_AREA_NOTE = {
   district: 'within its district',
 };
 
-const TruckCard = ({ truck, tree, busy, onEdit, onAssignDriver, onSetStatus, onDelete }) => {
+const VERIFICATION_COPY = {
+  not_submitted: {
+    pill: { label: 'Not verified', tone: 'muted' },
+    hint: 'Upload the bluebook and a photo of the truck, then send them to FLITO for the verified badge.',
+  },
+  pending: {
+    pill: { label: 'Under review', tone: 'warning' },
+    hint: 'An admin is checking this truck. Its papers are locked until then.',
+  },
+  approved: {
+    pill: { label: 'Verified', tone: 'success' },
+    hint: 'Shippers see the verified badge on this truck.',
+  },
+  rejected: {
+    pill: { label: 'Needs changes', tone: 'error' },
+    hint: 'Fix the papers below and send them again.',
+  },
+};
+
+const NO_VERIFICATION = {
+  status: 'not_submitted',
+  canEdit: true,
+  requiredDocuments: ['bluebook', 'truck_photo'],
+  optionalDocuments: ['insurance'],
+  missingDocuments: ['bluebook', 'truck_photo'],
+  documents: [],
+};
+
+// Getting a truck verified by an admin: its papers, and sending them for review.
+const TruckVerification = ({ truck, onChanged }) => {
+  const verification = truck.verification || NO_VERIFICATION;
+  const copy = VERIFICATION_COPY[verification.status] || VERIFICATION_COPY.not_submitted;
+  const [open, setOpen] = useState(false);
+  // What's working: { type, source } for a paper, or { source: 'submit' }.
+  const [busy, setBusy] = useState(null);
+
+  const upload = async (docType, source) => {
+    let asset;
+    try {
+      asset = source === 'camera' ? (await takePhoto())[0] : await pickDocument();
+    } catch (error) {
+      notify(source === 'camera' ? 'Could not open the camera' : 'Could not open files', getErrorMessage(error));
+      return;
+    }
+    if (!asset) return;
+    const size = asset.size || asset.fileSize;
+    if (size && size > MAX_DOCUMENT_BYTES) {
+      notify('File too large', 'Papers must be 10 MB or smaller');
+      return;
+    }
+
+    setBusy({ type: docType, source });
+    try {
+      await uploadFiles(`/trucks/${truck._id}/documents`, [asset], { field: 'document', fields: { type: docType } });
+      await onChanged();
+    } catch (error) {
+      notify('Upload failed', getErrorMessage(error));
+    }
+    setBusy(null);
+  };
+
+  const remove = (doc) => confirmAction({
+    title: 'Remove paper',
+    message: `Remove the ${TRUCK_DOCUMENT_LABELS[doc.type].toLowerCase()}?`,
+    confirmLabel: 'Remove',
+    destructive: true,
+    onConfirm: async () => {
+      setBusy({ type: doc.type, source: 'remove' });
+      try {
+        await api.delete(`/trucks/${truck._id}/documents/${doc._id}`);
+        await onChanged();
+      } catch (error) {
+        notify('Error', getErrorMessage(error));
+      }
+      setBusy(null);
+    },
+  });
+
+  const submit = async () => {
+    setBusy({ source: 'submit' });
+    try {
+      await api.post(`/trucks/${truck._id}/verification`);
+      await onChanged();
+      notify('Sent for verification', 'An admin will check this truck and its papers.');
+    } catch (error) {
+      notify('Could not send', getErrorMessage(error));
+    }
+    setBusy(null);
+  };
+
+  const paperTypes = [...verification.requiredDocuments, ...verification.optionalDocuments];
+  const missing = verification.missingDocuments;
+
+  return (
+    <Disclosure
+      style={styles.verification}
+      title="Verification"
+      hint={copy.hint}
+      icon="verified"
+      badge={<StatusPill label={copy.pill.label} tone={copy.pill.tone} />}
+      open={open}
+      onToggle={setOpen}
+      accessibilityLabel={`${truck.registrationNumber} verification`}
+    >
+      {verification.status === 'rejected' && verification.rejectionReason ? (
+        <View style={styles.rejection}>
+          <Icon name="warning" size={iconSize.sm} color={colors.errorText} />
+          <Text style={styles.rejectionText}>{verification.rejectionReason}</Text>
+        </View>
+      ) : null}
+
+      {paperTypes.map((docType) => {
+        const doc = verification.documents.find((paper) => paper.type === docType);
+        const required = verification.requiredDocuments.includes(docType);
+        const working = busy?.type === docType ? busy.source : null;
+        return (
+          <View key={docType} style={styles.paper}>
+            <View style={styles.paperHeader}>
+              <Text style={styles.paperTitle}>
+                {TRUCK_DOCUMENT_LABELS[docType]}
+                {required && <Text style={styles.required}> *</Text>}
+              </Text>
+              {!required && <StatusPill label="Optional" />}
+            </View>
+            {doc ? <DocumentTile doc={doc} label={`View ${TRUCK_DOCUMENT_LABELS[docType].toLowerCase()}`} size={56} /> : null}
+            {verification.canEdit && (
+              <View style={styles.paperActions}>
+                <PhotoSourceButtons
+                  onTakePhoto={() => upload(docType, 'camera')}
+                  onChoose={() => upload(docType, 'library')}
+                  takeLabel={doc ? 'Retake' : 'Take Photo'}
+                  chooseLabel={doc ? 'Replace' : 'Upload File'}
+                  chooseIcon="upload"
+                  busy={working === 'camera' || working === 'library' ? working : null}
+                  disabled={Boolean(busy) && !working}
+                />
+                {doc && (
+                  <Button title="Remove" icon="trash" variant="ghost" size="sm" onPress={() => remove(doc)} loading={working === 'remove'} />
+                )}
+              </View>
+            )}
+          </View>
+        );
+      })}
+
+      {verification.canEdit && (
+        <>
+          {missing.length > 0 && (
+            <Text style={styles.hint}>
+              {`Still needed: ${missing.map((type) => TRUCK_DOCUMENT_LABELS[type].toLowerCase()).join(', ')}.`}
+            </Text>
+          )}
+          <Button
+            title="Send for Verification"
+            icon="send"
+            onPress={submit}
+            loading={busy?.source === 'submit'}
+            disabled={missing.length > 0 || (Boolean(busy) && busy.source !== 'submit')}
+          />
+        </>
+      )}
+    </Disclosure>
+  );
+};
+
+const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSetStatus, onDelete }) => {
   const [assigning, setAssigning] = useState(false);
   const [driverPhone, setDriverPhone] = useState('+977');
 
@@ -673,7 +861,10 @@ const TruckCard = ({ truck, tree, busy, onEdit, onAssignDriver, onSetStatus, onD
   return (
     <Card>
       <View style={styles.row}>
-        <Text style={styles.reg}>{truck.registrationNumber}</Text>
+        <View style={styles.regRow}>
+          <Text style={styles.reg}>{truck.registrationNumber}</Text>
+          {truck.verified && <VerifiedBadge size={20} label="Verified truck" />}
+        </View>
         <StatusBadge status={truck.status} />
       </View>
       <Text style={styles.meta}>
@@ -716,6 +907,8 @@ const TruckCard = ({ truck, tree, busy, onEdit, onAssignDriver, onSetStatus, onD
           <Text style={styles.tipText}>{tip}</Text>
         </View>
       )}
+
+      <TruckVerification truck={truck} onChanged={onChanged} />
 
       {assigning ? (
         <View style={styles.assign}>
@@ -834,7 +1027,33 @@ const styles = StyleSheet.create({
   formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.xl },
   formAction: { minWidth: 140 },
 
-  reg: { ...type.h3, color: colors.textPrimary },
+  regRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
+  reg: { ...type.h3, color: colors.textPrimary, flexShrink: 1 },
+  warning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningMuted,
+  },
+  warningText: { ...type.small, color: colors.warningText, flex: 1 },
+  verification: { marginTop: spacing.md },
+  rejection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.errorMuted,
+  },
+  rejectionText: { ...type.small, color: colors.errorText, flex: 1 },
+  paper: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  paperHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.xs },
+  paperTitle: { ...type.bodyMedium, color: colors.textPrimary, flexShrink: 1 },
+  paperActions: { marginTop: spacing.xs },
   meta: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
   detailRow: {
     flexDirection: 'row',

@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import DashboardCard from '../components/home/DashboardCard';
 import Grid from '../components/common/Grid';
 import Avatar from '../components/common/Avatar';
+import VerifiedBadge from '../components/common/VerifiedBadge';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
 import EmailVerificationPrompt from '../components/auth/EmailVerificationPrompt';
 import Icon from '../theme/icons';
@@ -243,6 +244,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.headerText}>
           <View style={styles.greetingRow}>
             <Text style={[styles.greeting, !isPhone && styles.greetingWide]}>Hello, {user?.firstName}</Text>
+            {user?.kycStatus === 'approved' && <VerifiedBadge size={isPhone ? 22 : 26} label="Verified by FLITO" />}
             <View style={styles.roleChip}>
               <Text style={styles.roleText}>{user?.role}</Text>
             </View>

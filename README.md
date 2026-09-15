@@ -168,7 +168,7 @@ The backend validates its config at boot and exits with a clear message if somet
 
 **Happy path:** shipper posts a load (goods, weight, pickup and dropoff, pickup date) → picks a truck from the ranked matches and sends a price → owner accepts, counters or declines → on acceptance a **booking is created** with that truck, and its regular driver if verified → driver marks picked up → delivered → booking completes → both parties rate each other. Owners can also quote on open loads with one of their trucks.
 
-**Truck matching** (`backend/src/services/truckMatching.js`): a truck is a candidate only if it is active, its owner is verified and active, its capacity covers the load's weight, both stops are inside its service area (anywhere in Nepal, or only its base province or district), and it isn't already booked on the pickup day. Candidates are scored out of 100: how well the load fills the truck (30), how close its base is to the pickup (30), the owner's rating, smoothed so a single review can't dominate, and completed trips (20), asking price against the cheapest (15), and readiness: a verified driver already on the truck and insurance that is still current (5).
+**Truck matching** (`backend/src/services/truckMatching.js`): a truck is a candidate only if it is active, its owner is verified and active, its capacity covers the load's weight, both stops are inside its service area (anywhere in Nepal, or only its base province or district), and it isn't already booked on the pickup day. Candidates are scored out of 100: how well the load fills the truck (30), how close its base is to the pickup (25), the owner's rating, smoothed so a single review can't dominate, and completed trips (20), asking price against the cheapest (15), and readiness: a verified driver already on the truck, insurance that is still current, and an admin-verified truck (10).
 
 **Truck listings** follow how trucks are described in Nepal: the freight trade's classes (pickup, mini truck, light truck or canter, 6, 10 and 12-wheeler, trailer) with common makes and models, body type, year, fuel, cargo bed size in feet, and extras shippers ask about (tarpaulin, a helper or khalasi, GPS, hill roads). Papers (chassis and engine numbers, bluebook tax, insurance, pollution test green sticker) stay private to the owner: shippers only ever see whether the insurance is current, and the owner's fleet page flags papers that have lapsed or end within 30 days. The strongest signals are shown to the shipper as reasons. Distances are estimates: straight-line distance between municipality centres (or pinned points) times 1.4 for Nepal's winding roads.
 
@@ -186,6 +186,8 @@ npm run create-admin -- admin@example.com SomePassword123 Sita Sharma
 **Identity verification (KYC):** every account uploads at least one complete identity document: citizenship card (front and back), National ID card (front and back), driving license, or passport (photo page). Once one is complete, the others are optional. Owners also add a PAN certificate (company registration optional) and drivers add a driving license, which counts as their identity document (citizenship, National ID and passport are optional for drivers). An address is required before submitting.
 
 **Address:** every account can set a Nepal address from the Profile page: province, district, municipality and ward from official lists (7 provinces, 77 districts, 753 local levels, 6,743 wards), plus tole/village/area as free text. It's optional at sign-up and required before identity verification. "Use Current Location" fills in the province, district and municipality from the phone's GPS using Survey Department boundaries, and suggests a tole from OpenStreetMap. The user always chooses the ward and checks the result: no current ward boundaries are openly available, and GPS can be tens of metres off near a boundary. Data sources and licenses are in `backend/src/data/nepal/SOURCES.md`. Documents are stored privately in Cloudinary and shown only through links that expire after 10 minutes. Once submitted they're frozen; an admin approves, or rejects with a reason the user sees, and the user can fix and resubmit. A verified name can't be edited.
+
+**Verified badge:** a rounded amber seal with a white tick (`frontend/src/components/common/VerifiedBadge.js`) shows beside anyone whose identity an admin approved, and beside any truck an admin verified: on the profile and home greeting, truck matches, offers, and bookings. Other users only ever receive a yes or no `verified` for a person or truck (`backend/src/services/partyView.js`), never where a verification stands. To get a truck verified, its owner uploads the bluebook and a photo of the truck showing its number plate (the insurance paper is optional) from My Fleet and sends them for review; an admin approves or rejects with a reason from the Admin Dashboard. Changing the truck's class, body, capacity, make, model, year, chassis or engine number takes the badge away until it's checked again.
 
 **What verification unlocks:** owners must be verified to submit, counter or accept quotes, and drivers must be verified before an owner can assign them to a booking. Shippers, browsing and posting loads need no verification. The rule lives in `backend/src/services/kycPolicy.js`.
 
@@ -246,15 +248,20 @@ Routes marked `public` need no token; every other route requires `Authorization:
 | GET | `/api/trucks` | owner | Your fleet |
 | PATCH | `/api/trucks/:id` | owner | Update truck details, rates or status (`null` clears an optional field) |
 | PATCH | `/api/trucks/:id/driver` | owner | Assign/unassign the truck's driver |
-| DELETE | `/api/trucks/:id` | owner | Remove a truck |
+| DELETE | `/api/trucks/:id` | owner | Remove a truck (and its verification papers from storage) |
+| POST | `/api/trucks/:id/documents` | owner | Upload or replace a verification paper (multipart `document` + `type`: `bluebook`, `truck_photo`, `insurance`) |
+| DELETE | `/api/trucks/:id/documents/:docId` | owner | Remove a paper before submitting |
+| POST | `/api/trucks/:id/verification` | owner | Send the truck and its papers for admin review |
 | GET | `/api/admin/stats` | admin | Platform metrics |
 | GET | `/api/admin/kyc/pending` | admin | Submissions awaiting review, with 10-minute document links |
 | PATCH | `/api/admin/kyc/:userId` | admin | Approve, or reject with a required reason |
+| GET | `/api/admin/trucks/pending` | admin | Trucks awaiting verification, with their owner and 10-minute paper links |
+| PATCH | `/api/admin/trucks/:truckId` | admin | Approve a truck, or reject it with a required reason |
 | PATCH | `/api/admin/users/:userId/status` | admin | Suspend/ban/reactivate |
 
 ### Real-time (Socket.io)
 
-Clients emit `join-room` with their JWT to join a private `user-<id>` room; the server verifies the token before joining. Server pushes: `new-quote`, `quote-updated`, `quote-accepted`, `booking-assigned`, `booking-status-changed`, `location-update`.
+Clients emit `join-room` with their JWT to join a private `user-<id>` room; the server verifies the token before joining. Server pushes: `new-quote`, `quote-updated`, `quote-accepted`, `booking-assigned`, `booking-status-changed`, `location-update`, `kyc-reviewed`, `truck-reviewed`.
 
 ---
 

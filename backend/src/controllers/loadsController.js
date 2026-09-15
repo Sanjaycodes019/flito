@@ -17,6 +17,7 @@ const {
   unavailableReason,
 } = require('../services/truckMatching');
 const { MAX_OPEN_REQUESTS_PER_LOAD, standingOffer } = require('../services/negotiation');
+const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 
 const MAX_LOAD_PHOTOS = 6;
 
@@ -76,11 +77,11 @@ exports.listLoads = async (req, res, next) => {
     }
 
     const loads = await Load.find(filter)
-      .populate('shipperId', 'firstName lastName rating companyName')
+      .populate('shipperId', PARTY_FIELDS)
       .sort({ createdAt: -1 })
       .limit(100);
 
-    res.json({ success: true, loads });
+    res.json({ success: true, loads: loads.map((load) => withVerification(load, { people: ['shipperId'] })) });
   } catch (error) {
     next(error);
   }
@@ -88,9 +89,9 @@ exports.listLoads = async (req, res, next) => {
 
 exports.getLoad = async (req, res, next) => {
   try {
-    const load = await Load.findById(req.params.id).populate('shipperId', 'firstName lastName rating companyName');
+    const load = await Load.findById(req.params.id).populate('shipperId', PARTY_FIELDS);
     if (!load) return res.status(404).json({ success: false, message: 'Load not found' });
-    res.json({ success: true, load });
+    res.json({ success: true, load: withVerification(load, { people: ['shipperId'] }) });
   } catch (error) {
     next(error);
   }
@@ -169,6 +170,7 @@ exports.listMyTrucksForLoad = async (req, res, next) => {
         truckType: truck.truckType,
         capacity: capacityOf(truck),
         makeModel: truck.makeModel || null,
+        verified: truck.verificationStatus === 'approved',
         unavailableReason: unavailableReason(truck, load),
         askingPrice: askingPriceFor(truck, load.distanceKm),
       })),
@@ -240,11 +242,14 @@ exports.listQuotesForLoad = async (req, res, next) => {
     if (!load) return;
 
     const quotes = await Quote.find({ loadId: load._id })
-      .populate('ownerId', 'firstName lastName companyName rating totalRatings')
-      .populate('truckId', 'truckType capacity makeModel baseLocation')
+      .populate('ownerId', PARTY_FIELDS)
+      .populate('truckId', 'truckType capacity makeModel baseLocation verificationStatus')
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, quotes });
+    res.json({
+      success: true,
+      quotes: quotes.map((quote) => withVerification(quote, { people: ['ownerId'], trucks: ['truckId'] })),
+    });
   } catch (error) {
     next(error);
   }

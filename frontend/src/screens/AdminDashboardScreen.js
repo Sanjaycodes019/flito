@@ -8,8 +8,8 @@ import EmptyState from '../components/common/EmptyState';
 import DocumentTile from '../components/kyc/DocumentTile';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
-import { KYC_DOCUMENT_LABELS, KYC_ID_TYPE_LABELS } from '../utils/constants';
-import { formatDate, getErrorMessage } from '../utils/helpers';
+import { KYC_DOCUMENT_LABELS, KYC_ID_TYPE_LABELS, TRUCK_DOCUMENT_LABELS } from '../utils/constants';
+import { bodyTypeLabel, formatDate, formatKg, getErrorMessage, truckTypeLabel } from '../utils/helpers';
 import api from '../services/api';
 import { notify } from '../utils/alert';
 import useScreenLayout from '../hooks/useScreenLayout';
@@ -22,11 +22,48 @@ const STAT_ICON = {
   Loads: 'load',
   Bookings: 'truckDelivery',
   'Pending KYC': 'pending',
+  'Pending Trucks': 'truck',
+};
+
+// Approve, or reject with a reason, for one item in a review queue.
+const ReviewActions = ({ id, reason, onReasonChange, busy, onDecide, audience }) => {
+  const canReject = reason.trim().length >= MIN_REASON_LENGTH;
+  return (
+    <>
+      <Input
+        value={reason}
+        onChangeText={onReasonChange}
+        placeholder={`Reason (required to reject, the ${audience} will see it)`}
+        multiline
+        icon="document"
+        containerStyle={styles.reasonInput}
+      />
+      <View style={styles.actionsRow}>
+        <Button
+          title="Approve"
+          icon="checkmark"
+          onPress={() => onDecide(id, 'approved')}
+          loading={busy}
+          style={styles.actionButton}
+        />
+        <Button
+          title="Reject"
+          icon="close"
+          variant="destructive"
+          onPress={() => onDecide(id, 'rejected')}
+          loading={busy}
+          disabled={!canReject}
+          style={styles.actionButton}
+        />
+      </View>
+    </>
+  );
 };
 
 const AdminDashboardScreen = () => {
   const [stats, setStats] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [pendingTrucks, setPendingTrucks] = useState([]);
   const [reasons, setReasons] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,12 +72,14 @@ const AdminDashboardScreen = () => {
 
   const load = useCallback(async () => {
     try {
-      const [statsRes, kycRes] = await Promise.all([
+      const [statsRes, kycRes, trucksRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/kyc/pending'),
+        api.get('/admin/trucks/pending'),
       ]);
       setStats(statsRes.data.stats);
       setPendingUsers(kycRes.data.users);
+      setPendingTrucks(trucksRes.data.trucks);
     } catch (error) {
       notify('Error', getErrorMessage(error));
     }
@@ -60,17 +99,19 @@ const AdminDashboardScreen = () => {
     setRefreshing(false);
   };
 
-  const decide = async (userId, decision) => {
-    setBusyId(userId);
+  const decide = (path) => async (id, decision) => {
+    setBusyId(id);
     try {
-      await api.patch(`/admin/kyc/${userId}`, { decision, reason: reasons[userId] });
-      setReasons((current) => ({ ...current, [userId]: '' }));
+      await api.patch(`${path}/${id}`, { decision, reason: reasons[id] });
+      setReasons((current) => ({ ...current, [id]: '' }));
       await load();
     } catch (error) {
       notify('Error', getErrorMessage(error));
     }
     setBusyId(null);
   };
+
+  const setReason = (id) => (text) => setReasons((current) => ({ ...current, [id]: text }));
 
   if (loading) return <Spinner />;
 
@@ -85,6 +126,7 @@ const AdminDashboardScreen = () => {
         <StatTile label="Loads" value={stats?.loadCount} />
         <StatTile label="Bookings" value={stats?.bookingCount} />
         <StatTile label="Pending KYC" value={stats?.pendingKyc} highlight />
+        <StatTile label="Pending Trucks" value={stats?.pendingTrucks} highlight />
       </View>
 
       <Text style={styles.sectionTitle}>KYC Queue ({pendingUsers.length})</Text>
@@ -92,58 +134,85 @@ const AdminDashboardScreen = () => {
         <EmptyState icon="verified" title="All caught up" message="No submissions waiting for review." />
       )}
 
-      {pendingUsers.map((u) => {
-        const reason = reasons[u._id] || '';
-        const canReject = reason.trim().length >= MIN_REASON_LENGTH;
-        return (
-          <Card key={u._id}>
-            <View style={styles.nameRow}>
-              <Icon name="person" size={iconSize.sm} color={colors.textMuted} style={styles.nameIcon} />
-              <Text style={styles.name}>{u.firstName} {u.lastName}</Text>
-            </View>
+      {pendingUsers.map((u) => (
+        <Card key={u._id}>
+          <View style={styles.nameRow}>
+            <Icon name="person" size={iconSize.sm} color={colors.textMuted} style={styles.nameIcon} />
+            <Text style={styles.name}>{u.firstName} {u.lastName}</Text>
+          </View>
+          <Text style={styles.meta}>
+            {[u.email, u.phone, u.role, u.companyName].filter(Boolean).join(' · ')}
+          </Text>
+          {u.identityDocuments?.length ? (
             <Text style={styles.meta}>
-              {[u.email, u.phone, u.role, u.companyName].filter(Boolean).join(' · ')}
+              Identity: {u.identityDocuments.map((idType) => KYC_ID_TYPE_LABELS[idType] || idType).join(', ')}
             </Text>
-            {u.identityDocuments?.length ? (
-              <Text style={styles.meta}>
-                Identity: {u.identityDocuments.map((idType) => KYC_ID_TYPE_LABELS[idType] || idType).join(', ')}
-              </Text>
+          ) : null}
+          {u.submittedAt ? <Text style={styles.meta}>Submitted {formatDate(u.submittedAt)}</Text> : null}
+
+          <View style={styles.documents}>
+            {u.documents.map((doc) => (
+              <DocumentTile key={doc._id} doc={doc} label={KYC_DOCUMENT_LABELS[doc.type] || doc.type} />
+            ))}
+          </View>
+
+          <ReviewActions
+            id={u._id}
+            reason={reasons[u._id] || ''}
+            onReasonChange={setReason(u._id)}
+            busy={busyId === u._id}
+            onDecide={decide('/admin/kyc')}
+            audience="user"
+          />
+        </Card>
+      ))}
+
+      <Text style={styles.sectionTitle}>Truck Verification Queue ({pendingTrucks.length})</Text>
+      {pendingTrucks.length === 0 && (
+        <EmptyState icon="truck" title="No trucks waiting" message="Trucks sent for verification show up here." />
+      )}
+
+      {pendingTrucks.map((t) => {
+        const ownerName = t.owner?.companyName || [t.owner?.firstName, t.owner?.lastName].filter(Boolean).join(' ');
+        const papers = [
+          t.bluebookRenewedUntil && `Bluebook tax until ${formatDate(t.bluebookRenewedUntil)}`,
+          t.insurance?.validUntil && `Insurance until ${formatDate(t.insurance.validUntil)}${t.insurance.company ? ` (${t.insurance.company})` : ''}`,
+          t.emissionTestValidUntil && `Green sticker until ${formatDate(t.emissionTestValidUntil)}`,
+        ].filter(Boolean);
+        return (
+          <Card key={t._id}>
+            <View style={styles.nameRow}>
+              <Icon name="truck" size={iconSize.sm} color={colors.textMuted} style={styles.nameIcon} />
+              <Text style={styles.name}>{t.registrationNumber}</Text>
+            </View>
+            <Text style={styles.detail}>
+              {[truckTypeLabel(t.truckType), bodyTypeLabel(t.bodyType), t.capacity ? formatKg(t.capacity) : null, t.makeModel, t.year]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+            <Text style={styles.detail}>
+              {`Owner: ${[ownerName, t.owner?.phone, t.owner?.email].filter(Boolean).join(' · ')}${t.owner?.verified ? ' (identity verified)' : ' (identity not verified)'}`}
+            </Text>
+            {t.chassisNumber || t.engineNumber ? (
+              <Text style={styles.detail}>{`Chassis ${t.chassisNumber || '-'} · Engine ${t.engineNumber || '-'}`}</Text>
             ) : null}
-            {u.submittedAt ? <Text style={styles.meta}>Submitted {formatDate(u.submittedAt)}</Text> : null}
+            {papers.length ? <Text style={styles.detail}>{papers.join(' · ')}</Text> : null}
+            {t.submittedAt ? <Text style={styles.detail}>{`Submitted ${formatDate(t.submittedAt)}`}</Text> : null}
 
             <View style={styles.documents}>
-              {u.documents.map((doc) => (
-                <DocumentTile key={doc._id} doc={doc} label={KYC_DOCUMENT_LABELS[doc.type] || doc.type} />
+              {t.documents.map((doc) => (
+                <DocumentTile key={doc._id} doc={doc} label={TRUCK_DOCUMENT_LABELS[doc.type] || doc.type} />
               ))}
             </View>
 
-            <Input
-              value={reason}
-              onChangeText={(text) => setReasons((current) => ({ ...current, [u._id]: text }))}
-              placeholder="Reason (required to reject, the user will see it)"
-              multiline
-              icon="document"
-              containerStyle={styles.reasonInput}
+            <ReviewActions
+              id={t._id}
+              reason={reasons[t._id] || ''}
+              onReasonChange={setReason(t._id)}
+              busy={busyId === t._id}
+              onDecide={decide('/admin/trucks')}
+              audience="owner"
             />
-
-            <View style={styles.actionsRow}>
-              <Button
-                title="Approve"
-                icon="checkmark"
-                onPress={() => decide(u._id, 'approved')}
-                loading={busyId === u._id}
-                style={styles.actionButton}
-              />
-              <Button
-                title="Reject"
-                icon="close"
-                variant="destructive"
-                onPress={() => decide(u._id, 'rejected')}
-                loading={busyId === u._id}
-                disabled={!canReject}
-                style={styles.actionButton}
-              />
-            </View>
           </Card>
         );
       })}
@@ -182,6 +251,7 @@ const styles = StyleSheet.create({
   nameIcon: { marginRight: spacing.xs },
   name: { ...type.bodyMedium, color: colors.textPrimary },
   meta: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs, textTransform: 'capitalize' },
+  detail: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
   documents: { marginTop: spacing.sm },
   reasonInput: { marginTop: spacing.sm, marginBottom: 0 },
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },

@@ -6,9 +6,10 @@ import Constants from 'expo-constants';
 import { logout, setUser } from '../redux/slices/authSlice';
 import Card from '../components/common/Card';
 import Avatar from '../components/common/Avatar';
+import VerifiedBadge from '../components/common/VerifiedBadge';
 import Modal from '../components/common/Modal';
 import ActionList from '../components/common/ActionList';
-import { SettingsSection, SettingsRow, StatusPill } from '../components/common/SettingsList';
+import { SettingsSection, SettingsRow } from '../components/common/SettingsList';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, shadow, type, iconSize } from '../theme/tokens';
 import useScreenLayout from '../hooks/useScreenLayout';
@@ -270,13 +271,15 @@ const ProfileScreen = ({ navigation }) => {
   const summaryCard = (
     <Card style={styles.summary}>
       <ProfilePhotoButton user={user} busy={photoBusy} onPress={() => setPhotoSheet(true)} />
-      <Text style={styles.name}>{fullName || 'Your name'}</Text>
+      <View style={styles.nameRow}>
+        <Text style={styles.name}>{fullName || 'Your name'}</Text>
+        {user?.kycStatus === 'approved' && <VerifiedBadge size={22} label="Verified by FLITO" />}
+      </View>
       <View style={styles.identityRow}>
         <View style={styles.rolePill}>
           <Icon name={ROLE_ICON[user?.role] || 'person'} size={iconSize.xs} color={colors.primaryText} />
           <Text style={styles.roleText}>{ROLE_LABEL[user?.role] || user?.role}</Text>
         </View>
-        {user?.kycStatus === 'approved' && <StatusPill label="Verified" tone="success" icon="verified" />}
       </View>
       {!!user?.email && <Text style={styles.email} numberOfLines={1}>{user.email}</Text>}
 
@@ -433,7 +436,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadow.level2,
   },
-  name: { ...type.h2, color: colors.textPrimary, textAlign: 'center' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, maxWidth: '100%' },
+  name: { ...type.h2, color: colors.textPrimary, textAlign: 'center', flexShrink: 1 },
   identityRow: {
     flexDirection: 'row',
     alignItems: 'center',

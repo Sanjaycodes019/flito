@@ -4,9 +4,11 @@ const router = express.Router();
 const User = require('../models/User');
 const Load = require('../models/Load');
 const Booking = require('../models/Booking');
+const Truck = require('../models/Truck');
 const authMiddleware = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
 const { reviewView } = require('../services/kycView');
+const { truckReviewView } = require('../services/truckView');
 const { sendPushToUser } = require('../services/push');
 
 router.use(authMiddleware, requireRole('admin'));
@@ -14,17 +16,35 @@ router.use(authMiddleware, requireRole('admin'));
 // Platform metrics for a simple admin dashboard
 router.get('/stats', async (req, res, next) => {
   try {
-    const [userCount, loadCount, bookingCount, pendingKyc] = await Promise.all([
+    const [userCount, loadCount, bookingCount, pendingKyc, pendingTrucks] = await Promise.all([
       User.countDocuments(),
       Load.countDocuments(),
       Booking.countDocuments(),
       User.countDocuments({ kycStatus: 'pending' }),
+      Truck.countDocuments({ verificationStatus: 'pending' }),
     ]);
-    res.json({ success: true, stats: { userCount, loadCount, bookingCount, pendingKyc } });
+    res.json({ success: true, stats: { userCount, loadCount, bookingCount, pendingKyc, pendingTrucks } });
   } catch (error) {
     next(error);
   }
 });
+
+const MIN_REASON_LENGTH = 5;
+const MAX_REASON_LENGTH = 500;
+
+// A review decision from the request body, or an error for the admin.
+// Without a reason a rejected user has no idea what to fix.
+const readDecision = (body, who) => {
+  const { decision } = body;
+  const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
+
+  if (!['approved', 'rejected'].includes(decision)) return { error: 'decision must be approved or rejected' };
+  if (decision === 'rejected' && reason.length < MIN_REASON_LENGTH) {
+    return { error: `Give the ${who} a reason for the rejection (at least ${MIN_REASON_LENGTH} characters) so they know what to fix` };
+  }
+  if (reason.length > MAX_REASON_LENGTH) return { error: `The reason must be at most ${MAX_REASON_LENGTH} characters` };
+  return { decision, reason };
+};
 
 // Submissions awaiting review, oldest first, each with fresh document links.
 router.get('/kyc/pending', async (req, res, next) => {
@@ -36,24 +56,10 @@ router.get('/kyc/pending', async (req, res, next) => {
   }
 });
 
-const MIN_REASON_LENGTH = 5;
-const MAX_REASON_LENGTH = 500;
-
 router.patch('/kyc/:userId', async (req, res, next) => {
   try {
-    const { decision } = req.body;
-    const reason = typeof req.body.reason === 'string' ? req.body.reason.trim() : '';
-
-    if (!['approved', 'rejected'].includes(decision)) {
-      return res.status(400).json({ success: false, message: 'decision must be approved or rejected' });
-    }
-    // Without a reason a rejected user has no idea what to fix.
-    if (decision === 'rejected' && reason.length < MIN_REASON_LENGTH) {
-      return res.status(400).json({ success: false, message: `Give the user a reason for the rejection (at least ${MIN_REASON_LENGTH} characters) so they know what to fix` });
-    }
-    if (reason.length > MAX_REASON_LENGTH) {
-      return res.status(400).json({ success: false, message: `The reason must be at most ${MAX_REASON_LENGTH} characters` });
-    }
+    const { decision, reason, error } = readDecision(req.body, 'user');
+    if (error) return res.status(400).json({ success: false, message: error });
 
     const reviewed = { kycReviewedAt: new Date(), kycReviewedBy: req.user.userId };
     const update = decision === 'approved'
@@ -82,6 +88,57 @@ router.patch('/kyc/:userId', async (req, res, next) => {
     res.json({
       success: true,
       user: { _id: user._id, kycStatus: user.kycStatus, kycRejectionReason: user.kycRejectionReason },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Trucks awaiting review, oldest first, with their owner and fresh paper links.
+router.get('/trucks/pending', async (req, res, next) => {
+  try {
+    const trucks = await Truck.find({ verificationStatus: 'pending' })
+      .populate('ownerId', 'firstName lastName companyName phone email kycStatus')
+      .sort({ verificationSubmittedAt: 1 })
+      .limit(100);
+    res.json({ success: true, trucks: trucks.map(truckReviewView) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/trucks/:truckId', async (req, res, next) => {
+  try {
+    const { decision, reason, error } = readDecision(req.body, 'owner');
+    if (error) return res.status(400).json({ success: false, message: error });
+
+    const reviewed = { verificationReviewedAt: new Date(), verificationReviewedBy: req.user.userId };
+    const update = decision === 'approved'
+      ? { $set: { verificationStatus: 'approved', ...reviewed }, $unset: { verificationRejectionReason: '' } }
+      : { $set: { verificationStatus: 'rejected', verificationRejectionReason: reason, ...reviewed } };
+
+    // Only a truck awaiting review can be decided.
+    const truck = await Truck.findOneAndUpdate({ _id: req.params.truckId, verificationStatus: 'pending' }, update, { new: true });
+
+    if (!truck) {
+      const exists = await Truck.exists({ _id: req.params.truckId });
+      return exists
+        ? res.status(400).json({ success: false, message: 'This truck has no verification awaiting review' })
+        : res.status(404).json({ success: false, message: 'Truck not found' });
+    }
+
+    req.io?.to(`user-${truck.ownerId}`).emit('truck-reviewed', {
+      truckId: truck._id,
+      status: truck.verificationStatus,
+      reason: truck.verificationRejectionReason,
+    });
+    await sendPushToUser(truck.ownerId, truck.verificationStatus === 'approved'
+      ? { title: 'Truck verified', body: `${truck.registrationNumber} now shows the verified badge`, data: { type: 'fleet' } }
+      : { title: 'Truck verification needs changes', body: `${truck.registrationNumber}: ${truck.verificationRejectionReason}`, data: { type: 'fleet' } });
+
+    res.json({
+      success: true,
+      truck: { _id: truck._id, verificationStatus: truck.verificationStatus, verificationRejectionReason: truck.verificationRejectionReason },
     });
   } catch (error) {
     next(error);

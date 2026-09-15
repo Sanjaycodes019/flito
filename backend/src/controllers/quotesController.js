@@ -18,19 +18,22 @@ const {
   standingOffer,
 } = require('../services/negotiation');
 const { requiresVerification } = require('../services/kycPolicy');
+const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 const { formatCurrency } = require('../utils/format');
 
 const fail = (res, status, message) => res.status(status).json({ success: false, message });
 
 const CHANGED_UNDERNEATH = 'This offer just changed. Refresh and try again.';
 
-const OWNER_FIELDS = 'firstName lastName companyName rating totalRatings';
 // Registration numbers stay private until a booking is made.
-const TRUCK_FIELDS = 'truckType capacity makeModel baseLocation';
+const TRUCK_FIELDS = 'truckType capacity makeModel baseLocation verificationStatus';
 
 const displayName = (user) => user?.companyName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'A truck owner';
 
-const withDetails = (query) => query.populate('ownerId', OWNER_FIELDS).populate('truckId', TRUCK_FIELDS);
+const withDetails = (query) => query.populate('ownerId', PARTY_FIELDS).populate('truckId', TRUCK_FIELDS);
+
+// A populated quote as the other party sees it, with who and what is verified.
+const quoteView = (quote) => withVerification(quote, { people: ['ownerId'], trucks: ['truckId'] });
 
 // A new offer counts toward the load's offers and moves an untouched load to
 // "quoted". Both updates are atomic, so offers landing together can't lose a
@@ -95,14 +98,14 @@ exports.createQuote = async (req, res, next) => {
       withDetails(Quote.findById(quote._id)),
     ]);
 
-    req.io?.to(`user-${load.shipperId}`).emit('new-quote', { load: updatedLoad, quote: populated });
+    req.io?.to(`user-${load.shipperId}`).emit('new-quote', { load: updatedLoad, quote: quoteView(populated) });
     await sendPushToUser(load.shipperId, {
       title: 'New quote received',
       body: `${displayName(populated.ownerId)} quoted ${formatCurrency(quotedPrice)} on your ${load.goodsType} load`,
       data: { type: 'load', loadId: String(load._id) },
     });
 
-    res.status(201).json({ success: true, quote: populated });
+    res.status(201).json({ success: true, quote: quoteView(populated) });
   } catch (error) {
     next(error);
   }
@@ -153,14 +156,14 @@ exports.requestTruck = async (req, res, next) => {
     await recordNewOffer(load);
     const populated = await withDetails(Quote.findById(quote._id));
 
-    req.io?.to(`user-${owner._id}`).emit('quote-updated', { quote: populated });
+    req.io?.to(`user-${owner._id}`).emit('quote-updated', { quote: quoteView(populated) });
     await sendPushToUser(owner._id, {
       title: 'New booking request',
       body: `A shipper offers ${formatCurrency(price)} for your ${truck.truckType} truck to carry ${load.goodsType}`,
       data: { type: 'load', loadId: String(load._id) },
     });
 
-    res.status(201).json({ success: true, quote: populated });
+    res.status(201).json({ success: true, quote: quoteView(populated) });
   } catch (error) {
     next(error);
   }
@@ -173,7 +176,7 @@ exports.listMyQuotes = async (req, res, next) => {
       .populate('loadId')
       .populate('truckId', `registrationNumber ${TRUCK_FIELDS}`)
       .sort({ createdAt: -1 });
-    res.json({ success: true, quotes });
+    res.json({ success: true, quotes: quotes.map((quote) => withVerification(quote, { trucks: ['truckId'] })) });
   } catch (error) {
     next(error);
   }

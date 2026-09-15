@@ -62,6 +62,13 @@ export const INSURANCE_TYPES = [
   { value: 'comprehensive', label: 'Comprehensive', description: 'Also covers damage to the truck' },
 ];
 
+// Papers an admin checks a truck against.
+export const TRUCK_DOCUMENT_LABELS = {
+  bluebook: 'Bluebook',
+  truck_photo: 'Photo of the truck with its number plate',
+  insurance: 'Insurance paper',
+};
+
 export const TRUCK_FEATURES = [
   { key: 'tarpaulin', label: 'Tarpaulin cover', short: 'Tarpaulin', description: 'Keeps goods dry in the rain' },
   { key: 'helper', label: 'Helper (khalasi) comes along', short: 'Helper', description: 'An extra hand for loading and unloading' },

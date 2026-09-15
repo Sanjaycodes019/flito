@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import { StatusPill } from '../common/SettingsList';
+import VerifiedBadge from '../common/VerifiedBadge';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 import { bodyTypeLabel, formatCurrency, formatKg, truckTypeLabel } from '../../utils/helpers';
@@ -50,7 +51,10 @@ const TruckMatchCard = ({ match, best, canRequest, maxOpenRequests, sending, onR
           <Icon name="truck" size={iconSize.lg} color={colors.primaryText} />
         </View>
         <View style={styles.heading}>
-          <Text style={styles.title} numberOfLines={1}>{truckTypeLabel(truck.truckType)}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title} numberOfLines={1}>{truckTypeLabel(truck.truckType)}</Text>
+            {truck.verified && <VerifiedBadge size={18} label="Verified truck" />}
+          </View>
           <Text style={styles.subtitle} numberOfLines={2}>
             {[bodyTypeLabel(truck.bodyType), truck.makeModel, truck.year ? String(truck.year) : null, `carries ${formatKg(truck.capacity)}`]
               .filter(Boolean)
@@ -63,6 +67,7 @@ const TruckMatchCard = ({ match, best, canRequest, maxOpenRequests, sending, onR
       <View style={styles.ownerRow}>
         <Icon name="owner" size={iconSize.sm} color={colors.textMuted} />
         <Text style={styles.ownerName} numberOfLines={1}>{owner.name}</Text>
+        {owner.verified && <VerifiedBadge size={16} label="Verified owner" />}
         {rated ? (
           <View style={styles.rating}>
             <Icon name="star" size={iconSize.xs} color={colors.warningText} />
@@ -164,7 +169,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heading: { flex: 1, minWidth: 0 },
-  title: { ...type.h3, color: colors.textPrimary },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  title: { ...type.h3, color: colors.textPrimary, flexShrink: 1 },
   subtitle: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
 
   ownerRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },

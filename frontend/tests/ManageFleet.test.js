@@ -129,6 +129,83 @@ describe('my fleet', () => {
     expect(api.post).not.toHaveBeenCalled();
   });
 
+  it("won't send a truck for verification until its required papers are in", async () => {
+    const screen = renderFleet([{
+      _id: 'truck-1',
+      registrationNumber: 'BA 2 KHA 4567',
+      truckType: '6-wheeler',
+      capacity: 10000,
+      status: 'active',
+      verification: {
+        status: 'not_submitted',
+        canEdit: true,
+        requiredDocuments: ['bluebook', 'truck_photo'],
+        optionalDocuments: ['insurance'],
+        missingDocuments: ['truck_photo'],
+        documents: [{ _id: 'doc-1', type: 'bluebook', format: 'png', url: 'https://example.com/bluebook.png' }],
+      },
+    }]);
+
+    fireEvent.press(await screen.findByLabelText('BA 2 KHA 4567 verification'));
+
+    expect(screen.getByLabelText('Open View bluebook')).toBeTruthy();
+    expect(screen.getByText('Still needed: photo of the truck with its number plate.')).toBeTruthy();
+    fireEvent.press(screen.getByText('Send for Verification'));
+    expect(api.post).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('Verified truck')).toBeNull();
+  });
+
+  it('shows the verified badge on a truck an admin approved, with its papers locked', async () => {
+    const screen = renderFleet([{
+      _id: 'truck-1',
+      registrationNumber: 'BA 2 KHA 4567',
+      truckType: '6-wheeler',
+      capacity: 10000,
+      status: 'active',
+      verified: true,
+      verification: {
+        status: 'approved',
+        canEdit: false,
+        requiredDocuments: ['bluebook', 'truck_photo'],
+        optionalDocuments: ['insurance'],
+        missingDocuments: [],
+        documents: [],
+      },
+    }]);
+
+    expect(await screen.findByLabelText('Verified truck')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('BA 2 KHA 4567 verification'));
+    expect(screen.getByText('Shippers see the verified badge on this truck.')).toBeTruthy();
+    expect(screen.queryByText('Send for Verification')).toBeNull();
+    expect(screen.queryByText('Upload File')).toBeNull();
+  });
+
+  it('sends a truck for verification once its required papers are in', async () => {
+    api.post.mockResolvedValue({ data: {} });
+    const screen = renderFleet([{
+      _id: 'truck-1',
+      registrationNumber: 'BA 2 KHA 4567',
+      truckType: '6-wheeler',
+      capacity: 10000,
+      status: 'active',
+      verification: {
+        status: 'rejected',
+        rejectionReason: 'The bluebook photo is blurry',
+        canEdit: true,
+        requiredDocuments: ['bluebook', 'truck_photo'],
+        optionalDocuments: ['insurance'],
+        missingDocuments: [],
+        documents: [],
+      },
+    }]);
+
+    fireEvent.press(await screen.findByLabelText('BA 2 KHA 4567 verification'));
+    expect(screen.getByText('The bluebook photo is blurry')).toBeTruthy();
+    fireEvent.press(screen.getByText('Send for Verification'));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/trucks/truck-1/verification'));
+  });
+
   it('shows what a truck is missing and when its papers run out', async () => {
     const screen = renderFleet([
       {

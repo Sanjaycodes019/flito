@@ -17,6 +17,7 @@ const LOAD_ID = 'load-1';
 const match = (overrides = {}) => ({
   truck: {
     _id: 'truck-a',
+    verified: true,
     truckType: '6-wheeler',
     bodyType: 'covered',
     capacity: 10000,
@@ -27,7 +28,7 @@ const match = (overrides = {}) => ({
     features: { tarpaulin: true, helper: true },
     cargoBed: { lengthFt: 19, widthFt: 7.5, heightFt: 7 },
   },
-  owner: { _id: 'owner-a', name: 'Thapa Transport', rating: 4.8, totalRatings: 12, completedTrips: 20 },
+  owner: { _id: 'owner-a', name: 'Thapa Transport', verified: true, rating: 4.8, totalRatings: 12, completedTrips: 20 },
   distanceToPickupKm: 1,
   fillPercent: 60,
   askingPrice: 16000,
@@ -116,6 +117,10 @@ describe('choosing a truck', () => {
     expect(screen.getByText('Tarpaulin')).toBeTruthy();
     expect(screen.getByText('Helper')).toBeTruthy();
     expect(screen.getByText('Cargo bed 19 x 7.5 x 7 ft')).toBeTruthy();
+
+    // The verified badge sits only on the truck and owner an admin verified.
+    expect(screen.getAllByLabelText('Verified truck')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Verified owner')).toHaveLength(1);
   });
 
   it('re-sorts by price, distance and rating', async () => {

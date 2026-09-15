@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const {
-  ALL_TRUCK_TYPES, BODY_TYPES, FUEL_TYPES, SERVICE_AREAS, INSURANCE_TYPES,
+  ALL_TRUCK_TYPES, BODY_TYPES, FUEL_TYPES, SERVICE_AREAS, INSURANCE_TYPES, TRUCK_DOCUMENT_TYPES, TRUCK_VERIFICATION_STATUSES,
 } = require('../config/truckTypes');
 
 const truckSchema = new mongoose.Schema(
@@ -102,13 +102,27 @@ const truckSchema = new mongoose.Schema(
       default: [],
     },
 
-    documents: [
+    // Verification by an admin, against the papers uploaded here. Only an
+    // approved truck shows the verified badge. Papers are private storage
+    // identifiers, reachable only through short-lived signed links.
+    verificationStatus: {
+      type: String,
+      enum: TRUCK_VERIFICATION_STATUSES,
+      default: 'not_submitted',
+    },
+    verificationDocuments: [
       {
-        type: { type: String }, // bluebook, insurance, permit
-        url: String,
-        expiresAt: Date,
+        type: { type: String, enum: TRUCK_DOCUMENT_TYPES, required: true },
+        publicId: { type: String, required: true },
+        format: String,
+        bytes: Number,
+        uploadedAt: { type: Date, default: Date.now },
       },
     ],
+    verificationSubmittedAt: Date,
+    verificationReviewedAt: Date,
+    verificationReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    verificationRejectionReason: String,
   },
   { timestamps: true }
 );
@@ -117,5 +131,6 @@ const truckSchema = new mongoose.Schema(
 // never be blocked by each other, but one owner can't list the same truck twice.
 truckSchema.index({ ownerId: 1, registrationNumber: 1 }, { unique: true });
 truckSchema.index({ status: 1, capacity: 1 });
+truckSchema.index({ verificationStatus: 1, verificationSubmittedAt: 1 });
 
 module.exports = mongoose.model('Truck', truckSchema);

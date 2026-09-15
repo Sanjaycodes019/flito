@@ -43,7 +43,17 @@ const INSURANCE_TYPES = ['third-party', 'comprehensive'];
 
 const TRUCK_FEATURES = ['tarpaulin', 'helper', 'gpsTracker', 'hillRoads'];
 
+// Papers an admin checks a truck against: its bluebook and a photo of the
+// truck showing its number plate (both required), and the insurance paper.
+const REQUIRED_TRUCK_DOCUMENTS = ['bluebook', 'truck_photo'];
+const TRUCK_DOCUMENT_TYPES = [...REQUIRED_TRUCK_DOCUMENTS, 'insurance'];
+
+const TRUCK_VERIFICATION_STATUSES = ['not_submitted', 'pending', 'approved', 'rejected'];
+
 module.exports = {
+  REQUIRED_TRUCK_DOCUMENTS,
+  TRUCK_DOCUMENT_TYPES,
+  TRUCK_VERIFICATION_STATUSES,
   TRUCK_TYPES,
   ALL_TRUCK_TYPES,
   NOMINAL_CAPACITY_KG,
