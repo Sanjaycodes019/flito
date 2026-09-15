@@ -1,11 +1,13 @@
 const storage = require('./storage');
+const { isAddressComplete } = require('./nepalLocations');
 const {
-  KYC_ID_TYPES,
+  ID_DOCUMENT_OPTIONS,
   EDITABLE_KYC_STATUSES,
-  idTypeOf,
-  allowedDocumentsFor,
   requiredDocumentsFor,
   optionalDocumentsFor,
+  identityOptionsFor,
+  identityCoveredByRole,
+  completedIdTypes,
   missingDocuments,
 } = require('./kycPolicy');
 
@@ -21,21 +23,34 @@ const documentView = (doc) => ({
 });
 
 // A user's own verification state.
-const kycView = (user) => ({
-  status: user.kycStatus,
-  rejectionReason: user.kycStatus === 'rejected' ? user.kycRejectionReason : undefined,
-  submittedAt: user.kycSubmittedAt,
-  reviewedAt: user.kycReviewedAt,
-  canEdit: EDITABLE_KYC_STATUSES.includes(user.kycStatus),
-  idType: idTypeOf(user),
-  // For each identity document the user could pick, the uploads it keeps.
-  // Lets the app warn before a switch removes documents already uploaded.
-  idTypeDocuments: Object.fromEntries(KYC_ID_TYPES.map((idType) => [idType, allowedDocumentsFor(user, idType)])),
-  requiredDocuments: requiredDocumentsFor(user),
-  optionalDocuments: optionalDocumentsFor(user),
-  missingDocuments: missingDocuments(user),
-  documents: (user.kycDocuments || []).map(documentView),
-});
+const kycView = (user) => {
+  const completed = completedIdTypes(user);
+  return {
+    status: user.kycStatus,
+    rejectionReason: user.kycStatus === 'rejected' ? user.kycRejectionReason : undefined,
+    submittedAt: user.kycSubmittedAt,
+    reviewedAt: user.kycReviewedAt,
+    canEdit: EDITABLE_KYC_STATUSES.includes(user.kycStatus),
+    // One complete identity document is required and the rest are optional,
+    // unless the role's required documents already include one (a driver's
+    // license), in which case every identity document here is optional.
+    identity: {
+      required: !identityCoveredByRole(user),
+      complete: completed.length > 0,
+      options: identityOptionsFor(user).map((idType) => ({
+        idType,
+        documents: ID_DOCUMENT_OPTIONS[idType],
+        complete: completed.includes(idType),
+      })),
+    },
+    requiredDocuments: requiredDocumentsFor(user),
+    optionalDocuments: optionalDocumentsFor(user),
+    missingDocuments: missingDocuments(user),
+    // An address is required before submitting, alongside the documents.
+    addressComplete: isAddressComplete(user.address),
+    documents: (user.kycDocuments || []).map(documentView),
+  };
+};
 
 // A submission as an admin reviews it.
 const reviewView = (user) => ({
@@ -47,7 +62,8 @@ const reviewView = (user) => ({
   role: user.role,
   companyName: user.companyName,
   submittedAt: user.kycSubmittedAt,
-  idType: idTypeOf(user),
+  // The identity documents that are complete in this submission.
+  identityDocuments: completedIdTypes(user),
   requiredDocuments: requiredDocumentsFor(user),
   documents: (user.kycDocuments || []).map(documentView),
 });

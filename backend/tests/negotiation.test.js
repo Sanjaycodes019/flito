@@ -1,4 +1,6 @@
-const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone } = require('./helpers');
+const {
+  setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleLoad, placeQuote,
+} = require('./helpers');
 
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
@@ -9,28 +11,16 @@ const setupNegotiation = async ({ quotedPrice = 15000 } = {}) => {
   const shipper = await signUp({ phone: uniquePhone(), role: 'shipper', firstName: 'Ram' });
   const owner = await signUp({ phone: uniquePhone(), role: 'owner', firstName: 'Bikash' });
 
-  const loadRes = await as(shipper.token).post('/api/loads').send({
-    goodsType: 'Cement',
-    pickupLocation: { address: 'Kathmandu' },
-    dropoffLocation: { address: 'Pokhara' },
-  }).expect(201);
+  const load = (await as(shipper.token).post('/api/loads').send(sampleLoad()).expect(201)).body.load;
+  const quote = await placeQuote(owner, load, quotedPrice);
 
-  const quoteRes = await as(owner.token).post('/api/quotes').send({
-    loadId: loadRes.body.load._id,
-    quotedPrice,
-  }).expect(201);
-
-  return { shipper, owner, load: loadRes.body.load, quote: quoteRes.body.quote };
+  return { shipper, owner, load, quote };
 };
 
 describe('quote permissions', () => {
-  it('stops an owner from quoting on their own behalf as a shipper', async () => {
+  it('stops a shipper quoting as if they were an owner', async () => {
     const shipper = await signUp({ phone: uniquePhone(), role: 'shipper' });
-    const load = (await as(shipper.token).post('/api/loads').send({
-      goodsType: 'Rice',
-      pickupLocation: { address: 'A' },
-      dropoffLocation: { address: 'B' },
-    })).body.load;
+    const load = (await as(shipper.token).post('/api/loads').send(sampleLoad({ goodsType: 'Rice' }))).body.load;
 
     const res = await as(shipper.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 100 });
     expect(res.status).toBe(403);
@@ -39,11 +29,7 @@ describe('quote permissions', () => {
   it('rejects a non-positive quoted price', async () => {
     const shipper = await signUp({ phone: uniquePhone(), role: 'shipper' });
     const owner = await signUp({ phone: uniquePhone(), role: 'owner' });
-    const load = (await as(shipper.token).post('/api/loads').send({
-      goodsType: 'Rice',
-      pickupLocation: { address: 'A' },
-      dropoffLocation: { address: 'B' },
-    })).body.load;
+    const load = (await as(shipper.token).post('/api/loads').send(sampleLoad({ goodsType: 'Rice' }))).body.load;
 
     const res = await as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: -5 });
     expect(res.status).toBe(400);
@@ -75,8 +61,8 @@ describe('counter-offer turn taking', () => {
     expect(res.body.message).toMatch(/waiting on the other party/i);
   });
 
-  // The whole point of the counter-offer fix: before it, a shipper could
-  // counter but the owner had no way to accept, deadlocking the negotiation.
+  // Before this fix a shipper could counter but the owner had no way to
+  // accept, deadlocking the negotiation.
   it('lets the owner accept a shipper counter-offer at the countered price', async () => {
     const { shipper, owner, quote } = await setupNegotiation({ quotedPrice: 15000 });
 

@@ -26,6 +26,12 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    // The truck agreed in the negotiation. Bookings made before trucks were
+    // part of an offer have none.
+    truckId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Truck',
+    },
 
     status: {
       type: String,

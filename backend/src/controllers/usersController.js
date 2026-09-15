@@ -3,25 +3,17 @@ const User = require('../models/User');
 const storage = require('../services/storage');
 const { publicUser } = require('../services/userView');
 const { kycView } = require('../services/kycView');
+const { isAddressComplete } = require('../services/nepalLocations');
 const { issueVerificationCode } = require('../services/verification');
 const {
-  KYC_ID_TYPES,
-  DEFAULT_KYC_ID_TYPE,
   EDITABLE_KYC_STATUSES,
   NAME_LOCKED_KYC_STATUSES,
-  idTypeOf,
   allowedDocumentsFor,
-  requiredDocumentsFor,
+  completeDocumentSets,
   missingDocuments,
 } = require('../services/kycPolicy');
 
 const statusPhrase = (status) => (status === 'pending' ? 'under review' : status);
-
-// Matches the identity document choice a user was loaded with, including
-// accounts saved before the choice existed (no field stored, so citizenship).
-const idTypeFilter = (user) => (
-  idTypeOf(user) === DEFAULT_KYC_ID_TYPE ? { $in: [DEFAULT_KYC_ID_TYPE, null] } : idTypeOf(user)
-);
 
 // Owners look up a driver by exact phone match before assigning them to a
 // booking. Restricted to role=driver results and a minimal public shape.
@@ -78,10 +70,7 @@ exports.updateProfile = async (req, res, next) => {
     if (lastName !== undefined) user.lastName = lastName;
     if (phone !== undefined) user.phone = phone || undefined;
     if (companyName !== undefined) user.companyName = companyName || undefined;
-    if (address) {
-      if (address.street !== undefined) user.address.street = address.street || undefined;
-      if (address.city !== undefined) user.address.city = address.city || undefined;
-    }
+    if (address) user.address = address;
 
     // A changed email is a new, unverified address until proven otherwise:
     // carrying over the old `emailVerified: true` would let someone claim an
@@ -242,12 +231,11 @@ exports.uploadKycDocument = async (req, res, next) => {
 
     // One document per type, so a re-upload replaces the old one. A single
     // pipeline update swaps it atomically, and only while the status is still
-    // editable. A document can't slip in after the user has submitted, or
-    // after they switched to an identity document that doesn't use it.
+    // editable. A document can't slip in after the user has submitted.
     let updated;
     try {
       updated = await User.findOneAndUpdate(
-        { _id: user._id, kycStatus: { $in: EDITABLE_KYC_STATUSES }, kycIdType: idTypeFilter(user) },
+        { _id: user._id, kycStatus: { $in: EDITABLE_KYC_STATUSES } },
         [{
           $set: {
             kycDocuments: {
@@ -315,50 +303,6 @@ exports.deleteKycDocument = async (req, res, next) => {
   }
 };
 
-// Chooses which identity document the user verifies with. Uploads the new
-// choice doesn't use come off the record and out of storage, so an abandoned
-// citizenship scan isn't kept after switching to a passport.
-exports.setKycIdType = async (req, res, next) => {
-  try {
-    const { idType } = req.body || {};
-    if (!KYC_ID_TYPES.includes(idType)) {
-      return res.status(400).json({ success: false, message: `idType must be one of: ${KYC_ID_TYPES.join(', ')}` });
-    }
-
-    const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-
-    if (!EDITABLE_KYC_STATUSES.includes(user.kycStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: `Your identity document can't be changed while your verification is ${statusPhrase(user.kycStatus)}`,
-      });
-    }
-
-    const allowed = allowedDocumentsFor(user, idType);
-    // Returns the record as it was, so the files to delete are exactly the
-    // documents this update removed.
-    const before = await User.findOneAndUpdate(
-      { _id: user._id, kycStatus: { $in: EDITABLE_KYC_STATUSES } },
-      { $set: { kycIdType: idType }, $pull: { kycDocuments: { type: { $nin: allowed } } } },
-      { new: false },
-    );
-    if (!before) {
-      return res.status(400).json({ success: false, message: 'Your documents were submitted in the meantime and can no longer be changed' });
-    }
-
-    const removed = (before.kycDocuments || []).filter((doc) => !allowed.includes(doc.type));
-    if (removed.length && storage.isConfigured()) {
-      await storage.deleteAssets(removed.map((doc) => doc.publicId), { type: 'authenticated' });
-    }
-
-    const updated = await User.findById(user._id);
-    res.json({ success: true, kyc: kycView(updated), removedDocuments: removed.map((doc) => doc.type) });
-  } catch (error) {
-    next(error);
-  }
-};
-
 exports.submitKyc = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.userId);
@@ -366,6 +310,15 @@ exports.submitKyc = async (req, res, next) => {
 
     if (!EDITABLE_KYC_STATUSES.includes(user.kycStatus)) {
       return res.status(400).json({ success: false, message: `Your verification is already ${statusPhrase(user.kycStatus)}` });
+    }
+
+    // Reviewers check the address alongside the documents.
+    if (!isAddressComplete(user.address)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Add your address before submitting for verification',
+        code: 'ADDRESS_REQUIRED',
+      });
     }
 
     const missing = missingDocuments(user);
@@ -377,15 +330,14 @@ exports.submitKyc = async (req, res, next) => {
       });
     }
 
-    // Conditional on the documents still being complete and the status and
-    // identity document choice unchanged, in case either changed during the
-    // request.
+    // Conditional on the documents still being complete (the role's own
+    // documents plus at least one full identity document) and the status
+    // unchanged, in case a document was removed during the request.
     const updated = await User.findOneAndUpdate(
       {
         _id: user._id,
         kycStatus: user.kycStatus,
-        kycIdType: idTypeFilter(user),
-        'kycDocuments.type': { $all: requiredDocumentsFor(user) },
+        $or: completeDocumentSets(user).map((types) => ({ 'kycDocuments.type': { $all: types } })),
       },
       {
         $set: { kycStatus: 'pending', kycSubmittedAt: new Date() },

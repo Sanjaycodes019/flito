@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import CreateLoadScreen from '../screens/shipper/CreateLoadScreen';
+import TruckMatchesScreen from '../screens/shipper/TruckMatchesScreen';
 import LoadsListScreen from '../screens/LoadsListScreen';
 import LoadDetailScreen from '../screens/LoadDetailScreen';
 import BookingsListScreen from '../screens/BookingsListScreen';
@@ -26,12 +27,13 @@ const HomeStackNavigator = () => {
       {/* On desktop the FLITO mark already sits in the header's left slot. */}
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: isDesktop ? 'Dashboard' : 'FLITO' }} />
       <Stack.Screen name="CreateLoad" component={CreateLoadScreen} options={{ title: 'Post a Load' }} />
+      <Stack.Screen name="TruckMatches" component={TruckMatchesScreen} options={{ title: 'Choose a Truck' }} />
       <Stack.Screen name="LoadsList" component={LoadsListScreen} options={{ title: 'Loads' }} />
       <Stack.Screen name="LoadDetail" component={LoadDetailScreen} options={{ title: 'Load Details' }} />
       <Stack.Screen name="Bookings" component={BookingsListScreen} options={{ title: 'Bookings' }} />
       <Stack.Screen name="Jobs" component={BookingsListScreen} options={{ title: 'My Jobs' }} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
-      <Stack.Screen name="MyQuotes" component={MyQuotesScreen} options={{ title: 'My Quotes' }} />
+      <Stack.Screen name="MyQuotes" component={MyQuotesScreen} options={{ title: 'Offers' }} />
       <Stack.Screen name="Fleet" component={ManageFleet} options={{ title: 'My Fleet' }} />
       <Stack.Screen name="Earnings" component={EarningsScreen} options={{ title: 'Earnings' }} />
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: 'Admin Dashboard' }} />

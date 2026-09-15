@@ -1,12 +1,22 @@
 const Load = require('../models/Load');
 const Quote = require('../models/Quote');
+const Truck = require('../models/Truck');
 const storage = require('../services/storage');
 const {
-  LOAD_TTL_MS,
   BIDDABLE_LOAD_STATUSES,
   OPEN_QUOTE_STATUSES,
   isExpired,
+  loadExpiresAt,
 } = require('../services/expiry');
+const { estimateRoadKm } = require('../services/nepalLocations');
+const { nepalDay, startOfNepalDay } = require('../services/nepalTime');
+const {
+  askingPriceFor,
+  capacityOf,
+  findMatches,
+  unavailableReason,
+} = require('../services/truckMatching');
+const { MAX_OPEN_REQUESTS_PER_LOAD, standingOffer } = require('../services/negotiation');
 
 const MAX_LOAD_PHOTOS = 6;
 
@@ -20,7 +30,7 @@ exports.createLoad = async (req, res, next) => {
   try {
     const {
       goodsType, description, weight, volume, quantity,
-      pickupLocation, dropoffLocation, preferredPickupDate,
+      pickupLocation, dropoffLocation, pickupDay,
       estimatedDeliveryDate, truckTypePreference, budgetEstimate,
     } = req.body;
 
@@ -33,11 +43,13 @@ exports.createLoad = async (req, res, next) => {
       quantity,
       pickupLocation,
       dropoffLocation,
-      preferredPickupDate,
+      pickupDay,
+      preferredPickupDate: startOfNepalDay(pickupDay),
+      distanceKm: estimateRoadKm(pickupLocation, dropoffLocation),
       estimatedDeliveryDate,
       truckTypePreference,
       budgetEstimate,
-      expiresAt: new Date(Date.now() + LOAD_TTL_MS),
+      expiresAt: loadExpiresAt(pickupDay),
     });
 
     res.status(201).json({ success: true, load });
@@ -97,6 +109,75 @@ const findOwnLoad = async (req, res) => {
   return load;
 };
 
+// The trucks a shipper can choose from for their load, best match first, each
+// with any offer already open with its owner on this load.
+exports.listTruckMatches = async (req, res, next) => {
+  try {
+    const load = await findOwnLoad(req, res);
+    if (!load) return;
+
+    const takingOffers = BIDDABLE_LOAD_STATUSES.includes(load.status) && !isExpired(load);
+    const [matches, openOffers] = await Promise.all([
+      takingOffers ? findMatches(load) : [],
+      Quote.find({ loadId: load._id, status: { $in: OPEN_QUOTE_STATUSES } }),
+    ]);
+
+    const offerByOwner = new Map(openOffers.map((quote) => [String(quote.ownerId), quote]));
+    const withOffers = matches.map((match) => {
+      const quote = offerByOwner.get(String(match.owner._id));
+      if (!quote) return { ...match, offer: null };
+      const standing = standingOffer(quote);
+      return {
+        ...match,
+        offer: {
+          _id: quote._id,
+          status: quote.status,
+          initiatedBy: quote.initiatedBy || 'owner',
+          truckId: quote.truckId || null,
+          price: standing.price,
+          by: standing.by,
+        },
+      };
+    });
+
+    res.json({
+      success: true,
+      load,
+      takingOffers,
+      matches: withOffers,
+      openRequests: openOffers.filter((quote) => quote.initiatedBy === 'shipper').length,
+      maxOpenRequests: MAX_OPEN_REQUESTS_PER_LOAD,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// An owner's trucks for one load: which can carry it (and why not), and what
+// each one's rates come to for the trip.
+exports.listMyTrucksForLoad = async (req, res, next) => {
+  try {
+    const load = await Load.findById(req.params.id);
+    if (!load) return res.status(404).json({ success: false, message: 'Load not found' });
+
+    const trucks = await Truck.find({ ownerId: req.user.userId }).sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      trucks: trucks.map((truck) => ({
+        _id: truck._id,
+        registrationNumber: truck.registrationNumber,
+        truckType: truck.truckType,
+        capacity: capacityOf(truck),
+        makeModel: truck.makeModel || null,
+        unavailableReason: unavailableReason(truck, load),
+        askingPrice: askingPriceFor(truck, load.distanceKm),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Shipper withdraws their own load before it is booked. Live bids on it are
 // closed out so owners aren't left negotiating on a load that no longer exists.
 exports.cancelLoad = async (req, res, next) => {
@@ -118,8 +199,9 @@ exports.cancelLoad = async (req, res, next) => {
   }
 };
 
-// Put an expired load back on the market with a fresh window. Bids made on the
-// old posting stay expired; owners bid again against the relisted load.
+// Put an expired load back on the market. Its pickup date moves to the date
+// sent, or else to today if it has passed. Offers made on the old posting stay
+// expired; owners offer again against the relisted load.
 exports.relistLoad = async (req, res, next) => {
   try {
     const load = await findOwnLoad(req, res);
@@ -135,9 +217,14 @@ exports.relistLoad = async (req, res, next) => {
 
     await Quote.updateMany({ loadId: load._id, status: { $in: OPEN_QUOTE_STATUSES } }, { status: 'expired' });
 
+    const today = nepalDay();
+    const pickupDay = req.body.pickupDay || (load.pickupDay && load.pickupDay >= today ? load.pickupDay : today);
+
     load.status = 'open';
     load.totalQuotes = 0;
-    load.expiresAt = new Date(Date.now() + LOAD_TTL_MS);
+    load.pickupDay = pickupDay;
+    load.preferredPickupDate = startOfNepalDay(pickupDay);
+    load.expiresAt = loadExpiresAt(pickupDay);
     await load.save();
 
     res.json({ success: true, load });
@@ -146,14 +233,15 @@ exports.relistLoad = async (req, res, next) => {
   }
 };
 
-// All quotes submitted for one load (shipper reviewing bids)
+// Every negotiation on one load, with the owner and the truck on offer.
 exports.listQuotesForLoad = async (req, res, next) => {
   try {
     const load = await findOwnLoad(req, res);
     if (!load) return;
 
     const quotes = await Quote.find({ loadId: load._id })
-      .populate('ownerId', 'firstName lastName companyName rating')
+      .populate('ownerId', 'firstName lastName companyName rating totalRatings')
+      .populate('truckId', 'truckType capacity makeModel baseLocation')
       .sort({ createdAt: -1 });
 
     res.json({ success: true, quotes });

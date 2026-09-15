@@ -9,7 +9,8 @@ const newOwner = () => signUp({ phone: uniquePhone(), role: 'owner', firstName: 
 const addTruck = (owner, overrides = {}) =>
   as(owner.token).post('/api/trucks').send({
     registrationNumber: `BA 2 KHA ${Math.floor(1000 + Math.random() * 9000)}`,
-    truckType: '10-ton',
+    truckType: '6-wheeler',
+    bodyType: 'open',
     capacity: 10000,
     ...overrides,
   });
@@ -45,7 +46,7 @@ describe('fleet ownership', () => {
 describe('truck validation', () => {
   it('requires a registration number', async () => {
     const owner = await newOwner();
-    const res = await as(owner.token).post('/api/trucks').send({ truckType: '10-ton' });
+    const res = await as(owner.token).post('/api/trucks').send({ truckType: '6-wheeler', bodyType: 'open', capacity: 10000 });
     expect(res.status).toBe(400);
   });
 

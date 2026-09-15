@@ -9,7 +9,7 @@
 // (native) or window.parent.postMessage otherwise (web).
 //
 // Commands the host can send in: {type:'setDriver'|'clearDriver', lat, lng},
-// {type:'setPicked', lat, lng}, {type:'center', lat, lng, zoom?}.
+// {type:'setPicked', lat, lng}, {type:'clearPicked'}, {type:'center', lat, lng, zoom?}.
 // Events the page sends out: {type:'picked', lat, lng} (tap in picker mode),
 // {type:'ready'}.
 
@@ -142,6 +142,8 @@ export const buildMapHtml = ({
         } else if (msg.type === 'setPicked') {
           setPicked(msg.lat, msg.lng);
           map.setView([msg.lat, msg.lng], Math.max(map.getZoom(), 15));
+        } else if (msg.type === 'clearPicked') {
+          if (pickedMarker) { map.removeLayer(pickedMarker); pickedMarker = null; }
         } else if (msg.type === 'center') {
           map.setView([msg.lat, msg.lng], msg.zoom || map.getZoom());
         } else if (msg.type === 'fitAll') {

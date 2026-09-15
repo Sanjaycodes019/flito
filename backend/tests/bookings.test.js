@@ -1,4 +1,6 @@
-const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone } = require('./helpers');
+const {
+  setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleLoad, placeQuote,
+} = require('./helpers');
 
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
@@ -11,14 +13,9 @@ const setupBooking = async ({ withDriver = true } = {}) => {
   const driverPhone = uniquePhone();
   const driver = await signUp({ phone: driverPhone, role: 'driver', firstName: 'Hari' });
 
-  const load = (await as(shipper.token).post('/api/loads').send({
-    goodsType: 'Cement',
-    pickupLocation: { address: 'Kathmandu' },
-    dropoffLocation: { address: 'Pokhara' },
-  }).expect(201)).body.load;
+  const load = (await as(shipper.token).post('/api/loads').send(sampleLoad()).expect(201)).body.load;
 
-  const quote = (await as(owner.token).post('/api/quotes')
-    .send({ loadId: load._id, quotedPrice: 15000 }).expect(201)).body.quote;
+  const quote = await placeQuote(owner, load, 15000);
 
   let booking = (await as(shipper.token)
     .patch(`/api/quotes/${quote._id}/accept`).expect(200)).body.booking;

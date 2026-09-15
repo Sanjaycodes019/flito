@@ -1,3 +1,5 @@
+const { describeAddress } = require('./nepalLocations');
+
 // The account fields a user sees about themselves. Deliberately excludes KYC
 // document identifiers, review internals and anything security-sensitive.
 const publicUser = (user) => ({
@@ -17,14 +19,14 @@ const publicUser = (user) => ({
   // grey out "change email" for a Google-managed address.
   hasGoogle: Boolean(user.googleId),
   companyName: user.companyName,
-  address: {
-    street: user.address?.street,
-    city: user.address?.city,
-  },
+  // With province, district and local-level names filled in, or null until
+  // the user has added a complete address.
+  address: describeAddress(user.address),
   kycStatus: user.kycStatus,
   kycRejectionReason: user.kycStatus === 'rejected' ? user.kycRejectionReason : undefined,
   rating: user.rating,
   totalRatings: user.totalRatings,
+  memberSince: user.createdAt,
 });
 
 module.exports = { publicUser };

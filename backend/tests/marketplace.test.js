@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
-const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone } = require('./helpers');
+const {
+  setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleLoad, quoteOn, placeQuote,
+} = require('./helpers');
 
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
@@ -10,14 +12,7 @@ const Quote = () => mongoose.model('Quote');
 const User = () => mongoose.model('User');
 
 const postLoad = async (shipper) =>
-  (await as(shipper.token).post('/api/loads').send({
-    goodsType: 'Cement',
-    pickupLocation: { address: 'Kathmandu' },
-    dropoffLocation: { address: 'Pokhara' },
-  }).expect(201)).body.load;
-
-const quoteOn = (owner, load, quotedPrice = 15000) =>
-  as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice });
+  (await as(shipper.token).post('/api/loads').send(sampleLoad()).expect(201)).body.load;
 
 const newUser = (role, firstName = 'Test') => signUp({ phone: uniquePhone(), role, firstName });
 
@@ -30,11 +25,11 @@ describe('competitive bidding', () => {
     const ownerB = await newUser('owner');
     const load = await postLoad(shipper);
 
-    await quoteOn(ownerA, load).expect(201);
+    await placeQuote(ownerA, load);
 
     const browse = await as(ownerB.token).get('/api/loads').expect(200);
     expect(browse.body.loads.map((l) => l._id)).toContain(load._id);
-    await quoteOn(ownerB, load, 14000).expect(201);
+    await placeQuote(ownerB, load, 14000);
   });
 
   it('allows only one active quote per owner per load', async () => {
@@ -42,7 +37,7 @@ describe('competitive bidding', () => {
     const owner = await newUser('owner');
     const load = await postLoad(shipper);
 
-    await quoteOn(owner, load).expect(201);
+    await placeQuote(owner, load);
     const res = await quoteOn(owner, load, 9000);
     expect(res.status).toBe(409);
 
@@ -58,8 +53,8 @@ describe('booking a load exactly once', () => {
     const ownerA = await newUser('owner');
     const ownerB = await newUser('owner');
     const load = await postLoad(shipper);
-    const quoteA = (await quoteOn(ownerA, load).expect(201)).body.quote;
-    const quoteB = (await quoteOn(ownerB, load, 14000).expect(201)).body.quote;
+    const quoteA = await placeQuote(ownerA, load);
+    const quoteB = await placeQuote(ownerB, load, 14000);
 
     await as(shipper.token).patch(`/api/quotes/${quoteA._id}/accept`).expect(200);
     const second = await as(shipper.token).patch(`/api/quotes/${quoteB._id}/accept`);
@@ -73,8 +68,8 @@ describe('booking a load exactly once', () => {
     const ownerA = await newUser('owner');
     const ownerB = await newUser('owner');
     const load = await postLoad(shipper);
-    const quoteA = (await quoteOn(ownerA, load).expect(201)).body.quote;
-    const quoteB = (await quoteOn(ownerB, load, 14000).expect(201)).body.quote;
+    const quoteA = await placeQuote(ownerA, load);
+    const quoteB = await placeQuote(ownerB, load, 14000);
 
     await as(shipper.token).patch(`/api/quotes/${quoteA._id}/accept`).expect(200);
 
@@ -87,8 +82,8 @@ describe('booking a load exactly once', () => {
     const ownerA = await newUser('owner');
     const ownerB = await newUser('owner');
     const load = await postLoad(shipper);
-    const quoteA = (await quoteOn(ownerA, load).expect(201)).body.quote;
-    const quoteB = (await quoteOn(ownerB, load, 14000).expect(201)).body.quote;
+    const quoteA = await placeQuote(ownerA, load);
+    const quoteB = await placeQuote(ownerB, load, 14000);
 
     const results = await Promise.all([
       as(shipper.token).patch(`/api/quotes/${quoteA._id}/accept`),
@@ -105,7 +100,7 @@ describe('closed quotes are immutable', () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     const load = await postLoad(shipper);
-    const quote = (await quoteOn(owner, load).expect(201)).body.quote;
+    const quote = await placeQuote(owner, load);
     await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`).expect(200);
     return { shipper, owner, load, quote };
   };
@@ -138,7 +133,7 @@ describe('ratings', () => {
     const owner = await newUser('owner', 'Bikash');
     const driver = await newUser('driver', 'Hari');
     const load = await postLoad(shipper);
-    const quote = (await quoteOn(owner, load).expect(201)).body.quote;
+    const quote = await placeQuote(owner, load);
     const { booking } = (await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`).expect(200)).body;
     await as(owner.token).patch(`/api/bookings/${booking._id}/assign-driver`).send({ driverId: driver.id }).expect(200);
     await as(driver.token).patch(`/api/bookings/${booking._id}/status`)
@@ -166,7 +161,7 @@ describe('ratings', () => {
     const shipper2 = await newUser('shipper');
     const driver2 = await newUser('driver');
     const load2 = await postLoad(shipper2);
-    const quote2 = (await quoteOn(first.owner, load2).expect(201)).body.quote;
+    const quote2 = await placeQuote(first.owner, load2);
     const booking2 = (await as(shipper2.token).patch(`/api/quotes/${quote2._id}/accept`).expect(200)).body.booking;
     await as(first.owner.token).patch(`/api/bookings/${booking2._id}/assign-driver`).send({ driverId: driver2.id }).expect(200);
     await as(driver2.token).patch(`/api/bookings/${booking2._id}/status`)
@@ -221,7 +216,7 @@ describe('expiry', () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     const load = await postLoad(shipper);
-    const quote = (await quoteOn(owner, load).expect(201)).body.quote;
+    const quote = await placeQuote(owner, load);
     await backdate(Load(), load._id);
     await backdate(Quote(), quote._id);
 
@@ -236,7 +231,7 @@ describe('expiry', () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     const load = await postLoad(shipper);
-    const quote = (await quoteOn(owner, load).expect(201)).body.quote;
+    const quote = await placeQuote(owner, load);
     await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`).expect(200);
     await backdate(Load(), load._id);
 
@@ -249,7 +244,7 @@ describe('expiry', () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     const load = await postLoad(shipper);
-    const quote = (await quoteOn(owner, load).expect(201)).body.quote;
+    const quote = await placeQuote(owner, load);
     await backdate(Quote(), quote._id);
 
     const res = await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`);
@@ -268,7 +263,7 @@ describe('expiry', () => {
 
     expect(res.body.load.status).toBe('open');
     expect(new Date(res.body.load.expiresAt).getTime()).toBeGreaterThan(Date.now());
-    await quoteOn(owner, load).expect(201);
+    await placeQuote(owner, load);
   });
 
   it('stops anyone but the shipper relisting', async () => {

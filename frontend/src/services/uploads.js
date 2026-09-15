@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import api from './api';
+import { _getCameraBridge } from '../components/common/CameraCaptureHost';
 
 const isWeb = Platform.OS === 'web';
 
@@ -10,43 +11,123 @@ const isWeb = Platform.OS === 'web';
 // default request timeout.
 const UPLOAD_TIMEOUT_MS = 60000;
 
-// Picks up to `max` images. With `camera`, takes one photo on devices that
-// have a camera app; the web falls back to choosing a file. With `square`, a
-// single photo (a profile photo) opens the phone's square crop step first.
-export const pickImages = async ({ max = 1, camera = false, square = false } = {}) => {
-  if (max < 1) return [];
-  const useCamera = camera && !isWeb;
+const IMAGE_TYPES = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
 
-  if (!isWeb) {
-    const { granted } = useCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!granted) {
-      throw new Error(useCamera
-        ? 'Allow camera access to take a photo'
-        : 'Allow photo library access to add photos');
-    }
+// ── Web file input ─────────────────────────────────────────────────────────
+
+// expo's web pickers only listen for a file being chosen, so closing the
+// dialog without choosing one left their promise pending forever and the
+// button that opened it spinning. This opens the browser's own file input and
+// settles on cancel as well.
+const openWebFileInput = ({ accept, multiple = false, capture }) => new Promise((resolve) => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = accept;
+  input.multiple = multiple;
+  if (capture) input.setAttribute('capture', capture);
+  input.style.display = 'none';
+  document.body.appendChild(input);
+
+  let settled = false;
+  let onWindowFocus;
+  const settle = (files) => {
+    if (settled) return;
+    settled = true;
+    window.removeEventListener('focus', onWindowFocus);
+    input.remove();
+    resolve(files);
+  };
+
+  // Browsers without the input "cancel" event: the page regains focus when the
+  // dialog closes, and a chosen file's "change" arrives just after that.
+  onWindowFocus = () => setTimeout(() => settle([]), 1000);
+
+  input.addEventListener('change', () => settle(Array.from(input.files || [])));
+  input.addEventListener('cancel', () => settle([]));
+  window.addEventListener('focus', onWindowFocus, { once: true });
+  // Called synchronously from the tap that asked for it, as browsers require.
+  input.click();
+});
+
+const webAsset = (file) => ({
+  uri: URL.createObjectURL(file),
+  file,
+  fileName: file.name,
+  name: file.name,
+  mimeType: file.type || undefined,
+  fileSize: file.size,
+  size: file.size,
+});
+
+// A phone or tablet browser, whose file input can open the camera directly.
+const isTouchBrowser = () => (
+  isWeb && typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches)
+);
+
+// ── Pickers ────────────────────────────────────────────────────────────────
+
+// Picks up to `max` existing images from the photo library (a file chooser on
+// the web). With `square`, a single photo (a profile photo) opens the phone's
+// square crop step first.
+export const pickImages = async ({ max = 1, square = false } = {}) => {
+  if (max < 1) return [];
+
+  if (isWeb) {
+    const files = await openWebFileInput({ accept: IMAGE_TYPES, multiple: max > 1 });
+    return files.slice(0, max).map(webAsset);
   }
 
-  const options = {
+  const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!granted) throw new Error('Allow photo library access to add photos');
+
+  const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     quality: 0.8,
+    allowsMultipleSelection: max > 1,
+    selectionLimit: max,
     ...(square && max === 1 ? { allowsEditing: true, aspect: [1, 1] } : {}),
-  };
-  const result = useCamera
-    ? await ImagePicker.launchCameraAsync(options)
-    : await ImagePicker.launchImageLibraryAsync({
-      ...options,
-      allowsMultipleSelection: max > 1,
-      selectionLimit: max,
-    });
-
+  });
   if (result.canceled) return [];
   return result.assets.slice(0, max);
 };
 
+// Takes one photo now. The app opens the phone's camera; a phone browser's file
+// input opens its camera directly; a laptop browser, where that hint does
+// nothing, opens FLITO's webcam window (CameraCaptureHost). `facing` is
+// 'environment' (the back camera, for cargo and documents) or 'user' (the
+// front camera, for a profile photo).
+export const takePhoto = async ({ square = false, facing = 'environment' } = {}) => {
+  if (!isWeb) {
+    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    if (!granted) throw new Error('Allow camera access to take a photo');
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      cameraType: facing === 'user' ? ImagePicker.CameraType?.front : ImagePicker.CameraType?.back,
+      ...(square ? { allowsEditing: true, aspect: [1, 1] } : {}),
+    });
+    return result.canceled ? [] : result.assets.slice(0, 1);
+  }
+
+  if (isTouchBrowser()) {
+    const files = await openWebFileInput({ accept: 'image/*', capture: facing });
+    return files.slice(0, 1).map(webAsset);
+  }
+
+  const bridge = _getCameraBridge();
+  if (!bridge) throw new Error('The camera is not available right now. Choose a photo instead.');
+  const asset = await bridge.open({ square, facing });
+  return asset ? [asset] : [];
+};
+
 // Picks one image or PDF, for documents such as a citizenship card scan.
 export const pickDocument = async () => {
+  if (isWeb) {
+    const [file] = await openWebFileInput({ accept: `${IMAGE_TYPES},application/pdf` });
+    return file ? webAsset(file) : null;
+  }
+
   const result = await DocumentPicker.getDocumentAsync({
     type: ['image/*', 'application/pdf'],
     copyToCacheDirectory: true,
@@ -55,6 +136,8 @@ export const pickDocument = async () => {
   if (result.canceled) return null;
   return result.assets[0];
 };
+
+// ── Uploading ──────────────────────────────────────────────────────────────
 
 const mimeTypeOf = (asset) => {
   if (asset.mimeType) return asset.mimeType;

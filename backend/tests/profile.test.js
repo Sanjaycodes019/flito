@@ -7,7 +7,7 @@ jest.mock('../src/services/storage', () => ({
 }));
 
 const storage = require('../src/services/storage');
-const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone } = require('./helpers');
+const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleAddress } = require('./helpers');
 
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
@@ -41,13 +41,13 @@ describe('profile editing', () => {
       firstName: 'Ramesh',
       lastName: 'Shrestha',
       email: '  Ram@Example.com ',
-      address: { street: 'Balaju', city: 'Kathmandu' },
+      address: sampleAddress(),
     }).expect(200);
 
     expect(res.body.user).toEqual(expect.objectContaining({
       firstName: 'Ramesh',
       email: 'ram@example.com',
-      address: { street: 'Balaju', city: 'Kathmandu' },
+      address: expect.objectContaining({ ward: 20, tole: 'Basantapur', localLevel: 'Kathmandu' }),
     }));
     expect((await me(shipper)).email).toBe('ram@example.com');
   });
@@ -130,6 +130,7 @@ describe('profile editing', () => {
         .attach('document', PNG, { filename: 'doc.png', contentType: 'image/png' })
         .expect(201);
     }
+    await patchMe(shipper, { address: sampleAddress() }).expect(200);
     await as(shipper.token).post('/api/users/me/kyc/submit').expect(200);
 
     const renamed = await patchMe(shipper, { firstName: 'Someone Else' });

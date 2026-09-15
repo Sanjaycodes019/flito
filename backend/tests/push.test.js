@@ -4,7 +4,9 @@
 jest.mock('axios');
 const axios = require('axios');
 const mongoose = require('mongoose');
-const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone } = require('./helpers');
+const {
+  setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleLoad, quoteOn, placeQuote,
+} = require('./helpers');
 
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
@@ -65,11 +67,8 @@ describe('registering a push token', () => {
 });
 
 describe('sending pushes', () => {
-  const postLoad = (shipper) => as(shipper.token).post('/api/loads').send({
-    goodsType: 'Cement',
-    pickupLocation: { address: 'Kathmandu' },
-    dropoffLocation: { address: 'Pokhara' },
-  }).expect(201).then((r) => r.body.load);
+  const postLoad = (shipper) => as(shipper.token).post('/api/loads').send(sampleLoad())
+    .expect(201).then((r) => r.body.load);
 
   it('never fails the request if the recipient has no token registered', async () => {
     const shipper = await newUser('shipper'); // no push token registered
@@ -77,7 +76,7 @@ describe('sending pushes', () => {
     await registerToken(owner, VALID_TOKEN_2);
     const load = await postLoad(shipper);
 
-    const res = await as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 12000 });
+    const res = await quoteOn(owner, load, 12000);
 
     expect(res.status).toBe(201);
     expect(axios.post).not.toHaveBeenCalled();
@@ -89,7 +88,7 @@ describe('sending pushes', () => {
     await registerToken(shipper, VALID_TOKEN);
     const load = await postLoad(shipper);
 
-    await as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 12000 }).expect(201);
+    await placeQuote(owner, load, 12000);
 
     const push = pushCallTo(VALID_TOKEN);
     expect(push).toBeDefined();
@@ -102,7 +101,7 @@ describe('sending pushes', () => {
     const owner = await newUser('owner');
     await registerToken(owner, VALID_TOKEN);
     const load = await postLoad(shipper);
-    const quote = (await as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 12000 })).body.quote;
+    const quote = await placeQuote(owner, load, 12000);
 
     await as(shipper.token).patch(`/api/quotes/${quote._id}/counter`).send({ counterOfferPrice: 10000 }).expect(200);
 
@@ -116,8 +115,8 @@ describe('sending pushes', () => {
     await registerToken(winner, VALID_TOKEN);
     await registerToken(loser, VALID_TOKEN_2);
     const load = await postLoad(shipper);
-    const winningQuote = (await as(winner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 12000 })).body.quote;
-    await as(loser.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 11000 }).expect(201);
+    const winningQuote = await placeQuote(winner, load, 12000);
+    await placeQuote(loser, load, 11000);
 
     await as(shipper.token).patch(`/api/quotes/${winningQuote._id}/accept`).expect(200);
 
@@ -132,7 +131,7 @@ describe('sending pushes', () => {
     await registerToken(shipper, VALID_TOKEN);
     await registerToken(driver, VALID_TOKEN_2);
     const load = await postLoad(shipper);
-    const quote = (await as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 12000 })).body.quote;
+    const quote = await placeQuote(owner, load, 12000);
     const booking = (await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`)).body.booking;
     axios.post.mockClear(); // isolate from the earlier "New quote received" push to this same token
 
@@ -150,7 +149,7 @@ describe('sending pushes', () => {
     await registerToken(owner, VALID_TOKEN_2);
     await registerToken(driver, 'ExponentPushToken[driver999]');
     const load = await postLoad(shipper);
-    const quote = (await as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 12000 })).body.quote;
+    const quote = await placeQuote(owner, load, 12000);
     const booking = (await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`)).body.booking;
     await as(owner.token).patch(`/api/bookings/${booking._id}/assign-driver`).send({ driverId: driver.id });
     axios.post.mockClear();
@@ -193,7 +192,7 @@ describe('sending pushes', () => {
     await registerToken(shipper, VALID_TOKEN);
     const load = await postLoad(shipper);
 
-    await as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 12000 }).expect(201);
+    await placeQuote(owner, load, 12000);
 
     expect((await User().findById(shipper.id)).pushToken).toBeUndefined();
   });
@@ -205,7 +204,7 @@ describe('sending pushes', () => {
     await registerToken(shipper, VALID_TOKEN);
     const load = await postLoad(shipper);
 
-    const res = await as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice: 12000 });
+    const res = await quoteOn(owner, load, 12000);
 
     expect(res.status).toBe(201);
   });

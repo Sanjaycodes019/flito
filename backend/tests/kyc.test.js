@@ -11,7 +11,7 @@ jest.mock('../src/services/storage', () => ({
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const storage = require('../src/services/storage');
-const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone } = require('./helpers');
+const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleAddress } = require('./helpers');
 
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
@@ -42,7 +42,12 @@ const PNG = Buffer.from(
 
 const User = () => mongoose.model('User');
 // These tests drive verification themselves, so accounts start unverified.
-const newUser = (role) => signUp({ phone: uniquePhone(), role, verified: false });
+// They already have an address, which submitting requires.
+const newUser = async (role) => {
+  const actor = await signUp({ phone: uniquePhone(), role, verified: false });
+  await as(actor.token).patch('/api/users/me').send({ address: sampleAddress() }).expect(200);
+  return actor;
+};
 
 // Admins can't sign up publicly, so the suite creates one directly.
 const newAdmin = async () => {
@@ -126,9 +131,18 @@ describe('KYC documents', () => {
   it("rejects document types the account's role doesn't use", async () => {
     const shipper = await newUser('shipper');
 
-    expect((await uploadDoc(shipper, 'driving_license')).status).toBe(400);
-    expect((await uploadDoc(shipper, 'passport')).status).toBe(400);
+    expect((await uploadDoc(shipper, 'pan')).status).toBe(400);
+    expect((await uploadDoc(shipper, 'company_registration')).status).toBe(400);
+    expect((await uploadDoc(shipper, 'selfie')).status).toBe(400);
     expect(storage.uploadPrivateDocument).not.toHaveBeenCalled();
+  });
+
+  it('accepts every kind of identity document from any verifying role', async () => {
+    const shipper = await newUser('shipper');
+
+    for (const type of ['citizenship_front', 'nid_back', 'driving_license', 'passport']) {
+      await uploadDoc(shipper, type).expect(201);
+    }
   });
 
   it('replaces a document of the same type and deletes the old file', async () => {
@@ -166,81 +180,101 @@ describe('KYC documents', () => {
   });
 });
 
-describe('KYC identity document choice', () => {
-  const setIdType = (actor, idType) => as(actor.token).patch('/api/users/me/kyc/id-type').send({ idType });
-
-  it('starts on citizenship, front and back', async () => {
+describe('KYC identity document', () => {
+  it('asks for one identity document and offers all four', async () => {
     const shipper = await newUser('shipper');
     const kyc = await myKyc(shipper);
 
-    expect(kyc.idType).toBe('citizenship');
-    expect(kyc.requiredDocuments).toEqual(['citizenship_front', 'citizenship_back']);
-    expect(Object.keys(kyc.idTypeDocuments)).toEqual(['citizenship', 'nid', 'driving_license', 'passport']);
+    expect(kyc.identity.required).toBe(true);
+    expect(kyc.identity.complete).toBe(false);
+    expect(kyc.identity.options.map((o) => o.idType)).toEqual(['citizenship', 'nid', 'driving_license', 'passport']);
+    expect(kyc.missingDocuments).toEqual(['identity']);
   });
 
-  it('lets a shipper verify with a passport alone, and shows the choice to the admin', async () => {
+  it('accepts any one complete identity document, and shows which to the admin', async () => {
     const shipper = await newUser('shipper');
     const admin = await newAdmin();
 
-    const res = await setIdType(shipper, 'passport').expect(200);
-    expect(res.body.kyc.requiredDocuments).toEqual(['passport']);
-
     await uploadDoc(shipper, 'passport').expect(201);
-    await submit(shipper).expect(200);
+    const kyc = await myKyc(shipper);
+    expect(kyc.identity.complete).toBe(true);
+    expect(kyc.missingDocuments).toEqual([]);
 
+    await submit(shipper).expect(200);
     const [queued] = (await as(admin.token).get('/api/admin/kyc/pending').expect(200)).body.users;
-    expect(queued.idType).toBe('passport');
+    expect(queued.identityDocuments).toEqual(['passport']);
   });
 
-  it('accepts a National ID card, front and back', async () => {
+  it('needs both sides of a two-sided card', async () => {
     const shipper = await newUser('shipper');
-    const res = await setIdType(shipper, 'nid').expect(200);
-    expect(res.body.kyc.requiredDocuments).toEqual(['nid_front', 'nid_back']);
+    await uploadDoc(shipper, 'nid_front').expect(201);
 
-    await uploadAll(shipper, ['nid_front', 'nid_back']);
+    const early = await submit(shipper);
+    expect(early.status).toBe(400);
+    expect(early.body.missingDocuments).toEqual(['identity']);
+
+    await uploadDoc(shipper, 'nid_back').expect(201);
     await submit(shipper).expect(200);
   });
 
-  it("keeps a role's own documents on top of the identity document", async () => {
-    const owner = await newUser('owner');
-    expect((await setIdType(owner, 'passport').expect(200)).body.kyc.requiredDocuments).toEqual(['passport', 'pan']);
+  it('keeps further identity documents optional once one is complete', async () => {
+    const shipper = await newUser('shipper');
+    await uploadAll(shipper, ['citizenship_front', 'citizenship_back', 'nid_front']);
 
-    const driver = await newUser('driver');
-    expect((await setIdType(driver, 'nid').expect(200)).body.kyc.requiredDocuments).toEqual(['nid_front', 'nid_back', 'driving_license']);
+    const kyc = await myKyc(shipper);
+    expect(kyc.identity.options.find((o) => o.idType === 'citizenship').complete).toBe(true);
+    expect(kyc.identity.options.find((o) => o.idType === 'nid').complete).toBe(false);
+
+    await submit(shipper).expect(200);
   });
 
-  it('asks a driver who verifies with their driving license to upload it only once', async () => {
+  it("still requires a role's own documents alongside the identity document", async () => {
+    const owner = await newUser('owner');
+    await uploadDoc(owner, 'passport').expect(201);
+
+    const res = await submit(owner);
+
+    expect(res.status).toBe(400);
+    expect(res.body.missingDocuments).toEqual(['pan']);
+  });
+
+  it('requires only the driving license from a driver, with other identity documents optional', async () => {
     const driver = await newUser('driver');
-    const res = await setIdType(driver, 'driving_license').expect(200);
-    expect(res.body.kyc.requiredDocuments).toEqual(['driving_license']);
+    const before = await myKyc(driver);
+    expect(before.identity.required).toBe(false);
+    expect(before.identity.options.map((o) => o.idType)).toEqual(['citizenship', 'nid', 'passport']);
+    expect(before.missingDocuments).toEqual(['driving_license']);
 
     await uploadDoc(driver, 'driving_license').expect(201);
+
+    expect((await myKyc(driver)).missingDocuments).toEqual([]);
     await submit(driver).expect(200);
   });
 
-  it('removes uploads the new choice does not use, files included, and keeps the rest', async () => {
+  it("won't take another identity document in place of a driver's license", async () => {
     const driver = await newUser('driver');
-    await uploadAll(driver, ['citizenship_front', 'driving_license']);
+    await uploadAll(driver, ['citizenship_front', 'citizenship_back', 'passport']);
 
-    const res = await setIdType(driver, 'passport').expect(200);
+    const res = await submit(driver);
 
-    expect(res.body.removedDocuments).toEqual(['citizenship_front']);
-    expect(res.body.kyc.documents.map((d) => d.type)).toEqual(['driving_license']);
-    expect(storage.deleteAssets).toHaveBeenCalledWith([`flito/kyc/${driver.id}/doc1`], { type: 'authenticated' });
-    expect((await uploadDoc(driver, 'citizenship_back')).status).toBe(400);
+    expect(res.status).toBe(400);
+    expect(res.body.missingDocuments).toEqual(['driving_license']);
   });
+});
 
-  it('refuses an unknown choice, and any change once submitted', async () => {
-    const shipper = await newUser('shipper');
-    expect((await setIdType(shipper, 'library_card')).status).toBe(400);
+describe('KYC address requirement', () => {
+  it('asks for an address before documents can be submitted', async () => {
+    const shipper = await signUp({ phone: uniquePhone(), role: 'shipper', verified: false });
+    await uploadDoc(shipper, 'passport').expect(201);
+    expect((await myKyc(shipper)).addressComplete).toBe(false);
 
-    await uploadAll(shipper, ['citizenship_front', 'citizenship_back']);
-    await submit(shipper).expect(200);
-
-    const blocked = await setIdType(shipper, 'passport');
+    const blocked = await submit(shipper);
     expect(blocked.status).toBe(400);
-    expect(blocked.body.message).toMatch(/under review/);
-    expect((await myKyc(shipper)).idType).toBe('citizenship');
+    expect(blocked.body.code).toBe('ADDRESS_REQUIRED');
+
+    await as(shipper.token).patch('/api/users/me').send({ address: sampleAddress() }).expect(200);
+    expect((await myKyc(shipper)).addressComplete).toBe(true);
+    await submit(shipper).expect(200);
   });
 });
 

@@ -1,15 +1,26 @@
 const Load = require('../models/Load');
 const Quote = require('../models/Quote');
+const { endOfNepalDay } = require('./nepalTime');
 
-// How long a posting and an offer stay actionable. Short windows keep the
-// marketplace fresh; a shipper can relist an expired load in one tap.
-const LOAD_TTL_MS = 24 * 60 * 60 * 1000;
+// A load takes offers until the end of its pickup day, and for at least
+// LOAD_MIN_TTL_MS, so a load posted late in the evening for today still gets a
+// fair window. An offer stays open QUOTE_TTL_MS (a counter-offer restarts it)
+// but never outlives its load.
+const LOAD_MIN_TTL_MS = 12 * 60 * 60 * 1000;
 const QUOTE_TTL_MS = 48 * 60 * 60 * 1000;
 const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 
 // Loads still taking bids, and quotes still awaiting a response.
 const BIDDABLE_LOAD_STATUSES = ['open', 'quoted', 'negotiating'];
 const OPEN_QUOTE_STATUSES = ['pending', 'countered'];
+
+const loadExpiresAt = (pickupDay, now = Date.now()) =>
+  new Date(Math.max(endOfNepalDay(pickupDay).getTime(), now + LOAD_MIN_TTL_MS));
+
+const offerExpiresAt = (load, now = Date.now()) => {
+  const loadEnds = load?.expiresAt ? new Date(load.expiresAt).getTime() : Infinity;
+  return new Date(Math.min(now + QUOTE_TTL_MS, loadEnds));
+};
 
 // Documents created before expiry existed have no expiresAt and never expire.
 const isExpired = (doc, now = Date.now()) =>
@@ -53,10 +64,12 @@ const startExpirySweep = (intervalMs = SWEEP_INTERVAL_MS) => {
 };
 
 module.exports = {
-  LOAD_TTL_MS,
+  LOAD_MIN_TTL_MS,
   QUOTE_TTL_MS,
   BIDDABLE_LOAD_STATUSES,
   OPEN_QUOTE_STATUSES,
+  loadExpiresAt,
+  offerExpiresAt,
   isExpired,
   expireStale,
   startExpirySweep,

@@ -253,6 +253,15 @@ describe('ForgotPasswordScreen', () => {
 });
 
 describe('ResetPasswordScreen', () => {
+  it('asks for a new code when opened without an email, as after a page refresh', async () => {
+    const navigation = fakeNavigation();
+    const { findByText } = renderWithProviders(<ResetPasswordScreen navigation={navigation} route={{}} />);
+
+    fireEvent.press(await findByText('Request a New Code'));
+
+    expect(navigation.replace).toHaveBeenCalledWith('ForgotPassword');
+  });
+
   it('submits the code and new password', async () => {
     authService.resetPassword.mockResolvedValue({ token: 'tok', user: fakeUser('shipper') });
     const navigation = fakeNavigation();

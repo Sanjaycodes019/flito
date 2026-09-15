@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
-const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone } = require('./helpers');
+const {
+  setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleLoad, quoteOn, placeQuote,
+} = require('./helpers');
 
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
@@ -16,21 +18,14 @@ const newUser = (role, { verified }) => signUp({
 
 const setKyc = (user, kycStatus) => User().updateOne({ _id: user.id }, { kycStatus });
 
-const postLoad = async (shipper) => (await as(shipper.token).post('/api/loads').send({
-  goodsType: 'Cement',
-  pickupLocation: { address: 'Kathmandu' },
-  dropoffLocation: { address: 'Pokhara' },
-}).expect(201)).body.load;
-
-const quoteOn = (owner, load, quotedPrice = 15000) =>
-  as(owner.token).post('/api/quotes').send({ loadId: load._id, quotedPrice });
+const postLoad = async (shipper) => (await as(shipper.token).post('/api/loads').send(sampleLoad()).expect(201)).body.load;
 
 // A booking between a verified owner and an unverified shipper.
 const setupBooking = async () => {
   const shipper = await newUser('shipper', { verified: false });
   const owner = await newUser('owner', { verified: true });
   const load = await postLoad(shipper);
-  const quote = (await quoteOn(owner, load).expect(201)).body.quote;
+  const quote = await placeQuote(owner, load);
   const { booking } = (await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`).expect(200)).body;
   return { shipper, owner, booking };
 };
@@ -74,14 +69,14 @@ describe('owners must be verified to make offers', () => {
     await setKyc(owner, 'approved');
 
     // Same token as before the approval.
-    await quoteOn(owner, load).expect(201);
+    await placeQuote(owner, load);
   });
 
   it('stops an unverified owner countering or accepting, but still lets them reject', async () => {
     const shipper = await newUser('shipper', { verified: false });
     const owner = await newUser('owner', { verified: true });
     const load = await postLoad(shipper);
-    const quote = (await quoteOn(owner, load).expect(201)).body.quote;
+    const quote = await placeQuote(owner, load);
     await as(shipper.token).patch(`/api/quotes/${quote._id}/counter`).send({ counterOfferPrice: 12000 }).expect(200);
 
     // Verification revoked after the quote was made.
@@ -90,6 +85,17 @@ describe('owners must be verified to make offers', () => {
     expect((await as(owner.token).patch(`/api/quotes/${quote._id}/counter`).send({ counterOfferPrice: 13000 })).status).toBe(403);
     expect((await as(owner.token).patch(`/api/quotes/${quote._id}/accept`)).status).toBe(403);
     await as(owner.token).patch(`/api/quotes/${quote._id}/reject`).expect(200);
+  });
+
+  it("hides an unverified owner's trucks from a shipper's matches", async () => {
+    const shipper = await newUser('shipper', { verified: false });
+    const owner = await newUser('owner', { verified: false });
+    const { addTruck } = require('./helpers');
+    await addTruck(owner);
+    const load = await postLoad(shipper);
+
+    const res = await as(shipper.token).get(`/api/loads/${load._id}/matches`).expect(200);
+    expect(res.body.matches).toHaveLength(0);
   });
 });
 

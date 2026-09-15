@@ -15,7 +15,7 @@ import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
-import { formatCurrency, formatDate, formatStatus, getErrorMessage } from '../utils/helpers';
+import { formatCurrency, formatDate, formatStatus, getErrorMessage, truckTypeLabel } from '../utils/helpers';
 import api from '../services/api';
 import socketService from '../services/socket';
 import { notify } from '../utils/alert';
@@ -27,6 +27,7 @@ const DETAIL_ICON = {
   Shipper: 'shipper',
   Owner: 'owner',
   Driver: 'driver',
+  Truck: 'truck',
   'Pickup Status': 'pickup',
   'Dropoff Status': 'dropoff',
   Booked: 'calendar',
@@ -159,6 +160,9 @@ const BookingDetailScreen = ({ route }) => {
             <Detail label="Amount" value={formatCurrency(booking.totalAmount)} />
             <Detail label="Shipper" value={`${booking.shipperId?.firstName || ''} ${booking.shipperId?.lastName || ''}`} />
             <Detail label="Owner" value={booking.ownerId?.companyName || `${booking.ownerId?.firstName || ''} ${booking.ownerId?.lastName || ''}`} />
+            {booking.truckId ? (
+              <Detail label="Truck" value={[truckTypeLabel(booking.truckId.truckType), booking.truckId.registrationNumber].filter(Boolean).join(' · ')} />
+            ) : null}
             <Detail label="Driver" value={booking.driverId ? `${booking.driverId.firstName} ${booking.driverId.lastName}` : 'Not assigned'} />
             <Detail label="Pickup Status" value={formatStatus(booking.pickupStatus)} />
             <Detail label="Dropoff Status" value={formatStatus(booking.dropoffStatus)} />

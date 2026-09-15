@@ -104,7 +104,11 @@ const AdminDashboardScreen = () => {
             <Text style={styles.meta}>
               {[u.email, u.phone, u.role, u.companyName].filter(Boolean).join(' · ')}
             </Text>
-            {u.idType ? <Text style={styles.meta}>Identity document: {KYC_ID_TYPE_LABELS[u.idType] || u.idType}</Text> : null}
+            {u.identityDocuments?.length ? (
+              <Text style={styles.meta}>
+                Identity: {u.identityDocuments.map((idType) => KYC_ID_TYPE_LABELS[idType] || idType).join(', ')}
+              </Text>
+            ) : null}
             {u.submittedAt ? <Text style={styles.meta}>Submitted {formatDate(u.submittedAt)}</Text> : null}
 
             <View style={styles.documents}>

@@ -24,7 +24,6 @@ router.post('/me/avatar', usersController.requireStorage, avatar(), usersControl
 router.delete('/me/avatar', usersController.deleteAvatar);
 
 router.get('/me/kyc', requireRole(...VERIFYING_ROLES), usersController.getMyKyc);
-router.patch('/me/kyc/id-type', requireRole(...VERIFYING_ROLES), usersController.setKycIdType);
 // Status and storage are checked before any file bytes are accepted.
 router.post(
   '/me/kyc/documents',

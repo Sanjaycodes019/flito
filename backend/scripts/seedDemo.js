@@ -13,16 +13,36 @@ const User = require('../src/models/User');
 const Load = require('../src/models/Load');
 const Quote = require('../src/models/Quote');
 const Truck = require('../src/models/Truck');
-const { LOAD_TTL_MS, QUOTE_TTL_MS } = require('../src/services/expiry');
+const { QUOTE_TTL_MS, loadExpiresAt } = require('../src/services/expiry');
+const { getTree, describeAddress, estimateRoadKm } = require('../src/services/nepalLocations');
+const { nepalDay, startOfNepalDay } = require('../src/services/nepalTime');
 
 const DEMO_PASSWORD = 'Demo1234';
+
+// A load's pickup or dropoff in the local level with this name, stored the
+// same way the API stores one.
+const stop = (localLevelName, ward, tole, coordinates) => {
+  const tree = getTree();
+  const localLevel = tree.localLevels.find((l) => l.name === localLevelName);
+  const district = tree.districts.find((d) => d.id === localLevel.districtId);
+  const place = { provinceId: district.provinceId, districtId: district.id, localLevelId: localLevel.id, ward, tole };
+  const { formatted, label } = describeAddress(place);
+  return { ...place, address: formatted, label, coordinates };
+};
+
+// A municipality as a truck's base.
+const area = (localLevelName) => {
+  const { provinceId, districtId, localLevelId } = stop(localLevelName, 1, '-');
+  return { provinceId, districtId, localLevelId };
+};
 
 const DEMO_USERS = [
   { key: 'admin', email: 'admin@flito.demo', phone: '+9779800000000', role: 'admin', firstName: 'Sita', lastName: 'Sharma', kycStatus: 'approved', emailVerified: true },
   { key: 'shipper', email: 'shipper@flito.demo', phone: '+9779800000001', role: 'shipper', firstName: 'Ram', lastName: 'Shrestha', emailVerified: true },
-  { key: 'ownerA', email: 'owner1@flito.demo', phone: '+9779800000002', role: 'owner', firstName: 'Bikash', lastName: 'Thapa', companyName: 'Thapa Transport', emailVerified: true },
-  { key: 'ownerB', email: 'owner2@flito.demo', phone: '+9779800000003', role: 'owner', firstName: 'Anita', lastName: 'Gurung', companyName: 'Gurung Logistics', emailVerified: true },
-  { key: 'driver', email: 'driver@flito.demo', phone: '+9779800000004', role: 'driver', firstName: 'Hari', lastName: 'Tamang', emailVerified: true },
+  // Owners and the driver start verified, so their trucks show up as matches in a demo.
+  { key: 'ownerA', email: 'owner1@flito.demo', phone: '+9779800000002', role: 'owner', firstName: 'Bikash', lastName: 'Thapa', companyName: 'Thapa Transport', kycStatus: 'approved', emailVerified: true },
+  { key: 'ownerB', email: 'owner2@flito.demo', phone: '+9779800000003', role: 'owner', firstName: 'Anita', lastName: 'Gurung', companyName: 'Gurung Logistics', kycStatus: 'approved', emailVerified: true },
+  { key: 'driver', email: 'driver@flito.demo', phone: '+9779800000004', role: 'driver', firstName: 'Hari', lastName: 'Tamang', kycStatus: 'approved', emailVerified: true },
 ];
 
 const inFuture = (ms) => new Date(Date.now() + ms);
@@ -57,23 +77,64 @@ const seedMarketplace = async ({ shipper, ownerA, ownerB, driver }) => {
     return;
   }
 
+  // Trucks first, so the loads have matches. Upserted, so re-running never
+  // collides with a truck left from an earlier seed.
+  const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+  const fleet = [
+    {
+      ownerId: ownerA._id, registrationNumber: 'BA 2 KHA 4567', truckType: '6-wheeler', bodyType: 'open', capacity: 10000,
+      make: 'Tata', model: '1613', makeModel: 'Tata 1613', year: 2019, fuelType: 'diesel',
+      cargoBed: { lengthFt: 19, widthFt: 7.5, heightFt: 5 }, features: { tarpaulin: true, helper: true, gpsTracker: false, hillRoads: true },
+      baseLocation: area('Kathmandu'), serviceArea: 'nepal', ratePerKm: 85, minimumCharge: 6000,
+      insurance: { type: 'comprehensive', company: 'Shikhar Insurance', validUntil: nextYear }, bluebookRenewedUntil: nextYear,
+      assignedDriverId: driver._id,
+    },
+    {
+      ownerId: ownerB._id, registrationNumber: 'BA 3 KHA 7788', truckType: '6-wheeler', bodyType: 'covered', capacity: 9000,
+      make: 'Ashok Leyland', model: '1616', makeModel: 'Ashok Leyland 1616', year: 2021, fuelType: 'diesel',
+      cargoBed: { lengthFt: 20, widthFt: 7.5, heightFt: 7 }, features: { tarpaulin: false, helper: true, gpsTracker: true, hillRoads: false },
+      baseLocation: area('Lalitpur'), serviceArea: 'nepal', ratePerKm: 70, minimumCharge: 4000,
+      insurance: { type: 'third-party', company: 'Nepal Insurance', validUntil: nextYear },
+    },
+    {
+      ownerId: ownerB._id, registrationNumber: 'LU 1 KHA 2211', truckType: '10-wheeler', bodyType: 'open', capacity: 18000,
+      make: 'Tata', model: '2518', makeModel: 'Tata 2518', year: 2018, fuelType: 'diesel',
+      features: { tarpaulin: true, helper: true, gpsTracker: false, hillRoads: false },
+      baseLocation: area('Butwal'), serviceArea: 'province', ratePerKm: 110, minimumCharge: 8000,
+    },
+  ];
+  const [truckA, truckB] = await Promise.all(fleet.map(({ ownerId, registrationNumber, ...fields }) => Truck.findOneAndUpdate(
+    { ownerId, registrationNumber },
+    { $set: fields },
+    { upsert: true, new: true },
+  )));
+
+  const today = nepalDay();
+  const route = (pickupLocation, dropoffLocation) => ({
+    pickupLocation,
+    dropoffLocation,
+    pickupDay: today,
+    preferredPickupDate: startOfNepalDay(today),
+    distanceKm: estimateRoadKm(pickupLocation, dropoffLocation),
+    expiresAt: loadExpiresAt(today),
+  });
+
   const competitive = await Load.create({
     shipperId: shipper._id,
     goodsType: 'Cement bags',
     description: '120 bags, palletised',
     weight: 6000,
-    pickupLocation: { address: 'Kathmandu, Balaju', coordinates: { lat: 27.7340, lng: 85.3000 } },
-    dropoffLocation: { address: 'Pokhara, Lakeside', coordinates: { lat: 28.2096, lng: 83.9596 } },
-    truckTypePreference: '10-ton',
-    budgetEstimate: 18000,
+    ...route(
+      stop('Kathmandu', 16, 'Balaju', { lat: 27.7340, lng: 85.3000 }),
+      stop('Pokhara', 6, 'Lakeside', { lat: 28.2096, lng: 83.9596 }),
+    ),
     status: 'quoted',
     totalQuotes: 2,
-    expiresAt: inFuture(LOAD_TTL_MS),
   });
 
   await Quote.create([
-    { loadId: competitive._id, ownerId: ownerA._id, quotedPrice: 16500, truckType: '10-ton', expiresAt: inFuture(QUOTE_TTL_MS) },
-    { loadId: competitive._id, ownerId: ownerB._id, quotedPrice: 15800, truckType: '10-ton', expiresAt: inFuture(QUOTE_TTL_MS) },
+    { loadId: competitive._id, ownerId: ownerA._id, truckId: truckA._id, truckType: '6-wheeler', truckCapacity: 10000, initiatedBy: 'owner', quotedPrice: 16500, offers: [{ by: 'owner', price: 16500 }], expiresAt: inFuture(QUOTE_TTL_MS) },
+    { loadId: competitive._id, ownerId: ownerB._id, truckId: truckB._id, truckType: '6-wheeler', truckCapacity: 9000, initiatedBy: 'owner', quotedPrice: 15800, offers: [{ by: 'owner', price: 15800 }], expiresAt: inFuture(QUOTE_TTL_MS) },
   ]);
 
   await Load.create([
@@ -81,35 +142,24 @@ const seedMarketplace = async ({ shipper, ownerA, ownerB, driver }) => {
       shipperId: shipper._id,
       goodsType: 'Rice sacks',
       weight: 3500,
-      pickupLocation: { address: 'Butwal, Traffic Chowk', coordinates: { lat: 27.7006, lng: 83.4484 } },
-      dropoffLocation: { address: 'Kathmandu, Kalimati', coordinates: { lat: 27.6980, lng: 85.2970 } },
-      truckTypePreference: 'any',
-      budgetEstimate: 14000,
-      expiresAt: inFuture(LOAD_TTL_MS),
+      ...route(
+        stop('Butwal', 11, 'Traffic Chowk', { lat: 27.7006, lng: 83.4484 }),
+        stop('Kathmandu', 13, 'Kalimati', { lat: 27.6980, lng: 85.2970 }),
+      ),
     },
     {
       shipperId: shipper._id,
       goodsType: 'Office furniture',
       description: 'Desks and chairs, fragile',
-      pickupLocation: { address: 'Biratnagar, Main Road', coordinates: { lat: 26.4525, lng: 87.2718 } },
-      dropoffLocation: { address: 'Dharan, Bhanu Chowk', coordinates: { lat: 26.8120, lng: 87.2830 } },
-      truckTypePreference: '14-ton',
-      expiresAt: inFuture(LOAD_TTL_MS),
+      weight: 2000,
+      ...route(
+        stop('Biratnagar', 4, 'Main Road', { lat: 26.4525, lng: 87.2718 }),
+        stop('Dharan', 8, 'Bhanu Chowk', { lat: 26.8120, lng: 87.2830 }),
+      ),
     },
   ]);
 
-  if (!await Truck.exists({ ownerId: ownerA._id })) {
-    await Truck.create({
-      ownerId: ownerA._id,
-      registrationNumber: 'BA 2 KHA 4567',
-      truckType: '10-ton',
-      capacity: 10000,
-      makeModel: 'Tata 1613',
-      assignedDriverId: driver._id,
-    });
-  }
-
-  console.log('Created 3 loads (one with competing quotes) and a truck.');
+  console.log('Created 3 trucks and 3 loads (one with competing quotes).');
 };
 
 const main = async () => {

@@ -6,16 +6,14 @@ import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
 import EmptyState from '../components/common/EmptyState';
 import Input from '../components/common/Input';
-import Button from '../components/common/Button';
 import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
 import { colors, spacing, type, iconSize } from '../theme/tokens';
-import { ROLES, TRUCK_TYPES } from '../utils/constants';
-import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
+import { ROLES } from '../utils/constants';
+import { formatCurrency, formatDate, formatKg, getErrorMessage } from '../utils/helpers';
+import { dayLabel } from '../utils/nepalDate';
 import api from '../services/api';
 import { fetchLoadsStart, fetchLoadsSuccess, fetchLoadsError } from '../redux/slices/loadsSlice';
-
-const TRUCK_TYPE_FILTERS = ['all', ...TRUCK_TYPES];
 
 const LoadsListScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -23,7 +21,6 @@ const LoadsListScreen = ({ navigation }) => {
   const { items: loads, isLoading, error } = useSelector((state) => state.loads);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
-  const [truckType, setTruckType] = useState('all');
   const layout = useScreenLayout('wide');
   const columns = layout.isPhone ? 1 : layout.isDesktop ? 3 : 2;
 
@@ -32,7 +29,7 @@ const LoadsListScreen = ({ navigation }) => {
   const load = useCallback(async () => {
     dispatch(fetchLoadsStart());
     try {
-      // Owners get the server's default browse: every load still taking bids.
+      // Owners get the server's default browse: every load still taking offers.
       const q = isShipper ? '?mine=true' : '';
       const { data } = await api.get(`/loads${q}`);
       dispatch(fetchLoadsSuccess(data.loads));
@@ -53,22 +50,18 @@ const LoadsListScreen = ({ navigation }) => {
   };
 
   // Filtered in memory over the page already fetched (the server caps a
-  // browse response at 100 loads), rather than a new search API, since this
-  // is a UI-layer addition, not a change to the marketplace's data contract.
+  // browse response at 100 loads), rather than a new search API.
   const filteredLoads = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return loads.filter((item) => {
-      if (truckType !== 'all' && item.truckTypePreference !== truckType) return false;
-      if (!needle) return true;
-      const haystack = [item.goodsType, item.pickupLocation?.address, item.dropoffLocation?.address]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(needle);
-    });
-  }, [loads, query, truckType]);
+    if (!needle) return loads;
+    return loads.filter((item) => [item.goodsType, item.pickupLocation?.address, item.dropoffLocation?.address]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(needle));
+  }, [loads, query]);
 
-  const isFiltering = query.trim().length > 0 || truckType !== 'all';
+  const isFiltering = query.trim().length > 0;
 
   if (isLoading && !refreshing && loads.length === 0) return <Spinner />;
 
@@ -93,27 +86,13 @@ const LoadsListScreen = ({ navigation }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       ListHeaderComponent={
         loads.length > 0 && (
-          <View style={[styles.filters, !layout.isPhone && styles.filtersWide]}>
-            <Input
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search by goods type or location"
-              icon="search"
-              containerStyle={[styles.searchInput, !layout.isPhone && styles.searchInputWide]}
-            />
-            <View style={[styles.chipRow, !layout.isPhone && styles.chipRowWide]}>
-              {TRUCK_TYPE_FILTERS.map((t) => (
-                <Button
-                  key={t}
-                  title={t === 'all' ? 'All Trucks' : t}
-                  size="sm"
-                  variant={truckType === t ? 'primary' : 'tertiary'}
-                  onPress={() => setTruckType(t)}
-                  style={styles.chip}
-                />
-              ))}
-            </View>
-          </View>
+          <Input
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search by goods type or location"
+            icon="search"
+            containerStyle={[styles.searchInput, !layout.isPhone && styles.searchInputWide]}
+          />
         )
       }
       ListEmptyComponent={
@@ -122,45 +101,64 @@ const LoadsListScreen = ({ navigation }) => {
           title={isFiltering ? 'No matches' : isShipper ? 'No loads yet' : 'No open loads right now'}
           message={
             isFiltering
-              ? 'No loads match your search or filter. Try clearing them.'
+              ? 'No loads match your search. Try another word.'
               : isShipper
-                ? "You haven't posted any loads yet. Post one to start getting quotes."
-                : 'Check back soon, or widen your search.'
+                ? "You haven't posted any loads yet. Post one to choose a truck."
+                : 'Check back soon.'
           }
-          actionLabel={isFiltering ? 'Clear Filters' : undefined}
-          onAction={isFiltering ? () => { setQuery(''); setTruckType('all'); } : undefined}
+          actionLabel={isFiltering ? 'Clear Search' : undefined}
+          onAction={isFiltering ? () => setQuery('') : undefined}
         />
       }
-      renderItem={({ item }) => (
-        <View style={columns > 1 ? [styles.cell, { width: `${100 / columns}%` }] : null}>
-          <Card
-            style={[styles.card, columns > 1 && styles.cardInGrid]}
-            containerStyle={columns > 1 ? styles.fill : undefined}
-            onPress={() => navigation.navigate('LoadDetail', { loadId: item._id })}
-            accessibilityLabel={`${item.goodsType} load`}
-          >
-            <View style={styles.row}>
-              <Text style={styles.goodsType} numberOfLines={1}>{item.goodsType}</Text>
-              <StatusBadge status={item.status} />
-            </View>
-            <View style={styles.routeRow}>
-              <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
-              <Text style={styles.route} numberOfLines={1}>{item.pickupLocation?.address}</Text>
-              <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
-              <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
-              <Text style={styles.route} numberOfLines={1}>{item.dropoffLocation?.address}</Text>
-            </View>
-            <View style={styles.rowBottom}>
-              <View style={styles.metaRow}>
-                <Icon name="quote" size={iconSize.xs} color={colors.textMuted} />
-                <Text style={styles.meta}>{item.totalQuotes || 0} quotes</Text>
+      renderItem={({ item }) => {
+        const offers = item.totalQuotes || 0;
+        return (
+          <View style={columns > 1 ? [styles.cell, { width: `${100 / columns}%` }] : null}>
+            <Card
+              style={[styles.card, columns > 1 && styles.cardInGrid]}
+              containerStyle={columns > 1 ? styles.fill : undefined}
+              onPress={() => navigation.navigate('LoadDetail', { loadId: item._id })}
+              accessibilityLabel={`${item.goodsType} load`}
+            >
+              <View style={styles.row}>
+                <Text style={styles.goodsType} numberOfLines={1}>{item.goodsType}</Text>
+                <StatusBadge status={item.status} />
               </View>
-              {item.budgetEstimate ? <Text style={styles.budget}>{formatCurrency(item.budgetEstimate)}</Text> : null}
-            </View>
-            <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-          </Card>
-        </View>
-      )}
+              <View style={styles.routeRow}>
+                <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
+                <Text style={styles.route} numberOfLines={1}>{item.pickupLocation?.label || item.pickupLocation?.address}</Text>
+                <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
+                <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
+                <Text style={styles.route} numberOfLines={1}>{item.dropoffLocation?.label || item.dropoffLocation?.address}</Text>
+              </View>
+              {(item.weight || item.pickupDay) ? (
+                <View style={styles.factsRow}>
+                  {item.weight ? (
+                    <View style={styles.metaRow}>
+                      <Icon name="weight" size={iconSize.xs} color={colors.textMuted} />
+                      <Text style={styles.meta}>{formatKg(item.weight)}</Text>
+                    </View>
+                  ) : null}
+                  {item.pickupDay ? (
+                    <View style={styles.metaRow}>
+                      <Icon name="calendar" size={iconSize.xs} color={colors.textMuted} />
+                      <Text style={styles.meta}>{`Pickup ${dayLabel(item.pickupDay)}`}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+              <View style={styles.rowBottom}>
+                <View style={styles.metaRow}>
+                  <Icon name="quote" size={iconSize.xs} color={colors.textMuted} />
+                  <Text style={styles.meta}>{`${offers} ${offers === 1 ? 'offer' : 'offers'}`}</Text>
+                </View>
+                {item.budgetEstimate ? <Text style={styles.budget}>{formatCurrency(item.budgetEstimate)}</Text> : null}
+              </View>
+              <Text style={styles.date}>{`Posted ${formatDate(item.createdAt)}`}</Text>
+            </Card>
+          </View>
+        );
+      }}
     />
   );
 };
@@ -168,14 +166,8 @@ const LoadsListScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1 },
-  filters: { marginBottom: spacing.xs },
-  // From tablet width up the search box and truck filters share one row.
-  filtersWide: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.lg, marginBottom: spacing.md },
   searchInput: { marginBottom: spacing.sm },
-  searchInputWide: { flexGrow: 1, flexBasis: 280, maxWidth: 440, marginBottom: 0 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
-  chipRowWide: { marginBottom: 0 },
-  chip: { minWidth: 84 },
+  searchInputWide: { maxWidth: 440, marginBottom: spacing.md },
   card: { marginVertical: spacing.xs },
   // Grid layout: each cell carries half the gutter on both sides.
   columnRow: { marginHorizontal: -spacing.sm },
@@ -184,6 +176,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },
+  factsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginTop: spacing.sm },
   rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   goodsType: { ...type.h3, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },

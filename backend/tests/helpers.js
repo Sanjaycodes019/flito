@@ -60,6 +60,70 @@ const signUp = async ({ phone, role, firstName = 'Test', lastName = 'User', veri
   return { token: res.body.token, user: res.body.user, id };
 };
 
+// A complete, valid address in the local level with this name.
+const placeIn = (localLevelName, ward, tole) => {
+  const { getTree } = require('../src/services/nepalLocations');
+  const tree = getTree();
+  const localLevel = tree.localLevels.find((l) => l.name === localLevelName);
+  const district = tree.districts.find((d) => d.id === localLevel.districtId);
+  return { provinceId: district.provinceId, districtId: district.id, localLevelId: localLevel.id, ward, tole };
+};
+
+// Basantapur, ward 20, Kathmandu Metropolitan City.
+const sampleAddress = () => placeIn('Kathmandu', 20, 'Basantapur');
+
+// A valid pickup and dropoff for posting a load: Kathmandu to Pokhara.
+const loadRoute = () => ({
+  pickupLocation: placeIn('Kathmandu', 20, 'Basantapur'),
+  dropoffLocation: placeIn('Pokhara', 6, 'Lakeside'),
+});
+
+// A valid load to post: 6,000 kg of cement from Kathmandu to Pokhara, picked
+// up today.
+const sampleLoad = (overrides = {}) => ({ goodsType: 'Cement', weight: 6000, ...loadRoute(), ...overrides });
+
+// A municipality as a truck's base.
+const areaIn = (localLevelName) => {
+  const { provinceId, districtId, localLevelId } = placeIn(localLevelName, 1, '-');
+  return { provinceId, districtId, localLevelId };
+};
+
+let registrationCounter = 0;
+
+// Adds a truck to an owner's fleet: by default an open-body 6-wheeler that
+// carries 10,000 kg, based in Kathmandu, asking Rs. 80 per km, at least Rs. 5,000.
+const addTruck = async (owner, overrides = {}) => (await request(app())
+  .post('/api/trucks')
+  .set('Authorization', `Bearer ${owner.token}`)
+  .send({
+    registrationNumber: `BA 1 KHA ${1000 + (registrationCounter += 1)}`,
+    truckType: '6-wheeler',
+    bodyType: 'open',
+    capacity: 10000,
+    baseLocation: areaIn('Kathmandu'),
+    ratePerKm: 80,
+    minimumCharge: 5000,
+    ...overrides,
+  })
+  .expect(201)).body.truck;
+
+// An owner's quote on a load with one of their trucks (a new default truck
+// unless one is given). Returns the response without checking it.
+const quoteOn = async (owner, load, quotedPrice = 15000, truck = null) => {
+  const truckId = (truck || await addTruck(owner))._id;
+  return request(app())
+    .post('/api/quotes')
+    .set('Authorization', `Bearer ${owner.token}`)
+    .send({ loadId: load._id, quotedPrice, truckId });
+};
+
+// The same, expecting it to succeed, and returning the quote.
+const placeQuote = async (owner, load, quotedPrice = 15000, truck = null) => {
+  const res = await quoteOn(owner, load, quotedPrice, truck);
+  if (res.status !== 201) throw new Error(`Quote failed with ${res.status}: ${res.body.message}`);
+  return res.body.quote;
+};
+
 // Convenience: an authenticated supertest agent for a given token.
 const as = (token) => {
   const base = request(app());
@@ -72,4 +136,22 @@ const as = (token) => {
   };
 };
 
-module.exports = { setupTestDb, teardownTestDb, clearDb, app, signUp, as, uniquePhone, uniqueEmail, TEST_PASSWORD };
+module.exports = {
+  setupTestDb,
+  teardownTestDb,
+  clearDb,
+  app,
+  signUp,
+  as,
+  uniquePhone,
+  uniqueEmail,
+  placeIn,
+  areaIn,
+  sampleAddress,
+  loadRoute,
+  sampleLoad,
+  addTruck,
+  quoteOn,
+  placeQuote,
+  TEST_PASSWORD,
+};

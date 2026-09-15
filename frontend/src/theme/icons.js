@@ -70,6 +70,8 @@ const GLYPHS = {
   idCard: 'card-account-details-outline',
   upload: 'tray-arrow-up',
   camera: 'camera-outline',
+  cameraFlip: 'camera-flip-outline',
+  cameraOff: 'camera-off-outline',
   image: 'image-outline',
   signature: 'signature-freehand',
   verified: 'shield-check-outline',

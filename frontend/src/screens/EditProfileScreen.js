@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -20,11 +20,14 @@ const NAME_LOCKED_KYC_STATUSES = ['pending', 'approved'];
 
 const EditProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
+  // Read live from the store, so an address saved on the Address screen
+  // shows here straight away.
+  const savedAddress = useSelector((state) => state.auth.user?.address);
   const [account, setAccount] = useState(null);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const layout = useScreenLayout('narrow');
-  // From tablet width up, paired fields (first/last name, street/city) share a row.
+  // From tablet width up, first and last name share a row.
   const pairStyle = layout.isPhone ? null : styles.fieldRow;
   const halfStyle = layout.isPhone ? undefined : styles.fieldHalf;
 
@@ -40,8 +43,6 @@ const EditProfileScreen = ({ navigation }) => {
           email: user.email || '',
           phone: user.phone || '',
           companyName: user.companyName || '',
-          street: user.address?.street || '',
-          city: user.address?.city || '',
         });
       } catch (error) {
         notify('Error', getErrorMessage(error));
@@ -59,7 +60,6 @@ const EditProfileScreen = ({ navigation }) => {
     const payload = {
       email: form.email,
       phone: form.phone,
-      address: { street: form.street, city: form.city },
     };
     if (!namesLocked) {
       payload.firstName = form.firstName;
@@ -157,9 +157,24 @@ const EditProfileScreen = ({ navigation }) => {
           />
         )}
 
-        <View style={pairStyle}>
-          <Input label="Street" value={form.street} onChangeText={update('street')} placeholder="Optional" icon="location" containerStyle={halfStyle} />
-          <Input label="City" value={form.city} onChangeText={update('city')} placeholder="Optional" icon="location" containerStyle={halfStyle} />
+        {/* The address has its own screen: province, district, municipality
+            and ward come from official lists, with "use current location". */}
+        <View style={styles.addressBlock}>
+          <Text style={styles.label}>Address</Text>
+          <View style={styles.addressRow}>
+            <Icon name="location" size={iconSize.sm} color={colors.textMuted} />
+            <Text style={[styles.addressText, !savedAddress && styles.addressTextMuted]}>
+              {savedAddress?.formatted || 'Not added'}
+            </Text>
+          </View>
+          <Button
+            title={savedAddress ? 'Change Address' : 'Add Address'}
+            icon="location"
+            variant="tertiary"
+            size="sm"
+            onPress={() => navigation.navigate('Address')}
+            style={styles.addressButton}
+          />
         </View>
 
         <View style={styles.readOnlyRow}>
@@ -185,6 +200,11 @@ const styles = StyleSheet.create({
   fieldRow: { flexDirection: 'row', gap: spacing.lg },
   fieldHalf: { flex: 1 },
   saveWide: { alignSelf: 'flex-end', minWidth: 220 },
+  addressBlock: { marginBottom: spacing.lg },
+  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginTop: spacing.xxs },
+  addressText: { ...type.body, color: colors.textPrimary, flex: 1 },
+  addressTextMuted: { color: colors.textMuted },
+  addressButton: { alignSelf: 'flex-start', marginTop: spacing.sm },
   lockNote: { flexDirection: 'row', alignItems: 'flex-start', marginTop: -spacing.sm, marginBottom: spacing.md },
   lockIcon: { marginRight: spacing.xs, marginTop: 2 },
   note: { ...type.small, color: colors.textMuted, flex: 1 },

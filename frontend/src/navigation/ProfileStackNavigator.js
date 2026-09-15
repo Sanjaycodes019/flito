@@ -4,6 +4,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import KycScreen from '../screens/KycScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
+import AddressScreen from '../screens/AddressScreen';
 import useBreakpoint from '../hooks/useBreakpoint';
 import stackScreenOptions from './stackScreenOptions';
 
@@ -20,6 +21,7 @@ const ProfileStackNavigator = () => {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit Profile' }} />
       <Stack.Screen name="Kyc" component={KycScreen} options={{ title: 'Identity Verification' }} />
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ title: 'Verify Email' }} />
+      <Stack.Screen name="Address" component={AddressScreen} options={{ title: 'Address' }} />
     </Stack.Navigator>
   );
 };

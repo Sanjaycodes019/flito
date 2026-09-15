@@ -1,20 +1,14 @@
 const Truck = require('../models/Truck');
 const User = require('../models/User');
 
-// Owners manage their own fleet; every handler is scoped to req.user.
+const DRIVER_FIELDS = 'firstName lastName phone rating kycStatus';
+
+// Owners manage their own fleet; every handler is scoped to req.user. The
+// body has already been checked and cleaned by validateCreateTruck or
+// validateUpdateTruck.
 exports.createTruck = async (req, res, next) => {
   try {
-    const { registrationNumber, truckType, capacity, makeModel, year } = req.body;
-
-    const truck = await Truck.create({
-      ownerId: req.user.userId,
-      registrationNumber,
-      truckType,
-      capacity,
-      makeModel,
-      year,
-    });
-
+    const truck = await Truck.create({ ...req.body, ownerId: req.user.userId });
     res.status(201).json({ success: true, truck });
   } catch (error) {
     if (error.code === 11000) {
@@ -27,7 +21,7 @@ exports.createTruck = async (req, res, next) => {
 exports.listMyTrucks = async (req, res, next) => {
   try {
     const trucks = await Truck.find({ ownerId: req.user.userId })
-      .populate('assignedDriverId', 'firstName lastName phone rating kycStatus')
+      .populate('assignedDriverId', DRIVER_FIELDS)
       .sort({ createdAt: -1 });
 
     res.json({ success: true, trucks });
@@ -45,25 +39,18 @@ const findOwnTruck = async (truckId, userId) => {
   return { truck };
 };
 
+// Any of type, capacity, make and model, year, base, rates and status. A
+// field sent as null (already turned into undefined) is cleared.
 exports.updateTruck = async (req, res, next) => {
   try {
     const { truck, error } = await findOwnTruck(req.params.id, req.user.userId);
     if (error) return res.status(error.status).json({ success: false, message: error.message });
 
-    const { truckType, capacity, makeModel, year, status } = req.body;
-    if (truckType) truck.truckType = truckType;
-    if (capacity !== undefined) truck.capacity = capacity;
-    if (makeModel !== undefined) truck.makeModel = makeModel;
-    if (year !== undefined) truck.year = year;
-    if (status) {
-      if (!['active', 'maintenance', 'inactive'].includes(status)) {
-        return res.status(400).json({ success: false, message: 'Invalid truck status' });
-      }
-      truck.status = status;
-    }
-
+    Object.entries(req.body).forEach(([field, value]) => truck.set(field, value));
     await truck.save();
-    res.json({ success: true, truck });
+
+    const populated = await truck.populate('assignedDriverId', DRIVER_FIELDS);
+    res.json({ success: true, truck: populated });
   } catch (error) {
     next(error);
   }
@@ -90,7 +77,7 @@ exports.assignDriver = async (req, res, next) => {
     truck.assignedDriverId = driver._id;
     await truck.save();
 
-    const populated = await truck.populate('assignedDriverId', 'firstName lastName phone rating kycStatus');
+    const populated = await truck.populate('assignedDriverId', DRIVER_FIELDS);
     res.json({ success: true, truck: populated });
   } catch (error) {
     next(error);

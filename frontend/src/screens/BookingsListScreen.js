@@ -75,10 +75,10 @@ const BookingsListScreen = ({ navigation }) => {
             </View>
             <View style={styles.routeRow}>
               <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
-              <Text style={styles.route} numberOfLines={1}>{item.loadId?.pickupLocation?.address}</Text>
+              <Text style={styles.route} numberOfLines={1}>{item.loadId?.pickupLocation?.label || item.loadId?.pickupLocation?.address}</Text>
               <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
               <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
-              <Text style={styles.route} numberOfLines={1}>{item.loadId?.dropoffLocation?.address}</Text>
+              <Text style={styles.route} numberOfLines={1}>{item.loadId?.dropoffLocation?.label || item.loadId?.dropoffLocation?.address}</Text>
             </View>
             <View style={styles.rowBottom}>
               <Text style={styles.amount}>{formatCurrency(item.totalAmount)}</Text>

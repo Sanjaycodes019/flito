@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { KYC_DOCUMENT_TYPES, KYC_ID_TYPES, DEFAULT_KYC_ID_TYPE } = require('../services/kycPolicy');
+const { KYC_DOCUMENT_TYPES } = require('../services/kycPolicy');
 
 const userSchema = new mongoose.Schema(
   {
@@ -60,10 +60,16 @@ const userSchema = new mongoose.Schema(
       url: String,
       publicId: String,
     },
+    // A Nepal address in the federal structure: province, district and local
+    // level by Survey Department P-code, ward number, and free-text tole.
+    // Checked against services/nepalLocations before it is saved.
+    // `coordinates` is kept only when the user filled it in from their location.
     address: {
-      street: String,
-      city: String,
-      country: { type: String, default: 'Nepal' },
+      provinceId: String,
+      districtId: String,
+      localLevelId: String,
+      ward: Number,
+      tole: String,
       coordinates: {
         lat: Number,
         lng: Number,
@@ -81,13 +87,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['not_submitted', 'pending', 'approved', 'rejected'],
       default: 'not_submitted',
-    },
-    // Which identity document the user verifies with (citizenship, NID,
-    // driving license or passport); decides which uploads are required.
-    kycIdType: {
-      type: String,
-      enum: KYC_ID_TYPES,
-      default: DEFAULT_KYC_ID_TYPE,
     },
     // Identity documents live in private storage. Only storage identifiers are
     // kept here, never a URL that could be shared or leaked.

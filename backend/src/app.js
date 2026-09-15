@@ -39,6 +39,7 @@ module.exports = function createApp({ io } = {}) {
   app.use('/api/admin', require('./routes/admin'));
   app.use('/api/users', require('./routes/users'));
   app.use('/api/trucks', require('./routes/trucks'));
+  app.use('/api/locations', require('./routes/locations'));
 
   app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
   app.use(errorHandler);

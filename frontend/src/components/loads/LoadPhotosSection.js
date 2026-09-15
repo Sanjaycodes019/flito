@@ -1,26 +1,27 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Button from '../common/Button';
 import PhotoStrip from '../common/PhotoStrip';
+import PhotoSourceButtons from '../common/PhotoSourceButtons';
 import { colors, spacing, type } from '../../theme/tokens';
 import { MAX_LOAD_PHOTOS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
 import { notify, confirmAction } from '../../utils/alert';
 import api from '../../services/api';
-import { pickImages, uploadPhotos } from '../../services/uploads';
+import { pickImages, takePhoto, uploadPhotos } from '../../services/uploads';
 
 const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
-  const [busy, setBusy] = useState(false);
+  // Which source is working: 'camera', 'library', 'remove' or null.
+  const [busy, setBusy] = useState(null);
   const photos = load.photos || [];
 
   if (!photos.length && !canEdit) return null;
 
   const remaining = MAX_LOAD_PHOTOS - photos.length;
 
-  const handleAdd = async () => {
-    setBusy(true);
+  const handleAdd = async (source) => {
+    setBusy(source);
     try {
-      const assets = await pickImages({ max: remaining });
+      const assets = source === 'camera' ? await takePhoto() : await pickImages({ max: remaining });
       if (assets.length) {
         await uploadPhotos(`/loads/${load._id}/photos`, assets);
         await onChanged();
@@ -28,7 +29,7 @@ const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
     } catch (error) {
       notify('Upload failed', getErrorMessage(error));
     }
-    setBusy(false);
+    setBusy(null);
   };
 
   const handleRemove = (photo) => confirmAction({
@@ -37,14 +38,14 @@ const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
     confirmLabel: 'Remove',
     destructive: true,
     onConfirm: async () => {
-      setBusy(true);
+      setBusy('remove');
       try {
         await api.delete(`/loads/${load._id}/photos/${photo._id}`);
         await onChanged();
       } catch (error) {
         notify('Error', getErrorMessage(error));
       }
-      setBusy(false);
+      setBusy(null);
     },
   });
 
@@ -59,7 +60,12 @@ const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
       )}
 
       {canEdit && remaining > 0 && (
-        <Button title="Add Photos" icon="camera" variant="tertiary" onPress={handleAdd} loading={busy} />
+        <PhotoSourceButtons
+          onTakePhoto={() => handleAdd('camera')}
+          onChoose={() => handleAdd('library')}
+          chooseLabel="Choose Photos"
+          busy={busy}
+        />
       )}
     </View>
   );

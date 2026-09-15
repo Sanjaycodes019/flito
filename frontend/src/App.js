@@ -7,6 +7,7 @@ import { authService } from './services/auth';
 import { registerForPushNotifications, subscribeToNotificationTaps } from './services/pushNotifications';
 import RootNavigator from './navigation/RootNavigator';
 import AlertHost from './components/common/AlertHost';
+import CameraCaptureHost from './components/common/CameraCaptureHost';
 
 // On cold start, check for a previously stored JWT and restore the session
 // by fetching the current user, before rendering the real navigator.
@@ -49,6 +50,7 @@ export default function App() {
         <StatusBar style="dark" />
         <RootNavigator />
         <AlertHost />
+        <CameraCaptureHost />
       </Bootstrap>
     </Provider>
   );

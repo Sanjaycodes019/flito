@@ -1,5 +1,9 @@
 const Booking = require('../models/Booking');
+const Load = require('../models/Load');
+const Truck = require('../models/Truck');
 const User = require('../models/User');
+
+const TRUCK_FIELDS = 'registrationNumber truckType capacity makeModel';
 const { requiresVerification } = require('../services/kycPolicy');
 const { sendPushToUser, sendPushToUsers } = require('../services/push');
 
@@ -24,6 +28,7 @@ exports.listMyBookings = async (req, res, next) => {
       .populate('shipperId', 'firstName lastName')
       .populate('ownerId', 'firstName lastName companyName')
       .populate('driverId', 'firstName lastName')
+      .populate('truckId', TRUCK_FIELDS)
       .sort({ createdAt: -1 });
 
     res.json({ success: true, bookings });
@@ -38,7 +43,8 @@ exports.getBooking = async (req, res, next) => {
       .populate('loadId')
       .populate('shipperId', 'firstName lastName')
       .populate('ownerId', 'firstName lastName companyName')
-      .populate('driverId', 'firstName lastName');
+      .populate('driverId', 'firstName lastName')
+      .populate('truckId', TRUCK_FIELDS);
 
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     if (!isParty(booking, req.user.userId)) {
@@ -166,6 +172,12 @@ exports.updateStatus = async (req, res, next) => {
     if (pickupStatus) booking.pickupStatus = pickupStatus;
     if (dropoffStatus) booking.dropoffStatus = dropoffStatus;
     await booking.save();
+
+    // A finished or cancelled booking frees its truck's day for other loads.
+    if (booking.truckId && ['completed', 'cancelled'].includes(status)) {
+      const load = await Load.findById(booking.loadId).select('pickupDay');
+      if (load?.pickupDay) await Truck.updateOne({ _id: booking.truckId }, { $pull: { reservedDays: load.pickupDay } });
+    }
 
     const parties = [booking.shipperId, booking.ownerId, booking.driverId].filter(Boolean);
     parties.forEach((id) => req.io?.to(`user-${id}`).emit('booking-status-changed', { booking }));

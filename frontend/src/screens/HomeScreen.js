@@ -18,10 +18,11 @@ import { setUser } from '../redux/slices/authSlice';
 import { fetchLoadsStart, fetchLoadsSuccess, fetchLoadsError, updateLoad } from '../redux/slices/loadsSlice';
 import { fetchBookingsStart, fetchBookingsSuccess, fetchBookingsError, updateBooking } from '../redux/slices/bookingSlice';
 import { formatCurrency, getErrorMessage } from '../utils/helpers';
+import { isTurnOf } from '../utils/negotiation';
 
 const ROLE_SUBTITLE = {
-  [ROLES.SHIPPER]: 'Post loads, compare quotes and track every delivery.',
-  [ROLES.OWNER]: 'Find loads, send quotes and keep your fleet moving.',
+  [ROLES.SHIPPER]: 'Post loads, choose the right truck and track every delivery.',
+  [ROLES.OWNER]: 'Get booking requests, quote on loads and keep your fleet moving.',
   [ROLES.DRIVER]: 'Your assigned jobs and earnings in one place.',
   [ROLES.ADMIN]: 'Review verifications and keep the platform running.',
 };
@@ -113,10 +114,8 @@ const HomeScreen = ({ navigation }) => {
   const activeBookings = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status));
   const completedBookings = bookings.filter((b) => b.status === 'completed').length;
   const awaitingQuotes = loads.filter((l) => l.status === 'open' || l.status === 'quoted').length;
-  // Quotes where the shipper has countered are waiting on the owner to reply.
-  const awaitingMyResponse = myQuotes.filter(
-    (q) => q.status === 'countered' && q.counterOfferBy === 'shipper'
-  ).length;
+  // Booking requests and shipper counter-offers waiting on the owner to reply.
+  const awaitingMyResponse = myQuotes.filter((q) => isTurnOf(q, 'owner')).length;
   const todaysEarnings = bookings
     .filter((b) => b.status === 'completed')
     .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
@@ -131,7 +130,7 @@ const HomeScreen = ({ navigation }) => {
         key="post"
         icon="load"
         title="Post a Load"
-        description="Describe your shipment and get quotes from truck owners"
+        description="Tell us what and where, then choose from trucks that can carry it"
         actionLabel="Post Load"
         onAction={() => navigation.navigate('CreateLoad')}
       />,
@@ -161,16 +160,16 @@ const HomeScreen = ({ navigation }) => {
         key="browse"
         icon="search"
         title={`Available Loads (${loads.length})`}
-        description="Find new shipping opportunities and submit quotes"
+        description="Find loads and quote with a truck that can carry them"
         actionLabel="Browse Loads"
         onAction={() => navigation.navigate('LoadsList')}
       />,
       <DashboardCard
         key="quotes"
         icon="quote"
-        title="My Quotes"
-        description={awaitingMyResponse > 0 ? `${awaitingMyResponse} awaiting your response` : 'Track the loads you have bid on'}
-        actionLabel="View My Quotes"
+        title="Offers"
+        description={awaitingMyResponse > 0 ? `${awaitingMyResponse} waiting for your reply` : 'Your quotes and booking requests from shippers'}
+        actionLabel="View Offers"
         variant="secondary"
         onAction={() => navigation.navigate('MyQuotes')}
       />,
@@ -187,7 +186,7 @@ const HomeScreen = ({ navigation }) => {
         key="fleet"
         icon="fleet"
         title="My Fleet"
-        description="Manage your trucks and their assigned drivers"
+        description="Your trucks, their base, rates and drivers"
         actionLabel="Manage Fleet"
         variant="secondary"
         onAction={() => navigation.navigate('Fleet')}

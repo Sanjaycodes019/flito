@@ -8,7 +8,9 @@ jest.mock('../src/services/storage', () => ({
 }));
 
 const storage = require('../src/services/storage');
-const { setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone } = require('./helpers');
+const {
+  setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleLoad, placeQuote,
+} = require('./helpers');
 
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
@@ -45,12 +47,7 @@ const withPhotos = (req, count, { contentType = 'image/png', buffer = PNG } = {}
 
 const newUser = (role) => signUp({ phone: uniquePhone(), role });
 
-const postLoad = async (shipper, extra = {}) => (await as(shipper.token).post('/api/loads').send({
-  goodsType: 'Cement',
-  pickupLocation: { address: 'Kathmandu' },
-  dropoffLocation: { address: 'Pokhara' },
-  ...extra,
-}).expect(201)).body.load;
+const postLoad = async (shipper, extra = {}) => (await as(shipper.token).post('/api/loads').send(sampleLoad(extra)).expect(201)).body.load;
 
 describe('profile photo', () => {
   const uploadAvatar = (actor, { contentType = 'image/png', buffer = PNG } = {}) =>
@@ -241,8 +238,7 @@ describe('load photos', () => {
     const load = await postLoad(shipper);
     const { photos } = (await uploadTo(shipper, load, 1).expect(201)).body.load;
 
-    const quote = (await as(owner.token).post('/api/quotes')
-      .send({ loadId: load._id, quotedPrice: 15000 }).expect(201)).body.quote;
+    const quote = await placeQuote(owner, load, 15000);
     await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`).expect(200);
 
     const add = await uploadTo(shipper, load, 1);
@@ -270,8 +266,7 @@ describe('proof of delivery', () => {
     const driver = await newUser('driver');
     const load = await postLoad(shipper);
 
-    const quote = (await as(owner.token).post('/api/quotes')
-      .send({ loadId: load._id, quotedPrice: 15000 }).expect(201)).body.quote;
+    const quote = await placeQuote(owner, load, 15000);
     const { booking } = (await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`).expect(200)).body;
     await as(owner.token).patch(`/api/bookings/${booking._id}/assign-driver`).send({ driverId: driver.id }).expect(200);
 

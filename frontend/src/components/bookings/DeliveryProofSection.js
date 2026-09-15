@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import PhotoStrip from '../common/PhotoStrip';
@@ -8,9 +8,13 @@ import { colors, spacing, type, iconSize } from '../../theme/tokens';
 import { MAX_DELIVERY_PHOTOS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
-import { pickImages, uploadPhotos } from '../../services/uploads';
+import { takePhoto, uploadPhotos } from '../../services/uploads';
 
 // Shown to every party once proof exists; only the assigned driver can add it.
+//
+// Camera only, on purpose: proof of delivery is a photo taken at the drop-off,
+// so there is no "choose from gallery" here. An old or unrelated picture from
+// the phone's library would prove nothing if the delivery were disputed.
 const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
   const [busy, setBusy] = useState(false);
   const photos = booking.deliveryPhotos || [];
@@ -22,7 +26,7 @@ const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
   const handleAdd = async () => {
     setBusy(true);
     try {
-      const assets = await pickImages({ max: remaining, camera: true });
+      const assets = await takePhoto();
       if (assets.length) {
         await uploadPhotos(`/bookings/${booking._id}/delivery-proof`, assets);
         await onChanged();
@@ -49,12 +53,7 @@ const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
       )}
 
       {canUpload && remaining > 0 && (
-        <Button
-          title={Platform.OS === 'web' ? 'Add Photo' : 'Take Photo'}
-          icon="camera"
-          onPress={handleAdd}
-          loading={busy}
-        />
+        <Button title="Take Photo" icon="camera" onPress={handleAdd} loading={busy} />
       )}
     </Card>
   );

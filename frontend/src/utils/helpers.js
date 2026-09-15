@@ -1,4 +1,4 @@
-import { PHONE_REGEX, EMAIL_REGEX } from './constants';
+import { PHONE_REGEX, EMAIL_REGEX, TRUCK_TYPE_LABELS, BODY_TYPE_LABELS } from './constants';
 
 export const isValidPhone = (phone) => PHONE_REGEX.test(phone);
 export const isValidEmail = (email) => typeof email === 'string' && EMAIL_REGEX.test(email);
@@ -24,3 +24,10 @@ export const formatStatus = (status) => (status || '').replace(/_/g, ' ');
 
 export const pluralize = (count, singular, plural = `${singular}s`) =>
   `${count} ${count === 1 ? singular : plural}`;
+
+export const formatKg = (kg) => `${Number(kg || 0).toLocaleString('en-NP')} kg`;
+
+// "10-Ton Truck" for '10-ton'; an unknown type still reads sensibly.
+export const truckTypeLabel = (truckType) => TRUCK_TYPE_LABELS[truckType] || (truckType ? `${truckType} truck` : 'Truck');
+
+export const bodyTypeLabel = (bodyType) => BODY_TYPE_LABELS[bodyType] || null;

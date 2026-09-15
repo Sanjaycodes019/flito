@@ -142,6 +142,8 @@ A standalone Android build (EAS) additionally needs an **Android** OAuth client 
 | `BREVO_SENDER_EMAIL` | backend `.env`, Render | A sender address verified in Brevo (required in production) |
 | `BREVO_SENDER_NAME` | backend `.env`, Render | `FLITO` |
 | `GOOGLE_CLIENT_ID` | backend `.env`, Render | Google OAuth Web client ID, used to verify ID tokens. Optional |
+| `NOMINATIM_CONTACT` | backend `.env`, Render | Email or URL sent to OpenStreetMap's Nominatim with "Use Current Location" lookups, as its usage policy requires |
+| `NOMINATIM_URL` | backend `.env`, Render | Your own Nominatim server. Optional, defaults to the public service |
 | `CLOUDINARY_CLOUD_NAME` | backend `.env`, Render | Cloudinary cloud name (file uploads) |
 | `CLOUDINARY_API_KEY` | backend `.env`, Render | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | backend `.env`, Render | Cloudinary API secret, server only, never in the app |
@@ -159,14 +161,20 @@ The backend validates its config at boot and exits with a clear message if somet
 
 | Role | Can do |
 |---|---|
-| **shipper** | Post loads, review quotes, accept/reject, track bookings, rate the owner |
-| **owner** | Browse open loads, submit quotes, assign drivers, track jobs won |
+| **shipper** | Post loads, choose from matching trucks, send and negotiate offers, track bookings, rate the owner |
+| **owner** | List trucks with a base and rates, answer booking requests, quote on loads with a truck, assign drivers, track jobs won |
 | **driver** | View assigned jobs, update pickup/delivery status, push GPS pings, view earnings |
 | **admin** | Platform stats, KYC approve/reject, suspend users |
 
-**Happy path:** shipper posts a load → owner submits a quote → shipper accepts → **booking created** → owner assigns a driver by phone → driver marks picked up → delivered → booking completes → both parties rate each other.
+**Happy path:** shipper posts a load (goods, weight, pickup and dropoff, pickup date) → picks a truck from the ranked matches and sends a price → owner accepts, counters or declines → on acceptance a **booking is created** with that truck, and its regular driver if verified → driver marks picked up → delivered → booking completes → both parties rate each other. Owners can also quote on open loads with one of their trucks.
 
-**Bidding rules:** several owners can bid on the same load, each with one live quote. Accepting one books the load exactly once and closes the competing bids. Loads take bids for 24 hours and quotes stay open for 48 (a counter-offer restarts the quote's window); a shipper can relist an expired load.
+**Truck matching** (`backend/src/services/truckMatching.js`): a truck is a candidate only if it is active, its owner is verified and active, its capacity covers the load's weight, both stops are inside its service area (anywhere in Nepal, or only its base province or district), and it isn't already booked on the pickup day. Candidates are scored out of 100: how well the load fills the truck (30), how close its base is to the pickup (30), the owner's rating, smoothed so a single review can't dominate, and completed trips (20), asking price against the cheapest (15), and readiness: a verified driver already on the truck and insurance that is still current (5).
+
+**Truck listings** follow how trucks are described in Nepal: the freight trade's classes (pickup, mini truck, light truck or canter, 6, 10 and 12-wheeler, trailer) with common makes and models, body type, year, fuel, cargo bed size in feet, and extras shippers ask about (tarpaulin, a helper or khalasi, GPS, hill roads). Papers (chassis and engine numbers, bluebook tax, insurance, pollution test green sticker) stay private to the owner: shippers only ever see whether the insurance is current, and the owner's fleet page flags papers that have lapsed or end within 30 days. The strongest signals are shown to the shipper as reasons. Distances are estimates: straight-line distance between municipality centres (or pinned points) times 1.4 for Nepal's winding roads.
+
+**Pricing:** each truck can carry a rate per km and a minimum charge. The asking price for a trip is the rate times the estimated distance, rounded to the nearest Rs. 100 and never below the minimum. A truck without a rate shows no price and the shipper names one.
+
+**Offer rules** (`backend/src/services/negotiation.js`): either side opens (a shipper's request to a truck, or an owner's quote with a truck), then they take turns. A counter must move toward the other side: a shipper offers less than the owner's price and more than their own last offer; an owner asks more than the shipper's offer and less than their own last price. A negotiation ends after 6 offers, when the last one must be accepted or declined. One live negotiation per owner per load, and at most 3 shipper requests waiting per load. Accepting books the load and the truck's pickup day atomically, so neither is ever booked twice, and closes every other offer on the load. A load takes offers until the end of its pickup day (at least 12 hours), offers stay open 48 hours (a counter restarts that) but never past their load, and cancelling or completing a booking frees the truck's day.
 
 Admins cannot be created through public signup (the signup validator only accepts shipper/owner/driver). Use the script instead:
 
@@ -175,7 +183,9 @@ cd backend
 npm run create-admin -- admin@example.com SomePassword123 Sita Sharma
 ```
 
-**Identity verification (KYC):** every account picks one identity document and uploads it: citizenship card (front and back), National ID card (front and back), driving license, or passport (photo page). Owners also add a PAN certificate (company registration optional) and drivers add a driving license; a driver who picks the driving license as identity uploads it once for both. Switching the identity document before submitting removes uploads the new choice doesn't use. Documents are stored privately in Cloudinary and shown only through links that expire after 10 minutes. Once submitted they're frozen; an admin approves, or rejects with a reason the user sees, and the user can fix and resubmit. A verified name can't be edited.
+**Identity verification (KYC):** every account uploads at least one complete identity document: citizenship card (front and back), National ID card (front and back), driving license, or passport (photo page). Once one is complete, the others are optional. Owners also add a PAN certificate (company registration optional) and drivers add a driving license, which counts as their identity document (citizenship, National ID and passport are optional for drivers). An address is required before submitting.
+
+**Address:** every account can set a Nepal address from the Profile page: province, district, municipality and ward from official lists (7 provinces, 77 districts, 753 local levels, 6,743 wards), plus tole/village/area as free text. It's optional at sign-up and required before identity verification. "Use Current Location" fills in the province, district and municipality from the phone's GPS using Survey Department boundaries, and suggests a tole from OpenStreetMap. The user always chooses the ward and checks the result: no current ward boundaries are openly available, and GPS can be tens of metres off near a boundary. Data sources and licenses are in `backend/src/data/nepal/SOURCES.md`. Documents are stored privately in Cloudinary and shown only through links that expire after 10 minutes. Once submitted they're frozen; an admin approves, or rejects with a reason the user sees, and the user can fix and resubmit. A verified name can't be edited.
 
 **What verification unlocks:** owners must be verified to submit, counter or accept quotes, and drivers must be verified before an owner can assign them to a booking. Shippers, browsing and posting loads need no verification. The rule lives in `backend/src/services/kycPolicy.js`.
 
@@ -196,19 +206,22 @@ Routes marked `public` need no token; every other route requires `Authorization:
 | POST | `/api/auth/forgot-password` | public | Email a reset code (same response whether or not the account exists) |
 | POST | `/api/auth/reset-password` | public | Set a new password with the reset code, return JWT |
 | GET | `/api/auth/me` | any | Current user |
-| POST | `/api/loads` | shipper | Post a load |
+| POST | `/api/loads` | shipper | Post a load: `goodsType`, `weight` (kg), optional `pickupDate` (YYYY-MM-DD, today to 14 days ahead; defaults to today), and `pickupLocation`/`dropoffLocation` as Nepal addresses (`provinceId`, `districtId`, `localLevelId`, `ward`, `tole`) with optional `coordinates`, `contactPerson` and `phone`. The server adds the display `address`, short `label` and estimated `distanceKm` |
+| GET | `/api/loads/:id/matches` | shipper | Trucks that can carry own load, best match first, with score, reasons, asking price and any open offer |
+| POST | `/api/loads/:id/requests` | shipper | Request a matched truck at a price (`truckId`, `price`) |
+| GET | `/api/loads/:id/my-trucks` | owner | Own trucks for a load, with why each can't carry it and each one's asking price |
 | GET | `/api/loads` | any | Open loads, or `?mine=true` for own |
 | GET | `/api/loads/:id` | any | Load detail |
 | GET | `/api/loads/:id/quotes` | shipper | Quotes on own load |
 | PATCH | `/api/loads/:id/cancel` | shipper | Cancel own load |
-| PATCH | `/api/loads/:id/relist` | shipper | Reopen an expired load for 24h |
+| PATCH | `/api/loads/:id/relist` | shipper | Reopen an expired load, optionally with a new `pickupDate` |
 | POST | `/api/loads/:id/photos` | shipper | Upload up to 6 photos (multipart field `photos`) |
 | DELETE | `/api/loads/:id/photos/:photoId` | shipper | Remove a photo (also deleted from storage) |
-| POST | `/api/quotes` | owner | Submit a quote |
-| GET | `/api/quotes/mine` | owner | Own submitted quotes |
-| PATCH | `/api/quotes/:id/accept` | party without the standing offer | Accept → creates booking |
-| PATCH | `/api/quotes/:id/reject` | either party | Reject |
-| PATCH | `/api/quotes/:id/counter` | either party | Counter-offer |
+| POST | `/api/quotes` | owner | Quote on a load with one of your trucks (`loadId`, `truckId`, `quotedPrice`) |
+| GET | `/api/quotes/mine` | owner | Own quotes and booking requests from shippers |
+| PATCH | `/api/quotes/:id/accept` | party without the standing offer | Accept → creates booking with the truck and reserves its day |
+| PATCH | `/api/quotes/:id/reject` | either party | Decline, or withdraw your own offer |
+| PATCH | `/api/quotes/:id/counter` | either party | Counter-offer within the offer rules |
 | GET | `/api/bookings` | any | Bookings for your role |
 | GET | `/api/bookings/:id` | party | Booking detail |
 | PATCH | `/api/bookings/:id/assign-driver` | owner | Assign driver |
@@ -223,14 +236,15 @@ Routes marked `public` need no token; every other route requires `Authorization:
 | DELETE | `/api/users/me/push-token` | any | Unregister on logout |
 | POST | `/api/users/me/avatar` | any | Upload or replace the profile photo (multipart `avatar`, cropped to a square) |
 | DELETE | `/api/users/me/avatar` | any | Remove the profile photo |
+| GET | `/api/locations` | public | Nepal's provinces, districts and local levels with ward counts |
+| POST | `/api/locations/detect` | any | Province, district and local level at `{ lat, lng }`, plus a suggested tole (no ward) |
 | GET | `/api/users/me/kyc` | shipper/owner/driver | Own verification status and documents |
-| PATCH | `/api/users/me/kyc/id-type` | shipper/owner/driver | Choose the identity document (citizenship, nid, driving_license, passport) |
 | POST | `/api/users/me/kyc/documents` | shipper/owner/driver | Upload or replace a document (multipart `document` + `type`) |
 | DELETE | `/api/users/me/kyc/documents/:docId` | shipper/owner/driver | Remove a document before submitting |
 | POST | `/api/users/me/kyc/submit` | shipper/owner/driver | Send documents for review |
-| POST | `/api/trucks` | owner | Add a truck to your fleet |
+| POST | `/api/trucks` | owner | Add a truck. Required: `registrationNumber`, `truckType` (`pickup`, `mini-truck`, `light-truck`, `6-wheeler`, `10-wheeler`, `12-wheeler`, `trailer`, `other`), `bodyType` (`open`, `covered`, `flatbed`, `tipper`, `tanker`, `refrigerated`), `capacity` (kg). Optional: `make`, `model`, `year`, `fuelType`, `cargoBed` (`lengthFt`, `widthFt`, `heightFt`), `features` (`tarpaulin`, `helper`, `gpsTracker`, `hillRoads`), `baseLocation` (province, district, municipality), `serviceArea` (`nepal`, `province`, `district`), `ratePerKm`, `minimumCharge`, and papers: `chassisNumber`, `engineNumber`, `bluebookRenewedUntil`, `insurance` (`type`, `company`, `policyNumber`, `validUntil`), `emissionTestValidUntil` (dates as YYYY-MM-DD) |
 | GET | `/api/trucks` | owner | Your fleet |
-| PATCH | `/api/trucks/:id` | owner | Update truck details/status |
+| PATCH | `/api/trucks/:id` | owner | Update truck details, rates or status (`null` clears an optional field) |
 | PATCH | `/api/trucks/:id/driver` | owner | Assign/unassign the truck's driver |
 | DELETE | `/api/trucks/:id` | owner | Remove a truck |
 | GET | `/api/admin/stats` | admin | Platform metrics |
@@ -260,7 +274,7 @@ Before an EAS/standalone Android build (not needed for Expo Go testing), run `ea
 
 The pickup/dropoff map (on a load) and the live tracking map (on a booking) use **Leaflet + OpenStreetMap**, no API key, no billing account. The same HTML (`frontend/src/components/map/mapHtml.js`) renders inside a `WebView` on Android and an `iframe` on web (`MapCanvas.native.js` / `MapCanvas.web.js`, resolved automatically by the `.native`/`.web` filename convention), so the map behaves identically on both.
 
-- **Posting a load:** the shipper can tap the map to set an exact pickup/dropoff point (`LocationPickerMap`), or use "Use My Location". Coordinates are optional. A load with just an address still works, it just won't render a tracking map later.
+- **Posting a load:** the pickup and dropoff are chosen with the same province, district, municipality, ward and tole pickers as a profile address (`NepalAddressFields`), filled from "Use Current Location" or the shipper's saved address if they like. The map (`LocationPickerMap`) stays folded away under "Exact point on map" until the shipper opens it to pin a spot. Coordinates are optional. A load without them still works, it just won't render a tracking map later.
 - **Tracking a booking:** `TrackingMap` shows static pickup/dropoff pins plus a driver marker that moves live as `location-update` socket events arrive, without reloading the map or resetting the viewer's pan/zoom.
 - **Sharing location:** while a booking is `in_transit`, the assigned driver sees a "Share My Location" toggle (`LocationSharingToggle`). It samples position every ~15s/25m (`expo-location`) and PATCHes `/api/bookings/:id/location`, which persists it and pushes `location-update` to the shipper and owner. Sharing stops automatically when the driver leaves the screen. It is never a background/always-on broadcast.
 - The server only accepts a location ping while the booking is `in_transit`, and validates `lat`/`lng` are real coordinates (not just any number).
@@ -331,8 +345,12 @@ These are deliberate MVP scope cuts, not oversights:
 - **Accounts created before email login can't sign in.** The switch from phone+OTP to email+password left earlier phone-only accounts with no way to log in. The demo seed and `create-admin` script now set emails and passwords; older test accounts would need both set in the database. After deploying, run `npm run migrate-auth-indexes` once so accounts without a phone number don't collide on the old unique index.
 - **Phone/OTP code is retained but unused.** `src/services/sms.js` and `src/services/otpStore.js` are no longer wired to any route, kept in case a later feature (e.g. delivery SMS) wants them.
 - **No payment integration.** `Payment` model and `khalti`/`esewa` enums exist; no gateway is wired up. Needs a merchant account.
-- **Trucks aren't linked to bookings.** A truck carries a default driver, but per-booking driver assignment happens on the booking itself; the specific truck used isn't recorded.
+- **Distances are estimates, not routes.** Truck matching and asking prices use straight-line distance between municipality centres (or pinned points) times 1.4. That's close for most highway trips but can be well off where the road detours around a river or ridge. A routing service (OSRM or a paid API) would make both exact.
+- **Truck papers are taken on trust.** Owners type in their bluebook, insurance and green sticker dates; nothing checks them against the documents, and there's no upload for photos of the papers yet. Dates are entered in A.D.; the bluebook's own dates are in B.S., so owners convert them themselves until a B.S. calendar is added.
+- **Availability is by day.** A booked truck is unavailable for the whole pickup day and free again the next, whatever the trip's real length; a multi-day haul can still be double-booked for its later days.
 - **Push receipt-checking is skipped.** Expo's push API has a second async step (check delivery receipts ~15 minutes later) that would catch a token going stale faster; not implemented. A dead token still gets cleared, just on its *next* failed send rather than proactively.
+- **Wards aren't detected from location.** The official boundary data stops at local levels, and the only free ward map is outdated (pre-2020), so "Use Current Location" fills province, district and municipality and the user picks the ward. Near a boundary, GPS error can still place someone in the neighbouring municipality, which is why the app shows the accuracy and asks the user to check.
+- **Tole suggestions use the public Nominatim service.** It allows about one request per second for the whole app and discourages heavy commercial use. The backend throttles and caches lookups; a busy production deployment should run its own Nominatim (`NOMINATIM_URL`).
 - **Native push delivery is unverified on a real device.** The full pipeline (registration → backend send → Android banner → tap → deep link) is built and the backend half is tested, but this development environment has no Android device/emulator to confirm a real push actually arrives. Worth a real-device check before relying on it.
 
 ---

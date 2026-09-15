@@ -13,10 +13,12 @@ import { getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
 import { loginSuccess } from '../redux/slices/authSlice';
 
-// Reached only from ForgotPasswordScreen, which already confirmed a code
-// was requested for this email and passes it along as a route param.
+// Reached from ForgotPasswordScreen, which already confirmed a code was
+// requested for this email and passes it along as a route param.
 const ResetPasswordScreen = ({ route, navigation }) => {
-  const { email } = route.params;
+  // The email is deliberately kept out of the page address (see
+  // RootNavigator's linking config), so after a browser refresh it is gone.
+  const email = route?.params?.email;
   const dispatch = useDispatch();
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +27,17 @@ const ResetPasswordScreen = ({ route, navigation }) => {
   const [sentAt, setSentAt] = useState(() => Date.now());
   const [resending, setResending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Without the email this form can't work, so ask for a new code instead of
+  // showing inputs that would only fail.
+  if (!email) {
+    return (
+      <AuthLayout title="Reset Password" subtitle="We need your email again. Request a new code to continue.">
+        <Button title="Request a New Code" icon="email" onPress={() => navigation.replace('ForgotPassword')} />
+        <Button title="Back to Login" variant="ghost" onPress={() => navigation.navigate('Login')} />
+      </AuthLayout>
+    );
+  }
 
   const passwordsMatch = !confirmPassword || password === confirmPassword;
   const canSubmit = code.length === 6 && passwordScore(password) >= 2 && password === confirmPassword;
