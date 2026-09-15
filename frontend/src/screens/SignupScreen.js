@@ -48,6 +48,31 @@ const RoleOption = ({ option, selected, onSelect, stacked }) => (
   </Pressable>
 );
 
+// Required before any account is created, by email or by Google.
+const TermsCheckbox = ({ checked, onToggle }) => (
+  <Pressable
+    onPress={onToggle}
+    accessibilityRole="checkbox"
+    accessibilityState={{ checked }}
+    // react-native-web does not turn accessibilityState.checked into
+    // aria-checked, so browsers' screen readers need it set directly.
+    aria-checked={checked}
+    accessibilityLabel="I agree to FLITO's Terms of Service and Privacy Policy"
+    hitSlop={4}
+    style={styles.termsRow}
+  >
+    <Icon
+      name={checked ? 'checkboxOn' : 'checkboxOff'}
+      size={iconSize.md}
+      color={checked ? colors.primaryText : colors.textMuted}
+    />
+    <Text style={styles.termsText}>
+      I agree to FLITO&apos;s <Text style={styles.termsStrong}>Terms of Service</Text> and{' '}
+      <Text style={styles.termsStrong}>Privacy Policy</Text>
+    </Text>
+  </Pressable>
+);
+
 // Two ways in:
 // - A normal visit: email/password sign up, or "Sign up with Google".
 // - Arriving from the login page's Google button when no FLITO account
@@ -75,6 +100,7 @@ const SignupScreen = ({ navigation, route }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const dispatch = useDispatch();
 
   const nameError = nameTouched && !firstName.trim() ? 'First name is required' : null;
@@ -86,7 +112,19 @@ const SignupScreen = ({ navigation, route }) => {
     && isValidEmail(email)
     && passwordScore(password) >= 2
     && password === confirmPassword
-    && (!phone.trim() || isValidPhone(phone));
+    && (!phone.trim() || isValidPhone(phone))
+    && agreed;
+
+  // A disabled Sign Up button on its own does not say why, so the form
+  // spells out what is still missing once the user has started filling it in.
+  const missing = [];
+  if (!firstName.trim()) missing.push('your first name');
+  if (!isValidEmail(email)) missing.push('a valid email');
+  if (passwordScore(password) < 2) missing.push('a password of 8+ characters with a letter and a number');
+  else if (password !== confirmPassword) missing.push('the same password in both password fields');
+  if (phone.trim() && !isValidPhone(phone)) missing.push('a valid phone number, or leave it empty');
+  if (!agreed) missing.push('agreement to the Terms');
+  const started = Boolean(firstName || lastName || email || phone || password || confirmPassword || agreed);
 
   const handleSignup = async () => {
     setNameTouched(true);
@@ -147,6 +185,17 @@ const SignupScreen = ({ navigation, route }) => {
 
   const { promptGoogleSignIn } = useGoogleAuth(handleGoogleResult);
 
+  // The Google button stays tappable (see below), so the Terms check happens
+  // here instead of by disabling it.
+  const startGoogleSignup = () => {
+    if (!agreed) {
+      notify('Agree to the Terms first', "Tick the box to agree to FLITO's Terms of Service and Privacy Policy, then continue with Google.");
+      return;
+    }
+    setGoogleLoading(isGoogleConfigured());
+    promptGoogleSignIn();
+  };
+
   const googleName = [pendingGoogle?.profile?.firstName, pendingGoogle?.profile?.lastName].filter(Boolean).join(' ');
 
   const rolePicker = (
@@ -188,11 +237,14 @@ const SignupScreen = ({ navigation, route }) => {
 
           {rolePicker}
 
+          <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
+
           <Button
             title="Finish Sign Up"
             icon="checkmark"
             onPress={() => completeGoogleSignup(pendingGoogle.idToken)}
             loading={googleLoading}
+            disabled={!agreed}
           />
           <Button title="Use Email Instead" variant="ghost" onPress={() => setPendingGoogle(null)} />
         </>
@@ -282,11 +334,12 @@ const SignupScreen = ({ navigation, route }) => {
             error={!passwordsMatch ? 'Passwords do not match' : null}
           />
 
-          <Text style={styles.terms}>
-            By continuing, you agree to FLITO&apos;s Terms of Service and Privacy Policy.
-          </Text>
+          <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
 
           <Button title="Sign Up" icon="checkmark" onPress={handleSignup} loading={loading} disabled={!canSubmit} />
+          {started && missing.length > 0 && (
+            <Text style={styles.missingHint}>Still needed: {missing.join(', ')}.</Text>
+          )}
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -298,7 +351,7 @@ const SignupScreen = ({ navigation, route }) => {
               a clear "not available yet" message instead of a dead click. */}
           <GoogleButton
             title="Sign up with Google"
-            onPress={() => { setGoogleLoading(isGoogleConfigured()); promptGoogleSignIn(); }}
+            onPress={startGoogleSignup}
             loading={googleLoading}
           />
         </>
@@ -356,7 +409,10 @@ const styles = StyleSheet.create({
   googleBannerTitle: { ...type.bodyMedium, color: colors.textPrimary },
   googleBannerBody: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs },
   googleBannerEmail: { fontWeight: '700', color: colors.textPrimary },
-  terms: { ...type.small, color: colors.textMuted, marginBottom: spacing.md, textAlign: 'center' },
+  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.lg },
+  termsText: { ...type.small, color: colors.textSecondary, flex: 1, paddingTop: 2 },
+  termsStrong: { fontWeight: '600', color: colors.textPrimary },
+  missingHint: { ...type.small, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
   dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },

@@ -121,13 +121,14 @@ describe('SignupScreen', () => {
   it('submits with the selected role, email, password, and no phone', async () => {
     authService.signup.mockResolvedValue({ token: 'tok', user: fakeUser('owner') });
     const navigation = fakeNavigation();
-    const { findAllByText, findByPlaceholderText } = renderWithProviders(<SignupScreen navigation={navigation} />);
+    const { findAllByText, findByPlaceholderText, findByRole } = renderWithProviders(<SignupScreen navigation={navigation} />);
 
     fireEvent.press((await findAllByText('Truck Owner'))[0]);
     fireEvent.changeText(await findByPlaceholderText('Ram'), 'Bikash');
     fireEvent.changeText(await findByPlaceholderText('you@example.com'), 'bikash@example.com');
     fireEvent.changeText(await findByPlaceholderText('At least 8 characters'), 'Password123');
     fireEvent.changeText(await findByPlaceholderText('Type your password again'), 'Password123');
+    fireEvent.press(await findByRole('checkbox'));
 
     // The screen title and the submit button share the text "Sign Up".
     const submitButtons = await findAllByText('Sign Up');
@@ -156,6 +157,29 @@ describe('SignupScreen', () => {
     const submitButtons = await findAllByText('Sign Up');
     fireEvent.press(submitButtons[submitButtons.length - 1]);
     expect(authService.signup).not.toHaveBeenCalled();
+  });
+
+  it('keeps Sign Up blocked until the Terms are agreed, and says what is missing', async () => {
+    const navigation = fakeNavigation();
+    const { findByText, findAllByText, findByPlaceholderText } = renderWithProviders(<SignupScreen navigation={navigation} />);
+
+    fireEvent.changeText(await findByPlaceholderText('Ram'), 'Bikash');
+    fireEvent.changeText(await findByPlaceholderText('you@example.com'), 'bikash@example.com');
+    fireEvent.changeText(await findByPlaceholderText('At least 8 characters'), 'Password123');
+    fireEvent.changeText(await findByPlaceholderText('Type your password again'), 'Password123');
+
+    expect(await findByText('Still needed: agreement to the Terms.')).toBeTruthy();
+    const submitButtons = await findAllByText('Sign Up');
+    fireEvent.press(submitButtons[submitButtons.length - 1]);
+    expect(authService.signup).not.toHaveBeenCalled();
+  });
+
+  it('asks for Terms agreement before starting Google sign up', async () => {
+    const navigation = fakeNavigation();
+    const { findByText } = renderWithProviders(<SignupScreen navigation={navigation} />);
+
+    fireEvent.press(await findByText('Sign up with Google'));
+    expect(notify).toHaveBeenCalledWith('Agree to the Terms first', expect.any(String));
   });
 
   it('signs up a new Google account with the chosen role', async () => {
@@ -187,7 +211,7 @@ describe('SignupScreen', () => {
     authService.googleAuth.mockResolvedValue({ token: 'tok', user: fakeUser('driver'), isNewAccount: true });
     const navigation = fakeNavigation();
     const route = { params: { googleIdToken: 'google-token', googleProfile: GOOGLE_PROFILE } };
-    const { findByText, findAllByText, queryByPlaceholderText } = renderWithProviders(
+    const { findByText, findAllByText, findByRole, queryByPlaceholderText } = renderWithProviders(
       <SignupScreen navigation={navigation} route={route} />
     );
 
@@ -196,6 +220,7 @@ describe('SignupScreen', () => {
     expect(queryByPlaceholderText('At least 8 characters')).toBeNull();
 
     fireEvent.press((await findAllByText('Driver'))[0]);
+    fireEvent.press(await findByRole('checkbox'));
     fireEvent.press(await findByText('Finish Sign Up'));
 
     await waitFor(() => expect(authService.googleAuth).toHaveBeenCalledWith('google-token', 'driver'));

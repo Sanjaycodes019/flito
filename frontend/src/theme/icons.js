@@ -100,6 +100,8 @@ const GLYPHS = {
   eye: 'eye-outline',
   eyeOff: 'eye-off-outline',
   checkmark: 'check',
+  checkboxOff: 'checkbox-blank-outline',
+  checkboxOn: 'checkbox-marked',
   chevronDown: 'chevron-down',
   chevronUp: 'chevron-up',
   phone: 'phone-outline',
