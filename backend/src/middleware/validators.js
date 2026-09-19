@@ -3,6 +3,7 @@ const { nepalDay, addDays, isDayKey } = require('../services/nepalTime');
 const {
   TRUCK_TYPES, ALL_TRUCK_TYPES, BODY_TYPES, FUEL_TYPES, TRUCK_MAKES, SERVICE_AREAS, INSURANCE_TYPES, TRUCK_FEATURES,
 } = require('../config/truckTypes');
+const { fail: respond } = require('../utils/respond');
 
 const PHONE_REGEX = /^\+977\d{10}$/;
 const EMAIL_AUTH_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -23,21 +24,21 @@ const isValidPassword = (password) =>
 const validateEmailSignup = (req, res, next) => {
   const { email, password, role, firstName, phone } = req.body;
   if (!isValidEmail(email)) {
-    return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+    return respond(res, 400, 'VALIDATION_INVALID_EMAIL', 'Enter a valid email address');
   }
   if (!isValidPassword(password)) {
-    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters and include a letter and a number' });
+    return respond(res, 400, 'VALIDATION_WEAK_PASSWORD', 'Password must be at least 8 characters and include a letter and a number');
   }
   if (!['shipper', 'owner', 'driver'].includes(role)) {
-    return res.status(400).json({ success: false, message: 'Role must be shipper, owner, or driver' });
+    return respond(res, 400, 'VALIDATION_INVALID_ROLE', 'Role must be shipper, owner, or driver');
   }
   if (!firstName || !String(firstName).trim()) {
-    return res.status(400).json({ success: false, message: 'First name is required' });
+    return respond(res, 400, 'VALIDATION_FIRST_NAME_REQUIRED', 'First name is required');
   }
   // Phone is optional, but a value that IS sent must be a real +977 number,
   // not silently-accepted garbage that breaks later (driver lookup, SMS).
   if (phone !== undefined && phone !== '' && phone !== null && !isValidPhone(phone)) {
-    return res.status(400).json({ success: false, message: 'Phone number must be a valid +977 number, or left blank' });
+    return respond(res, 400, 'VALIDATION_INVALID_PHONE', 'Phone number must be a valid +977 number, or left blank');
   }
   next();
 };
@@ -45,7 +46,26 @@ const validateEmailSignup = (req, res, next) => {
 const validateEmailLogin = (req, res, next) => {
   const { email, password } = req.body;
   if (!isValidEmail(email) || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required' });
+    return respond(res, 400, 'VALIDATION_LOGIN_REQUIRED', 'Email and password are required');
+  }
+  next();
+};
+
+const validateAdminLogin = (req, res, next) => {
+  const { email, password, accessKey } = req.body;
+  if (!isValidEmail(email) || !password || !accessKey) {
+    return respond(res, 400, 'VALIDATION_ADMIN_LOGIN_REQUIRED', 'Email, password and access key are required');
+  }
+  next();
+};
+
+const validateAdminSignup = (req, res, next) => {
+  const { email, password, firstName, accessKey } = req.body;
+  if (!isValidEmail(email) || !firstName || !String(firstName).trim() || !accessKey) {
+    return respond(res, 400, 'VALIDATION_ADMIN_SIGNUP_REQUIRED', 'Name, email and access key are required');
+  }
+  if (!isValidPassword(password)) {
+    return respond(res, 400, 'VALIDATION_WEAK_PASSWORD', 'Password must be at least 8 characters and include a letter and a number');
   }
   next();
 };
@@ -53,19 +73,19 @@ const validateEmailLogin = (req, res, next) => {
 const validateGoogleAuth = (req, res, next) => {
   const { idToken, role } = req.body;
   if (!idToken || typeof idToken !== 'string') {
-    return res.status(400).json({ success: false, message: 'Google idToken is required' });
+    return respond(res, 400, 'VALIDATION_GOOGLE_TOKEN_REQUIRED', 'Google idToken is required');
   }
   // Only required for a first-time signup; the controller ignores it for an
   // account that already exists.
   if (role !== undefined && !['shipper', 'owner', 'driver'].includes(role)) {
-    return res.status(400).json({ success: false, message: 'Role must be shipper, owner, or driver' });
+    return respond(res, 400, 'VALIDATION_INVALID_ROLE', 'Role must be shipper, owner, or driver');
   }
   next();
 };
 
 const validateForgotPassword = (req, res, next) => {
   if (!isValidEmail(req.body.email)) {
-    return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+    return respond(res, 400, 'VALIDATION_INVALID_EMAIL', 'Enter a valid email address');
   }
   next();
 };
@@ -73,10 +93,10 @@ const validateForgotPassword = (req, res, next) => {
 const validateResetPassword = (req, res, next) => {
   const { email, code, newPassword } = req.body;
   if (!isValidEmail(email) || !code) {
-    return res.status(400).json({ success: false, message: 'Email and code are required' });
+    return respond(res, 400, 'VALIDATION_CODE_REQUIRED', 'Email and code are required');
   }
   if (!isValidPassword(newPassword)) {
-    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters and include a letter and a number' });
+    return respond(res, 400, 'VALIDATION_WEAK_PASSWORD', 'Password must be at least 8 characters and include a letter and a number');
   }
   next();
 };
@@ -84,7 +104,7 @@ const validateResetPassword = (req, res, next) => {
 const validateVerifyEmail = (req, res, next) => {
   const { email, code } = req.body;
   if (!isValidEmail(email) || !code) {
-    return res.status(400).json({ success: false, message: 'Email and code are required' });
+    return respond(res, 400, 'VALIDATION_CODE_REQUIRED', 'Email and code are required');
   }
   next();
 };
@@ -97,7 +117,7 @@ const CONTACT_NAME_MAX_LENGTH = 60;
 // (coordinates) and the contact are optional. Returns { stop } or { error }.
 const cleanStop = (input, name) => {
   const { address, error } = validateAddress(input);
-  if (error) return { error: `${name}: ${error}` };
+  if (error) return { error: `${name}: ${error}`, code: 'VALIDATION_STOP_ADDRESS', extra: { stop: name, detail: error } };
 
   const { formatted, label } = describeAddress(address);
   const stop = { ...address, address: formatted, label };
@@ -105,12 +125,22 @@ const cleanStop = (input, name) => {
   const { contactPerson, phone } = input;
   if (contactPerson !== undefined && contactPerson !== null && contactPerson !== '') {
     if (typeof contactPerson !== 'string' || contactPerson.trim().length > CONTACT_NAME_MAX_LENGTH) {
-      return { error: `${name}: contact name must be text of at most ${CONTACT_NAME_MAX_LENGTH} characters` };
+      return {
+        error: `${name}: contact name must be text of at most ${CONTACT_NAME_MAX_LENGTH} characters`,
+        code: 'VALIDATION_CONTACT_NAME',
+        extra: { stop: name, max: CONTACT_NAME_MAX_LENGTH },
+      };
     }
     if (contactPerson.trim()) stop.contactPerson = contactPerson.trim();
   }
   if (phone !== undefined && phone !== null && phone !== '') {
-    if (!isValidPhone(phone)) return { error: `${name}: contact phone must be a valid +977 number, or left blank` };
+    if (!isValidPhone(phone)) {
+      return {
+        error: `${name}: contact phone must be a valid +977 number, or left blank`,
+        code: 'VALIDATION_CONTACT_PHONE',
+        extra: { stop: name },
+      };
+    }
     stop.phone = phone;
   }
 
@@ -127,30 +157,34 @@ const MAX_PICKUP_DAYS_AHEAD = 14;
 const pickupDayFrom = (value) => {
   const today = nepalDay();
   if (!isDayKey(value) || value < today || value > addDays(today, MAX_PICKUP_DAYS_AHEAD)) {
-    return { error: `pickupDate must be a date (YYYY-MM-DD) from today to ${MAX_PICKUP_DAYS_AHEAD} days ahead` };
+    return {
+      error: `pickupDate must be a date (YYYY-MM-DD) from today to ${MAX_PICKUP_DAYS_AHEAD} days ahead`,
+      code: 'VALIDATION_PICKUP_DATE',
+      extra: { maxDaysAhead: MAX_PICKUP_DAYS_AHEAD },
+    };
   }
   return { day: value };
 };
 
 const validateCreateLoad = (req, res, next) => {
-  const fail = (message) => res.status(400).json({ success: false, message });
+  const fail = (message, code, extra) => respond(res, 400, code, message, extra);
   const { goodsType, weight, pickupDate, pickupLocation, dropoffLocation } = req.body;
 
   if (typeof goodsType !== 'string' || !goodsType.trim() || goodsType.trim().length > 100) {
-    return fail('goodsType is required (up to 100 characters)');
+    return fail('goodsType is required (up to 100 characters)', 'VALIDATION_LOAD_GOODS_TYPE');
   }
   if (typeof weight !== 'number' || !Number.isFinite(weight) || weight <= 0 || weight > MAX_LOAD_WEIGHT_KG) {
-    return fail(`weight is required, in kg, up to ${MAX_LOAD_WEIGHT_KG.toLocaleString('en-IN')}`);
+    return fail(`weight is required, in kg, up to ${MAX_LOAD_WEIGHT_KG.toLocaleString('en-IN')}`, 'VALIDATION_LOAD_WEIGHT', { max: MAX_LOAD_WEIGHT_KG });
   }
 
   // Today when not given.
   const pickup = pickupDate === undefined ? { day: nepalDay() } : pickupDayFrom(pickupDate);
-  if (pickup.error) return fail(pickup.error);
+  if (pickup.error) return fail(pickup.error, pickup.code, pickup.extra);
 
   const pickupStop = cleanStop(pickupLocation, 'Pickup');
-  if (pickupStop.error) return fail(pickupStop.error);
+  if (pickupStop.error) return fail(pickupStop.error, pickupStop.code, pickupStop.extra);
   const dropoffStop = cleanStop(dropoffLocation, 'Dropoff');
-  if (dropoffStop.error) return fail(dropoffStop.error);
+  if (dropoffStop.error) return fail(dropoffStop.error, dropoffStop.code, dropoffStop.extra);
 
   req.body.goodsType = goodsType.trim();
   req.body.pickupDay = pickup.day;
@@ -165,7 +199,7 @@ const validateRelist = (req, res, next) => {
   req.body = req.body || {};
   if (req.body.pickupDate !== undefined) {
     const pickup = pickupDayFrom(req.body.pickupDate);
-    if (pickup.error) return res.status(400).json({ success: false, message: pickup.error });
+    if (pickup.error) return respond(res, 400, pickup.code, pickup.error, pickup.extra);
     req.body.pickupDay = pickup.day;
   }
   next();
@@ -178,26 +212,26 @@ const PRICE_RULE = `a whole number of rupees from Rs. ${MIN_PRICE} to Rs. ${MAX_
 const isValidPrice = (value) => Number.isInteger(value) && value >= MIN_PRICE && value <= MAX_PRICE;
 
 const validateCreateQuote = (req, res, next) => {
-  const fail = (message) => res.status(400).json({ success: false, message });
+  const fail = (message, code, extra) => respond(res, 400, code, message, extra);
   const { loadId, quotedPrice, truckId } = req.body;
-  if (!loadId) return fail('loadId is required');
-  if (!isValidPrice(quotedPrice)) return fail(`quotedPrice must be ${PRICE_RULE}`);
-  if (!truckId) return fail('truckId is required: choose which of your trucks will carry this load');
+  if (!loadId) return fail('loadId is required', 'VALIDATION_LOAD_ID_REQUIRED');
+  if (!isValidPrice(quotedPrice)) return fail(`quotedPrice must be ${PRICE_RULE}`, 'VALIDATION_PRICE', { field: 'quotedPrice', min: MIN_PRICE, max: MAX_PRICE });
+  if (!truckId) return fail('truckId is required: choose which of your trucks will carry this load', 'VALIDATION_QUOTE_TRUCK_REQUIRED');
   next();
 };
 
 const validateCounterOffer = (req, res, next) => {
   if (!isValidPrice(req.body.counterOfferPrice)) {
-    return res.status(400).json({ success: false, message: `counterOfferPrice must be ${PRICE_RULE}` });
+    return respond(res, 400, 'VALIDATION_PRICE', `counterOfferPrice must be ${PRICE_RULE}`, { field: 'counterOfferPrice', min: MIN_PRICE, max: MAX_PRICE });
   }
   next();
 };
 
 // A shipper asking a particular truck to carry their load, at a price.
 const validateTruckRequest = (req, res, next) => {
-  const fail = (message) => res.status(400).json({ success: false, message });
-  if (!req.body.truckId) return fail('truckId is required');
-  if (!isValidPrice(req.body.price)) return fail(`price must be ${PRICE_RULE}`);
+  const fail = (message, code, extra) => respond(res, 400, code, message, extra);
+  if (!req.body.truckId) return fail('truckId is required', 'VALIDATION_TRUCK_ID_REQUIRED');
+  if (!isValidPrice(req.body.price)) return fail(`price must be ${PRICE_RULE}`, 'VALIDATION_PRICE', { field: 'price', min: MIN_PRICE, max: MAX_PRICE });
   next();
 };
 
@@ -371,7 +405,11 @@ const cleanTruck = (body, { creating }) => {
 
 const truckValidator = (creating) => (req, res, next) => {
   const { truck, error } = cleanTruck(req.body || {}, { creating });
-  if (error) return res.status(400).json({ success: false, message: error });
+  // cleanTruck composes one of dozens of field-specific sentences (allowed
+  // makes, capacity bounds, document number format...); one generic code
+  // covers all of them, with the full English detail carried as `extra` so
+  // a Nepali rendering can still surface exactly what's wrong.
+  if (error) return respond(res, 400, 'VALIDATION_TRUCK_FIELD', error, { detail: error });
   req.body = truck;
   next();
 };
@@ -382,10 +420,10 @@ const validateUpdateTruck = truckValidator(false);
 const validateRating = (req, res, next) => {
   const { rating, review } = req.body;
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return res.status(400).json({ success: false, message: 'rating must be a whole number from 1 to 5' });
+    return respond(res, 400, 'VALIDATION_RATING', 'rating must be a whole number from 1 to 5');
   }
   if (review !== undefined && (typeof review !== 'string' || review.length > 1000)) {
-    return res.status(400).json({ success: false, message: 'review must be text of at most 1000 characters' });
+    return respond(res, 400, 'VALIDATION_REVIEW_LENGTH', 'review must be text of at most 1000 characters', { max: 1000 });
   }
   next();
 };
@@ -396,13 +434,13 @@ const PROFILE_TEXT_FIELDS = ['firstName', 'lastName', 'email', 'companyName'];
 // body (phone, role, kycStatus, rating) is dropped before it reaches the
 // controller, which works only from the cleaned result.
 const validateProfileUpdate = (req, res, next) => {
-  const fail = (message) => res.status(400).json({ success: false, message });
+  const fail = (message, code, extra) => respond(res, 400, code, message, extra);
   const body = req.body || {};
   const update = {};
 
   for (const key of PROFILE_TEXT_FIELDS) {
     if (body[key] === undefined) continue;
-    if (typeof body[key] !== 'string') return fail(`${key} must be text`);
+    if (typeof body[key] !== 'string') return fail(`${key} must be text`, 'VALIDATION_FIELD_TEXT_TYPE', { field: key });
     update[key] = body[key].trim();
   }
 
@@ -410,21 +448,21 @@ const validateProfileUpdate = (req, res, next) => {
   // and the ward must exist in that local level (see services/nepalLocations).
   if (body.address !== undefined) {
     const { address, error } = validateAddress(body.address);
-    if (error) return fail(error);
+    if (error) return fail(error, 'VALIDATION_ADDRESS', { detail: error });
     update.address = address;
   }
 
   if (update.firstName !== undefined && (!update.firstName || update.firstName.length > 50)) {
-    return fail('firstName must be 1 to 50 characters');
+    return fail('firstName must be 1 to 50 characters', 'VALIDATION_FIRST_NAME_LENGTH', { max: 50 });
   }
   if (update.lastName !== undefined && update.lastName.length > 50) {
-    return fail('lastName must be at most 50 characters');
+    return fail('lastName must be at most 50 characters', 'VALIDATION_LAST_NAME_LENGTH', { max: 50 });
   }
   if (update.companyName !== undefined && update.companyName.length > 100) {
-    return fail('companyName must be at most 100 characters');
+    return fail('companyName must be at most 100 characters', 'VALIDATION_COMPANY_NAME_LENGTH', { max: 100 });
   }
   if (update.email) {
-    if (!isValidEmail(update.email)) return fail('Enter a valid email address');
+    if (!isValidEmail(update.email)) return fail('Enter a valid email address', 'VALIDATION_INVALID_EMAIL');
     update.email = update.email.toLowerCase();
   }
 
@@ -432,7 +470,7 @@ const validateProfileUpdate = (req, res, next) => {
   // format check, not just a length limit, and an empty string clears it.
   if (body.phone !== undefined) {
     if (body.phone !== '' && !isValidPhone(body.phone)) {
-      return fail('Phone number must be a valid +977 number, or left blank');
+      return fail('Phone number must be a valid +977 number, or left blank', 'VALIDATION_INVALID_PHONE');
     }
     update.phone = body.phone;
   }
@@ -447,7 +485,7 @@ const isValidLng = (v) => typeof v === 'number' && Number.isFinite(v) && v >= -1
 const validateCoordinates = (req, res, next) => {
   const { lat, lng } = req.body;
   if (!isValidLat(lat) || !isValidLng(lng)) {
-    return res.status(400).json({ success: false, message: 'lat must be -90 to 90 and lng must be -180 to 180' });
+    return respond(res, 400, 'VALIDATION_COORDINATES', 'lat must be -90 to 90 and lng must be -180 to 180');
   }
   next();
 };
@@ -456,7 +494,7 @@ const validatePushToken = (req, res, next) => {
   const { pushToken } = req.body;
   const { isExpoPushToken } = require('../services/push');
   if (typeof pushToken !== 'string' || !isExpoPushToken(pushToken)) {
-    return res.status(400).json({ success: false, message: 'pushToken must be a valid Expo push token' });
+    return respond(res, 400, 'VALIDATION_PUSH_TOKEN', 'pushToken must be a valid Expo push token');
   }
   next();
 };
@@ -473,6 +511,8 @@ module.exports = {
   isValidPassword,
   validateEmailSignup,
   validateEmailLogin,
+  validateAdminLogin,
+  validateAdminSignup,
   validateGoogleAuth,
   validateForgotPassword,
   validateResetPassword,

@@ -1,3 +1,4 @@
+const { fail } = require('../utils/respond');
 const Load = require('../models/Load');
 const Quote = require('../models/Quote');
 const Truck = require('../models/Truck');
@@ -90,7 +91,7 @@ exports.listLoads = async (req, res, next) => {
 exports.getLoad = async (req, res, next) => {
   try {
     const load = await Load.findById(req.params.id).populate('shipperId', PARTY_FIELDS);
-    if (!load) return res.status(404).json({ success: false, message: 'Load not found' });
+    if (!load) return fail(res, 404, 'LOADS_NOT_FOUND', 'Load not found');
     res.json({ success: true, load: withVerification(load, { people: ['shipperId'] }) });
   } catch (error) {
     next(error);
@@ -100,11 +101,11 @@ exports.getLoad = async (req, res, next) => {
 const findOwnLoad = async (req, res) => {
   const load = await Load.findById(req.params.id);
   if (!load) {
-    res.status(404).json({ success: false, message: 'Load not found' });
+    fail(res, 404, 'LOADS_NOT_FOUND', 'Load not found');
     return null;
   }
   if (String(load.shipperId) !== req.user.userId) {
-    res.status(403).json({ success: false, message: 'Not your load' });
+    fail(res, 403, 'LOADS_NOT_OWNER', 'Not your load');
     return null;
   }
   return load;
@@ -159,7 +160,7 @@ exports.listTruckMatches = async (req, res, next) => {
 exports.listMyTrucksForLoad = async (req, res, next) => {
   try {
     const load = await Load.findById(req.params.id);
-    if (!load) return res.status(404).json({ success: false, message: 'Load not found' });
+    if (!load) return fail(res, 404, 'LOADS_NOT_FOUND', 'Load not found');
 
     const trucks = await Truck.find({ ownerId: req.user.userId }).sort({ createdAt: -1 });
     res.json({
@@ -188,7 +189,8 @@ exports.cancelLoad = async (req, res, next) => {
     if (!load) return;
 
     if (![...BIDDABLE_LOAD_STATUSES, 'expired'].includes(load.status)) {
-      return res.status(400).json({ success: false, message: `Cannot cancel a load that is ${load.status}` });
+      const message = `Cannot cancel a load that is ${load.status}`;
+      return fail(res, 400, 'LOADS_CANCEL_NOT_ALLOWED', message, { status: load.status });
     }
 
     load.status = 'cancelled';
@@ -214,7 +216,8 @@ exports.relistLoad = async (req, res, next) => {
     const lapsed = load.status === 'expired'
       || (BIDDABLE_LOAD_STATUSES.includes(load.status) && isExpired(load));
     if (!lapsed) {
-      return res.status(400).json({ success: false, message: `Only an expired load can be relisted (this one is ${load.status})` });
+      const message = `Only an expired load can be relisted (this one is ${load.status})`;
+      return fail(res, 400, 'LOADS_RELIST_NOT_EXPIRED', message, { status: load.status });
     }
 
     await Quote.updateMany({ loadId: load._id, status: { $in: OPEN_QUOTE_STATUSES } }, { status: 'expired' });
@@ -260,14 +263,15 @@ exports.listQuotesForLoad = async (req, res, next) => {
 exports.loadEditableOwnLoad = async (req, res, next) => {
   try {
     if (!storage.isConfigured()) {
-      return res.status(503).json({ success: false, message: 'File uploads are not configured on this server' });
+      return fail(res, 503, 'LOADS_UPLOADS_NOT_CONFIGURED', 'File uploads are not configured on this server');
     }
 
     const load = await findOwnLoad(req, res);
     if (!load) return;
 
     if (!PHOTO_EDITABLE_STATUSES.includes(load.status)) {
-      return res.status(400).json({ success: false, message: `Photos can't be changed once a load is ${load.status}` });
+      const message = `Photos can't be changed once a load is ${load.status}`;
+      return fail(res, 400, 'LOADS_PHOTOS_LOCKED', message, { status: load.status });
     }
 
     req.load = load;
@@ -283,13 +287,11 @@ exports.addLoadPhotos = async (req, res, next) => {
     const files = req.files || [];
 
     if (!files.length) {
-      return res.status(400).json({ success: false, message: 'Attach at least one photo' });
+      return fail(res, 400, 'LOADS_PHOTOS_REQUIRED', 'Attach at least one photo');
     }
     if (load.photos.length + files.length > MAX_LOAD_PHOTOS) {
-      return res.status(400).json({
-        success: false,
-        message: `A load can have at most ${MAX_LOAD_PHOTOS} photos (it has ${load.photos.length})`,
-      });
+      const message = `A load can have at most ${MAX_LOAD_PHOTOS} photos (it has ${load.photos.length})`;
+      return fail(res, 400, 'LOADS_MAX_PHOTOS', message, { max: MAX_LOAD_PHOTOS, count: load.photos.length });
     }
 
     const uploaded = await storage.uploadImages(files, { folder: `flito/loads/${load._id}` });
@@ -314,7 +316,7 @@ exports.addLoadPhotos = async (req, res, next) => {
 
     if (!updated) {
       await storage.deleteAssets(uploaded.map((photo) => photo.publicId));
-      return res.status(409).json({ success: false, message: 'This load changed while uploading. Refresh and try again.' });
+      return fail(res, 409, 'LOADS_PHOTOS_UPLOAD_CONFLICT', 'This load changed while uploading. Refresh and try again.');
     }
 
     res.status(201).json({ success: true, load: updated });
@@ -327,7 +329,7 @@ exports.deleteLoadPhoto = async (req, res, next) => {
   try {
     const { load } = req;
     const photo = load.photos.id(req.params.photoId);
-    if (!photo) return res.status(404).json({ success: false, message: 'Photo not found' });
+    if (!photo) return fail(res, 404, 'LOADS_PHOTO_NOT_FOUND', 'Photo not found');
 
     const updated = await Load.findOneAndUpdate(
       { _id: load._id, status: { $in: PHOTO_EDITABLE_STATUSES } },
@@ -335,7 +337,7 @@ exports.deleteLoadPhoto = async (req, res, next) => {
       { new: true },
     );
     if (!updated) {
-      return res.status(409).json({ success: false, message: 'This load was booked in the meantime, so its photos are locked' });
+      return fail(res, 409, 'LOADS_PHOTO_DELETE_CONFLICT', 'This load was booked in the meantime, so its photos are locked');
     }
 
     await storage.deleteAssets([photo.publicId]);

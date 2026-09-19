@@ -1,0 +1,189 @@
+{
+  "stats": {
+    "users": "प्रयोगकर्ताहरू",
+    "loads": "भाडाहरू",
+    "bookings": "बुकिङहरू",
+    "pendingKyc": "बाँकी KYC",
+    "pendingTrucks": "बाँकी ट्रकहरू",
+    "trucks": "ट्रक"
+  },
+  "review": {
+    "reasonPlaceholder": "कारण (अस्वीकार गर्न आवश्यक, {{audience}}ले यो देख्नेछ)",
+    "audience": {
+      "user": "प्रयोगकर्ता",
+      "owner": "मालिक"
+    },
+    "approve": "स्वीकृत गर्नुहोस्",
+    "reject": "अस्वीकार गर्नुहोस्"
+  },
+  "kycQueue": {
+    "title": "KYC पर्खाइ सूची ({{count}})",
+    "emptyTitle": "सबै पूरा भयो",
+    "emptyMessage": "समीक्षाका लागि कुनै पेश गरिएको छैन।",
+    "identity": "पहिचान: {{list}}"
+  },
+  "truckQueue": {
+    "title": "ट्रक प्रमाणीकरण पर्खाइ सूची ({{count}})",
+    "emptyTitle": "कुनै ट्रक पर्खाइमा छैन",
+    "emptyMessage": "प्रमाणीकरणका लागि पठाइएका ट्रकहरू यहाँ देखिन्छन्।",
+    "bluebookTax": "ब्लुबुक कर {{date}} सम्म मान्य",
+    "insuranceUntil": "बीमा {{date}} सम्म मान्य",
+    "insuranceCompanySuffix": " ({{company}})",
+    "greenSticker": "प्रदूषण जाँच {{date}} सम्म मान्य",
+    "owner": "मालिक: {{details}}",
+    "verifiedSuffix": " (पहिचान प्रमाणित)",
+    "notVerifiedSuffix": " (पहिचान प्रमाणित नभएको)",
+    "chassisEngine": "चेसिस {{chassis}} · इन्जिन {{engine}}"
+  },
+  "common": {
+    "submitted": "{{date}} मा पेश गरियो",
+    "error": "त्रुटि",
+    "refresh": "रिफ्रेस"
+  },
+  "roles": {
+    "shipper": "शिपर",
+    "owner": "ट्रक मालिक",
+    "driver": "चालक",
+    "admin": "एडमिन"
+  },
+  "pagination": {
+    "previous": "अघिल्लो",
+    "next": "अर्को",
+    "pageOf": "पृष्ठ {{page}} / {{totalPages}}",
+    "showing": "{{total}} मध्ये {{from}}–{{to}} देखाइँदै",
+    "perPage": "प्रति पेज",
+    "goTo": "पेज {{page}} मा जानुहोस्"
+  },
+  "usersList": {
+    "title": "प्रयोगकर्ताहरू ({{count}})",
+    "emptyTitle": "अहिलेसम्म कुनै प्रयोगकर्ता छैन",
+    "emptyMessage": "नयाँ साइन अपहरू यहाँ देखिन्छन्।",
+    "unnamed": "नाम नराखिएको",
+    "joined": "{{date}} मा सामेल भयो",
+    "rating_one": "{{count}} रेटिङ",
+    "rating_other": "{{count}} रेटिङहरू"
+  },
+  "userActions": {
+    "suspend": {
+      "button": "निलम्बन गर्नुहोस्",
+      "title": "यो प्रयोगकर्तालाई निलम्बन गर्ने?",
+      "message": "{{name}} लाई तुरुन्तै रोकिनेछ र तपाईंले पुनः सक्रिय नगरेसम्म FLITO प्रयोग गर्न सक्नुहुन्न।",
+      "confirm": "निलम्बन गर्नुहोस्"
+    },
+    "ban": {
+      "button": "प्रतिबन्ध लगाउनुहोस्",
+      "title": "यो प्रयोगकर्तालाई प्रतिबन्ध लगाउने?",
+      "message": "{{name}} लाई तुरुन्तै रोकिनेछ। तपाईं पछि पुनः सक्रिय गर्न सक्नुहुन्छ।",
+      "confirm": "प्रतिबन्ध लगाउनुहोस्"
+    },
+    "reactivate": {
+      "button": "पुनः सक्रिय गर्नुहोस्",
+      "title": "यो प्रयोगकर्तालाई पुनः सक्रिय गर्ने?",
+      "message": "{{name}} ले फेरि FLITO प्रयोग गर्न सक्नुहुनेछ।",
+      "confirm": "पुनः सक्रिय गर्नुहोस्"
+    }
+  },
+  "loadsList": {
+    "title": "भाडाहरू ({{count}})",
+    "emptyTitle": "अहिलेसम्म कुनै भाडा छैन",
+    "emptyMessage": "शिपरहरूले पोस्ट गरेका भाडाहरू यहाँ देखिन्छन्।",
+    "shipperFallback": "अज्ञात शिपर",
+    "quotes_one": "{{count}} प्रस्ताव",
+    "quotes_other": "{{count}} प्रस्तावहरू",
+    "posted": "{{date}} मा पोस्ट गरियो"
+  },
+  "bookingsList": {
+    "title": "बुकिङहरू ({{count}})",
+    "emptyTitle": "अहिलेसम्म कुनै बुकिङ छैन",
+    "emptyMessage": "स्वीकृत प्रस्तावबाट बनेका बुकिङहरू यहाँ देखिन्छन्।",
+    "goodsFallback": "बुकिङ",
+    "created": "{{date}} मा बनाइयो"
+  },
+  "nav": {
+    "users": "प्रयोगकर्ता",
+    "loads": "लोड",
+    "bookings": "बुकिङ",
+    "kyc": "KYC",
+    "trucks": "ट्रक"
+  },
+  "console": {
+    "title": "एडमिन कन्सोल",
+    "subtitle": "FLITO प्लेटफर्म व्यवस्थापन",
+    "management": "व्यवस्थापन"
+  },
+  "filters": {
+    "all": "सबै",
+    "role": "भूमिका",
+    "status": "स्थिति",
+    "identity": "पहिचान",
+    "verification": "प्रमाणीकरण",
+    "clear": "फिल्टर हटाउनुहोस्",
+    "title": "फिल्टरहरू"
+  },
+  "pages": {
+    "count_one": "{{count}} नतिजा",
+    "count_other": "{{count}} नतिजा",
+    "noMatchesTitle": "केही मिलेन",
+    "noMatchesMessage": "अर्को खोजी गर्नुहोस् वा फिल्टर हटाउनुहोस्।",
+    "users": {
+      "title": "प्रयोगकर्ता",
+      "subtitle": "FLITO का सबै प्रयोगकर्ता। खाता निलम्बन वा पुनः सक्रिय गर्नुहोस्।",
+      "search": "नाम, इमेल, फोन वा कम्पनी खोज्नुहोस्",
+      "emptyTitle": "अहिलेसम्म प्रयोगकर्ता छैनन्",
+      "emptyMessage": "नयाँ साइनअपहरू यहाँ देखिनेछन्।"
+    },
+    "loads": {
+      "title": "लोड",
+      "subtitle": "शिपरहरूले राखेका सबै लोड, जुनसुकै स्थितिमा।",
+      "search": "सामानको प्रकारले खोज्नुहोस्",
+      "emptyTitle": "अहिलेसम्म लोड छैन",
+      "emptyMessage": "शिपरहरूले राखेका लोड यहाँ देखिनेछन्।"
+    },
+    "bookings": {
+      "title": "बुकिङ",
+      "subtitle": "स्वीकृत कोटेसनबाट बनेका सबै बुकिङ।",
+      "search": "",
+      "emptyTitle": "अहिलेसम्म बुकिङ छैन",
+      "emptyMessage": "स्वीकृत कोटेसनबाट बनेका बुकिङ यहाँ देखिनेछन्।"
+    },
+    "kyc": {
+      "title": "पहिचान प्रमाणीकरण",
+      "subtitle": "पेश गरिएका कागजातहरू समीक्षा गर्नुहोस्।",
+      "search": "नाम, इमेल, फोन वा कम्पनी खोज्नुहोस्",
+      "emptyTitle": "सबै सकियो",
+      "emptyMessage": "यो सूचीमा कुनै पेशकर्ता छैन।"
+    },
+    "trucks": {
+      "title": "ट्रक",
+      "subtitle": "प्लेटफर्मका सबै ट्रक र तिनको प्रमाणीकरण।",
+      "search": "दर्ता नम्बर वा मेक/मोडेल खोज्नुहोस्",
+      "emptyTitle": "अहिलेसम्म ट्रक छैन",
+      "emptyMessage": "मालिकहरूले थपेका ट्रक यहाँ देखिनेछन्।"
+    }
+  },
+  "dashboard": {
+    "morning": "शुभ प्रभात",
+    "afternoon": "शुभ दिन",
+    "evening": "शुभ सन्ध्या",
+    "subtitle": "आज FLITO को अवस्था यस्तो छ।",
+    "needsAttention": "तपाईंको ध्यान चाहिन्छ",
+    "allClearTitle": "सबै ठीक छ",
+    "allClear": "समीक्षाको लागि केही बाँकी छैन।",
+    "review": "समीक्षा",
+    "kycWaiting_one": "{{count}} पहिचान प्रमाणीकरण पर्खिरहेको छ",
+    "kycWaiting_other": "{{count}} पहिचान प्रमाणीकरण पर्खिरहेका छन्",
+    "trucksWaiting_one": "{{count}} ट्रक प्रमाणीकरणको प्रतीक्षामा छ",
+    "trucksWaiting_other": "{{count}} ट्रक प्रमाणीकरणको प्रतीक्षामा छन्",
+    "platform": "प्लेटफर्म",
+    "openLoads": "{{count}} खुला",
+    "activeBookings": "{{count}} प्रगतिमा",
+    "whereThingsStand": "अवस्था कस्तो छ",
+    "usersByRole": "भूमिका अनुसार प्रयोगकर्ता",
+    "loadsByStatus": "स्थिति अनुसार लोड",
+    "bookingsByStatus": "स्थिति अनुसार बुकिङ",
+    "trucksByVerification": "प्रमाणीकरण अनुसार ट्रक",
+    "noData": "अहिलेसम्म देखाउने केही छैन।",
+    "newestUsers": "नयाँ प्रयोगकर्ता",
+    "viewAll": "सबै हेर्नुहोस्"
+  }
+}

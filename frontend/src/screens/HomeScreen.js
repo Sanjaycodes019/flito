@@ -2,6 +2,7 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import DashboardCard from '../components/home/DashboardCard';
 import Grid from '../components/common/Grid';
 import Avatar from '../components/common/Avatar';
@@ -21,13 +22,6 @@ import { fetchBookingsStart, fetchBookingsSuccess, fetchBookingsError, updateBoo
 import { formatCurrency, getErrorMessage } from '../utils/helpers';
 import { isTurnOf } from '../utils/negotiation';
 
-const ROLE_SUBTITLE = {
-  [ROLES.SHIPPER]: 'Post loads, choose the right truck and track every delivery.',
-  [ROLES.OWNER]: 'Get booking requests, quote on loads and keep your fleet moving.',
-  [ROLES.DRIVER]: 'Your assigned jobs and earnings in one place.',
-  [ROLES.ADMIN]: 'Review verifications and keep the platform running.',
-};
-
 const StatTile = ({ icon, label, value }) => (
   <View style={styles.stat}>
     <View style={styles.statHeader}>
@@ -41,6 +35,7 @@ const StatTile = ({ icon, label, value }) => (
 );
 
 const HomeScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { user, token } = useSelector((state) => state.auth);
   const { items: loads, isLoading: loadsLoading } = useSelector((state) => state.loads);
@@ -110,6 +105,7 @@ const HomeScreen = ({ navigation }) => {
 
   const { isPhone, isDesktop } = layout;
   const cardColumns = isPhone ? 1 : isDesktop ? 3 : 2;
+  const roleSubtitle = user?.role ? t(`common:home.roleSubtitle.${user.role}`, '') : '';
 
   const needsVerification = (isOwner || isDriver) && user?.kycStatus !== 'approved';
   const activeBookings = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status));
@@ -130,26 +126,26 @@ const HomeScreen = ({ navigation }) => {
       <DashboardCard
         key="post"
         icon="load"
-        title="Post a Load"
-        description="Tell us what and where, then choose from trucks that can carry it"
-        actionLabel="Post Load"
+        title={t('common:home.postLoad.title')}
+        description={t('common:home.postLoad.description')}
+        actionLabel={t('common:home.postLoad.action')}
         onAction={() => navigation.navigate('CreateLoad')}
       />,
       <DashboardCard
         key="loads"
         icon="document"
-        title={`Your Loads (${loads.length})`}
-        description={loadsLoading ? 'Loading...' : `${awaitingQuotes} awaiting quotes`}
-        actionLabel="View My Loads"
+        title={t('common:home.yourLoads.title', { count: loads.length })}
+        description={loadsLoading ? t('common:home.loading') : t('common:home.yourLoads.awaitingQuotes', { count: awaitingQuotes })}
+        actionLabel={t('common:home.yourLoads.action')}
         variant="secondary"
         onAction={() => navigation.navigate('LoadsList')}
       />,
       <DashboardCard
         key="bookings"
         icon="truckDelivery"
-        title={`Active Bookings (${activeBookings.length})`}
-        description="Track pickup, delivery, and driver location"
-        actionLabel="View Bookings"
+        title={t('common:home.activeBookingsCard.title', { count: activeBookings.length })}
+        description={t('common:home.activeBookingsCard.description')}
+        actionLabel={t('common:home.activeBookingsCard.action')}
         variant="secondary"
         onAction={() => navigation.navigate('Bookings')}
       />,
@@ -160,35 +156,37 @@ const HomeScreen = ({ navigation }) => {
       <DashboardCard
         key="browse"
         icon="search"
-        title={`Available Loads (${loads.length})`}
-        description="Find loads and quote with a truck that can carry them"
-        actionLabel="Browse Loads"
+        title={t('common:home.browseLoads.title', { count: loads.length })}
+        description={t('common:home.browseLoads.description')}
+        actionLabel={t('common:home.browseLoads.action')}
         onAction={() => navigation.navigate('LoadsList')}
       />,
       <DashboardCard
         key="quotes"
         icon="quote"
-        title="Offers"
-        description={awaitingMyResponse > 0 ? `${awaitingMyResponse} waiting for your reply` : 'Your quotes and booking requests from shippers'}
-        actionLabel="View Offers"
+        title={t('common:home.offers.title')}
+        description={awaitingMyResponse > 0
+          ? t('common:home.offers.waitingForReply', { count: awaitingMyResponse })
+          : t('common:home.offers.description')}
+        actionLabel={t('common:home.offers.action')}
         variant="secondary"
         onAction={() => navigation.navigate('MyQuotes')}
       />,
       <DashboardCard
         key="bookings"
         icon="truckDelivery"
-        title={`My Bookings (${activeBookings.length} active)`}
-        description="Assign drivers and track jobs you've won"
-        actionLabel="View Bookings"
+        title={t('common:home.myBookings.title', { count: activeBookings.length })}
+        description={t('common:home.myBookings.description')}
+        actionLabel={t('common:home.myBookings.action')}
         variant="secondary"
         onAction={() => navigation.navigate('Bookings')}
       />,
       <DashboardCard
         key="fleet"
         icon="fleet"
-        title="My Fleet"
-        description="Your trucks, their base, rates and drivers"
-        actionLabel="Manage Fleet"
+        title={t('common:home.myFleet.title')}
+        description={t('common:home.myFleet.description')}
+        actionLabel={t('common:home.myFleet.action')}
         variant="secondary"
         onAction={() => navigation.navigate('Fleet')}
       />,
@@ -199,17 +197,17 @@ const HomeScreen = ({ navigation }) => {
       <DashboardCard
         key="jobs"
         icon="jobs"
-        title={`Active Jobs (${activeBookings.length})`}
-        description={bookingsLoading ? 'Loading...' : 'Jobs assigned to you'}
-        actionLabel="View Jobs"
+        title={t('common:home.activeJobs.title', { count: activeBookings.length })}
+        description={bookingsLoading ? t('common:home.loading') : t('common:home.activeJobs.description')}
+        actionLabel={t('common:home.activeJobs.action')}
         onAction={() => navigation.navigate('Jobs')}
       />,
       <DashboardCard
         key="earnings"
         icon="earnings"
-        title="Earnings"
+        title={t('common:home.earnings.title')}
         value={formatCurrency(todaysEarnings)}
-        actionLabel="Earnings History"
+        actionLabel={t('common:home.earnings.action')}
         variant="secondary"
         onAction={() => navigation.navigate('Earnings')}
       />,
@@ -220,10 +218,10 @@ const HomeScreen = ({ navigation }) => {
       <DashboardCard
         key="admin"
         icon="admin"
-        title="Admin Dashboard"
-        description="KYC approvals, disputes, platform metrics"
-        actionLabel="Open Dashboard"
-        onAction={() => navigation.navigate('AdminDashboard')}
+        title={t('common:home.adminDashboard.title')}
+        description={t('common:home.adminDashboard.description')}
+        actionLabel={t('common:home.adminDashboard.action')}
+        onAction={() => navigation.navigate('AdminUsers')}
       />,
     );
   }
@@ -243,13 +241,13 @@ const HomeScreen = ({ navigation }) => {
         />
         <View style={styles.headerText}>
           <View style={styles.greetingRow}>
-            <Text style={[styles.greeting, !isPhone && styles.greetingWide]}>Hello, {user?.firstName}</Text>
-            {user?.kycStatus === 'approved' && <VerifiedBadge size={isPhone ? 22 : 26} label="Verified by FLITO" />}
+            <Text style={[styles.greeting, !isPhone && styles.greetingWide]}>{t('common:home.greeting', { firstName: user?.firstName })}</Text>
+            {user?.kycStatus === 'approved' && <VerifiedBadge size={isPhone ? 22 : 26} label={t('common:home.verifiedByFlito')} />}
             <View style={styles.roleChip}>
-              <Text style={styles.roleText}>{user?.role}</Text>
+              <Text style={styles.roleText}>{t(`profile:roles.${user?.role}`, user?.role)}</Text>
             </View>
           </View>
-          {!!ROLE_SUBTITLE[user?.role] && <Text style={styles.subtitle}>{ROLE_SUBTITLE[user?.role]}</Text>}
+          {!!roleSubtitle && <Text style={styles.subtitle}>{roleSubtitle}</Text>}
         </View>
       </View>
 
@@ -261,26 +259,26 @@ const HomeScreen = ({ navigation }) => {
         <VerificationPrompt
           kycStatus={user?.kycStatus}
           message={isOwner
-            ? 'Owners need a verified identity to submit quotes and win bookings. You can still browse loads.'
-            : 'Drivers need a verified identity before an owner can assign them to a job.'}
+            ? t('common:home.ownerVerificationMessage')
+            : t('common:home.driverVerificationMessage')}
         />
       )}
 
       {isShipper && (
         <>
-          <Text style={styles.sectionLabel}>Overview</Text>
+          <Text style={styles.sectionLabel}>{t('common:home.overview')}</Text>
           <Grid columns={isPhone ? 2 : 4} gap={isPhone ? spacing.md : spacing.lg}>
-            <StatTile key="loads" icon="load" label="Total loads" value={count(loads.length, loadsLoading)} />
-            <StatTile key="awaiting" icon="quote" label="Awaiting quotes" value={count(awaitingQuotes, loadsLoading)} />
-            <StatTile key="active" icon="truckDelivery" label="Active bookings" value={count(activeBookings.length, bookingsLoading)} />
-            <StatTile key="completed" icon="success" label="Completed" value={count(completedBookings, bookingsLoading)} />
+            <StatTile key="loads" icon="load" label={t('common:home.totalLoads')} value={count(loads.length, loadsLoading)} />
+            <StatTile key="awaiting" icon="quote" label={t('common:home.awaitingQuotes')} value={count(awaitingQuotes, loadsLoading)} />
+            <StatTile key="active" icon="truckDelivery" label={t('common:home.activeBookings')} value={count(activeBookings.length, bookingsLoading)} />
+            <StatTile key="completed" icon="success" label={t('common:home.completed')} value={count(completedBookings, bookingsLoading)} />
           </Grid>
         </>
       )}
 
       {cards.length > 0 && (
         <>
-          <Text style={styles.sectionLabel}>Quick actions</Text>
+          <Text style={styles.sectionLabel}>{t('common:home.quickActions')}</Text>
           <Grid columns={cardColumns}>{cards}</Grid>
         </>
       )}

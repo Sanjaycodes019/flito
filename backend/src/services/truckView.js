@@ -66,6 +66,7 @@ const truckReviewView = (truck) => {
     bluebookRenewedUntil: truck.bluebookRenewedUntil,
     insurance: truck.insurance,
     emissionTestValidUntil: truck.emissionTestValidUntil,
+    verificationStatus: verificationStatusOf(truck),
     submittedAt: truck.verificationSubmittedAt,
     owner: {
       _id: owner._id,

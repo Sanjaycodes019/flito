@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
@@ -16,6 +17,7 @@ import api from '../services/api';
 import { fetchLoadsStart, fetchLoadsSuccess, fetchLoadsError } from '../redux/slices/loadsSlice';
 
 const LoadsListScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { items: loads, isLoading, error } = useSelector((state) => state.loads);
@@ -39,9 +41,9 @@ const LoadsListScreen = ({ navigation }) => {
   }, [dispatch, isShipper]);
 
   useEffect(() => {
-    navigation.setOptions({ title: isShipper ? 'My Loads' : 'Available Loads' });
+    navigation.setOptions({ title: isShipper ? t('loads:loadsList.myLoadsTitle') : t('loads:loadsList.availableLoadsTitle') });
     load();
-  }, [load, navigation, isShipper]);
+  }, [load, navigation, isShipper, t]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -68,7 +70,7 @@ const LoadsListScreen = ({ navigation }) => {
   if (error && loads.length === 0) {
     return (
       <View style={styles.container}>
-        <EmptyState icon="offline" tone="error" title="Could not load this" message={error} actionLabel="Try Again" onAction={load} />
+        <EmptyState icon="offline" tone="error" title={t('loads:loadsList.couldNotLoadThisTitle')} message={error} actionLabel={t('loads:common.tryAgain')} onAction={load} />
       </View>
     );
   }
@@ -89,7 +91,7 @@ const LoadsListScreen = ({ navigation }) => {
           <Input
             value={query}
             onChangeText={setQuery}
-            placeholder="Search by goods type or location"
+            placeholder={t('loads:loadsList.searchPlaceholder')}
             icon="search"
             containerStyle={[styles.searchInput, !layout.isPhone && styles.searchInputWide]}
           />
@@ -98,15 +100,15 @@ const LoadsListScreen = ({ navigation }) => {
       ListEmptyComponent={
         <EmptyState
           icon={isFiltering ? 'search' : 'load'}
-          title={isFiltering ? 'No matches' : isShipper ? 'No loads yet' : 'No open loads right now'}
+          title={isFiltering ? t('loads:loadsList.noMatchesTitle') : isShipper ? t('loads:loadsList.noLoadsYetTitle') : t('loads:loadsList.noOpenLoadsTitle')}
           message={
             isFiltering
-              ? 'No loads match your search. Try another word.'
+              ? t('loads:loadsList.noMatchesMessage')
               : isShipper
-                ? "You haven't posted any loads yet. Post one to choose a truck."
-                : 'Check back soon.'
+                ? t('loads:loadsList.noLoadsYetMessage')
+                : t('loads:loadsList.noOpenLoadsMessage')
           }
-          actionLabel={isFiltering ? 'Clear Search' : undefined}
+          actionLabel={isFiltering ? t('loads:loadsList.clearSearchButton') : undefined}
           onAction={isFiltering ? () => setQuery('') : undefined}
         />
       }
@@ -118,7 +120,7 @@ const LoadsListScreen = ({ navigation }) => {
               style={[styles.card, columns > 1 && styles.cardInGrid]}
               containerStyle={columns > 1 ? styles.fill : undefined}
               onPress={() => navigation.navigate('LoadDetail', { loadId: item._id })}
-              accessibilityLabel={`${item.goodsType} load`}
+              accessibilityLabel={t('loads:loadsList.loadAccessibilityLabel', { goodsType: item.goodsType })}
             >
               <View style={styles.row}>
                 <Text style={styles.goodsType} numberOfLines={1}>{item.goodsType}</Text>
@@ -142,7 +144,7 @@ const LoadsListScreen = ({ navigation }) => {
                   {item.pickupDay ? (
                     <View style={styles.metaRow}>
                       <Icon name="calendar" size={iconSize.xs} color={colors.textMuted} />
-                      <Text style={styles.meta}>{`Pickup ${dayLabel(item.pickupDay)}`}</Text>
+                      <Text style={styles.meta}>{t('loads:truckMatches.pickupOn', { day: dayLabel(item.pickupDay) })}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -150,11 +152,11 @@ const LoadsListScreen = ({ navigation }) => {
               <View style={styles.rowBottom}>
                 <View style={styles.metaRow}>
                   <Icon name="quote" size={iconSize.xs} color={colors.textMuted} />
-                  <Text style={styles.meta}>{`${offers} ${offers === 1 ? 'offer' : 'offers'}`}</Text>
+                  <Text style={styles.meta}>{t('loads:loadsList.offersCount', { count: offers })}</Text>
                 </View>
                 {item.budgetEstimate ? <Text style={styles.budget}>{formatCurrency(item.budgetEstimate)}</Text> : null}
               </View>
-              <Text style={styles.date}>{`Posted ${formatDate(item.createdAt)}`}</Text>
+              <Text style={styles.date}>{t('loads:loadsList.postedOn', { date: formatDate(item.createdAt) })}</Text>
             </Card>
           </View>
         );

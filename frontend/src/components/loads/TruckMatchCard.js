@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import { StatusPill } from '../common/SettingsList';
 import VerifiedBadge from '../common/VerifiedBadge';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
-import { bodyTypeLabel, formatCurrency, formatKg, truckTypeLabel } from '../../utils/helpers';
+import { bodyTypeLabel, formatCurrency, formatKg, truckFeatureLabel, truckTypeLabel } from '../../utils/helpers';
 import { TRUCK_FEATURES } from '../../utils/constants';
 
 const Fact = ({ icon, text, muted }) => (
@@ -17,31 +18,32 @@ const Fact = ({ icon, text, muted }) => (
 );
 
 // The offer already open with this truck's owner, in the shipper's words.
-const offerStatus = (offer) => {
+const offerStatus = (offer, t) => {
   if (offer.by === 'shipper') {
-    return { tone: 'info', text: `Request sent for ${formatCurrency(offer.price)}. Waiting for the owner.` };
+    return { tone: 'info', text: t('loads:truckMatchCard.requestSentWaiting', { price: formatCurrency(offer.price) }) };
   }
   if (offer.initiatedBy === 'owner' && offer.status === 'pending') {
-    return { tone: 'warning', text: `This owner quoted ${formatCurrency(offer.price)}. Your turn to reply.` };
+    return { tone: 'warning', text: t('loads:truckMatchCard.ownerQuotedYourTurn', { price: formatCurrency(offer.price) }) };
   }
-  return { tone: 'warning', text: `The owner countered with ${formatCurrency(offer.price)}. Your turn to reply.` };
+  return { tone: 'warning', text: t('loads:truckMatchCard.ownerCounteredYourTurn', { price: formatCurrency(offer.price) }) };
 };
 
 // One truck a shipper can choose for their load: what it is, who runs it,
 // why it suits the load, its asking price, and how to ask for it.
 const TruckMatchCard = ({ match, best, canRequest, maxOpenRequests, sending, onRequest, onMakeOffer, onViewOffer }) => {
+  const { t } = useTranslation();
   const { truck, owner, offer } = match;
   const rated = owner.totalRatings > 0;
-  const status = offer ? offerStatus(offer) : null;
+  const status = offer ? offerStatus(offer, t) : null;
   const priced = match.askingPrice != null;
   const bed = truck.cargoBed;
   const badges = [
     truck.insurance && {
-      label: truck.insurance === 'comprehensive' ? 'Comprehensive insurance' : 'Insured',
+      label: truck.insurance === 'comprehensive' ? t('loads:truckMatchCard.comprehensiveInsurance') : t('loads:truckMatchCard.insured'),
       tone: 'success',
       icon: 'verified',
     },
-    ...TRUCK_FEATURES.filter((feature) => truck.features?.[feature.key]).map((feature) => ({ label: feature.short, tone: 'info' })),
+    ...TRUCK_FEATURES.filter((feature) => truck.features?.[feature.key]).map((feature) => ({ label: truckFeatureLabel(feature.key, t, 'short'), tone: 'info' })),
   ].filter(Boolean);
 
   return (
@@ -52,32 +54,32 @@ const TruckMatchCard = ({ match, best, canRequest, maxOpenRequests, sending, onR
         </View>
         <View style={styles.heading}>
           <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={1}>{truckTypeLabel(truck.truckType)}</Text>
-            {truck.verified && <VerifiedBadge size={18} label="Verified truck" />}
+            <Text style={styles.title} numberOfLines={1}>{truckTypeLabel(truck.truckType, t)}</Text>
+            {truck.verified && <VerifiedBadge size={18} label={t('loads:common.verifiedTruck')} />}
           </View>
           <Text style={styles.subtitle} numberOfLines={2}>
-            {[bodyTypeLabel(truck.bodyType), truck.makeModel, truck.year ? String(truck.year) : null, `carries ${formatKg(truck.capacity)}`]
+            {[bodyTypeLabel(truck.bodyType, t), truck.makeModel, truck.year ? String(truck.year) : null, t('loads:truckMatchCard.carriesCapacity', { capacity: formatKg(truck.capacity) })]
               .filter(Boolean)
               .join(' · ')}
           </Text>
         </View>
-        {best ? <StatusPill label="Best match" tone="success" icon="star" /> : null}
+        {best ? <StatusPill label={t('loads:truckMatchCard.bestMatch')} tone="success" icon="star" /> : null}
       </View>
 
       <View style={styles.ownerRow}>
         <Icon name="owner" size={iconSize.sm} color={colors.textMuted} />
         <Text style={styles.ownerName} numberOfLines={1}>{owner.name}</Text>
-        {owner.verified && <VerifiedBadge size={16} label="Verified owner" />}
+        {owner.verified && <VerifiedBadge size={16} label={t('loads:common.verifiedOwner')} />}
         {rated ? (
           <View style={styles.rating}>
             <Icon name="star" size={iconSize.xs} color={colors.warningText} />
             <Text style={styles.ratingText}>{`${owner.rating.toFixed(1)} (${owner.totalRatings})`}</Text>
           </View>
         ) : (
-          <Text style={styles.newOwner}>New on FLITO</Text>
+          <Text style={styles.newOwner}>{t('loads:truckMatchCard.newOnFlito')}</Text>
         )}
         {owner.completedTrips > 0 ? (
-          <Text style={styles.trips}>{`${owner.completedTrips} ${owner.completedTrips === 1 ? 'trip' : 'trips'}`}</Text>
+          <Text style={styles.trips}>{t('loads:truckMatchCard.completedTrips', { count: owner.completedTrips })}</Text>
         ) : null}
       </View>
 
@@ -88,33 +90,35 @@ const TruckMatchCard = ({ match, best, canRequest, maxOpenRequests, sending, onR
       )}
 
       <View style={styles.facts}>
-        {match.fillPercent != null && <Fact icon="weight" text={`Your load fills ${match.fillPercent}% of it`} />}
+        {match.fillPercent != null && <Fact icon="weight" text={t('loads:truckMatchCard.fillsPercent', { percent: match.fillPercent })} />}
         {bed?.lengthFt ? (
           <Fact
             icon="load"
-            text={`Cargo bed ${[bed.lengthFt, bed.widthFt, bed.heightFt].filter(Boolean).join(' x ')} ft`}
+            text={t('loads:truckMatchCard.cargoBedDims', { dims: [bed.lengthFt, bed.widthFt, bed.heightFt].filter(Boolean).join(' x ') })}
           />
         ) : null}
         <Fact
           icon="pickup"
           text={truck.base
-            ? `Based in ${truck.base}${match.distanceToPickupKm != null ? `, about ${match.distanceToPickupKm} km from pickup` : ''}`
-            : 'Base not listed'}
+            ? (match.distanceToPickupKm != null
+              ? t('loads:truckMatchCard.basedInWithDistance', { base: truck.base, km: match.distanceToPickupKm })
+              : t('loads:truckMatchCard.basedIn', { base: truck.base }))
+            : t('loads:truckMatchCard.baseNotListed')}
           muted={!truck.base}
         />
         <Fact
           icon="driver"
-          text={match.driverReady ? 'Driver assigned' : 'Owner assigns a driver after booking'}
+          text={match.driverReady ? t('loads:truckMatchCard.driverAssigned') : t('loads:truckMatchCard.ownerAssignsDriver')}
           muted={!match.driverReady}
         />
       </View>
 
       <View style={styles.scoreRow}>
-        <Text style={styles.scoreLabel}>Match score</Text>
+        <Text style={styles.scoreLabel}>{t('loads:truckMatchCard.matchScore')}</Text>
         <View style={styles.scoreTrack}>
           <View style={[styles.scoreFill, { width: `${match.score}%` }]} />
         </View>
-        <Text style={styles.scoreValue}>{`${match.score}/100`}</Text>
+        <Text style={styles.scoreValue}>{t('loads:truckMatchCard.scoreOutOf100', { score: match.score })}</Text>
       </View>
 
       {match.reasons.length > 0 && (
@@ -129,25 +133,25 @@ const TruckMatchCard = ({ match, best, canRequest, maxOpenRequests, sending, onR
       )}
 
       <View style={styles.priceRow}>
-        <Text style={styles.priceLabel}>{priced ? 'Asking price' : 'No listed rate'}</Text>
-        <Text style={[styles.price, !priced && styles.priceMissing]}>{priced ? formatCurrency(match.askingPrice) : 'Name your price'}</Text>
+        <Text style={styles.priceLabel}>{priced ? t('loads:truckMatchCard.askingPrice') : t('loads:truckMatchCard.noListedRate')}</Text>
+        <Text style={[styles.price, !priced && styles.priceMissing]}>{priced ? formatCurrency(match.askingPrice) : t('loads:truckMatchCard.nameYourPrice')}</Text>
       </View>
 
       {status ? (
         <View style={[styles.status, status.tone === 'info' ? styles.statusInfo : styles.statusWarning]}>
           <Text style={[styles.statusText, { color: status.tone === 'info' ? colors.infoText : colors.warningText }]}>{status.text}</Text>
-          <Button title="View Offer" icon="forward" iconPosition="right" variant="tertiary" size="sm" onPress={onViewOffer} />
+          <Button title={t('loads:truckMatchCard.viewOfferButton')} icon="forward" iconPosition="right" variant="tertiary" size="sm" onPress={onViewOffer} />
         </View>
       ) : canRequest ? (
         <View style={styles.actions}>
           {priced && (
-            <Button title={`Request for ${formatCurrency(match.askingPrice)}`} icon="send" onPress={onRequest} loading={sending} />
+            <Button title={t('loads:truckMatchCard.requestForPrice', { price: formatCurrency(match.askingPrice) })} icon="send" onPress={onRequest} loading={sending} />
           )}
-          <Button title="Make an Offer" icon="counterOffer" variant={priced ? 'tertiary' : 'primary'} onPress={onMakeOffer} disabled={sending} />
+          <Button title={t('loads:truckMatchCard.makeAnOfferButton')} icon="counterOffer" variant={priced ? 'tertiary' : 'primary'} onPress={onMakeOffer} disabled={sending} />
         </View>
       ) : (
         <Text style={styles.limitNote}>
-          {`You have ${maxOpenRequests} requests waiting. Withdraw one or wait for a reply before asking this truck.`}
+          {t('loads:truckMatchCard.requestsLimitNote', { max: maxOpenRequests })}
         </Text>
       )}
     </Card>

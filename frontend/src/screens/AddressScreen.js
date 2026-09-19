@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Spinner from '../components/common/Spinner';
@@ -28,6 +29,7 @@ import { notify } from '../utils/alert';
 // province, district and municipality and suggests a tole; the ward is always
 // the user's choice, since no current ward boundaries are openly available.
 const AddressScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const saved = useSelector((state) => state.auth.user?.address);
   const layout = useScreenLayout('narrow');
@@ -95,12 +97,12 @@ const AddressScreen = ({ navigation }) => {
       savedUser = data.user;
       dispatch(setUser(savedUser));
     } catch (error) {
-      notify('Could not save your address', getErrorMessage(error));
+      notify(t('profile:addressScreen.saveFailedTitle'), getErrorMessage(error));
     }
     setSaving(false);
 
     if (savedUser) {
-      notify('Address saved', savedUser.address?.formatted || 'Your address has been updated.', () => navigation.goBack());
+      notify(t('profile:addressScreen.savedTitle'), savedUser.address?.formatted || t('profile:addressScreen.savedFallbackMessage'), () => navigation.goBack());
     }
   };
 
@@ -114,16 +116,16 @@ const AddressScreen = ({ navigation }) => {
             <Icon name="gps" size={iconSize.md} color={colors.primaryText} />
           </View>
           <View style={styles.locationText}>
-            <Text style={styles.locationTitle}>Use your current location</Text>
-            <Text style={styles.locationHint}>Fills in your province, district and municipality. You choose the ward.</Text>
+            <Text style={styles.locationTitle}>{t('profile:addressScreen.useLocationTitle')}</Text>
+            <Text style={styles.locationHint}>{t('profile:addressScreen.useLocationHint')}</Text>
           </View>
         </View>
-        <Button title="Use Current Location" icon="gps" variant="tertiary" onPress={handleUseLocation} loading={detecting} />
+        <Button title={t('profile:addressScreen.useLocationButton')} icon="gps" variant="tertiary" onPress={handleUseLocation} loading={detecting} />
       </Card>
 
       <Card style={!layout.isPhone && styles.formWide}>
         {detected && (
-          <DetectedLocationNotice detected={detected} hint="Choose your ward and check everything before saving." />
+          <DetectedLocationNotice detected={detected} hint={t('profile:addressScreen.detectedHint')} />
         )}
 
         <NepalAddressFields
@@ -132,11 +134,11 @@ const AddressScreen = ({ navigation }) => {
           onChange={handleChange}
           errors={errors}
           columns={!layout.isPhone}
-          toleHelperText={toleIsSuggestion ? 'Suggested from OpenStreetMap (c) OpenStreetMap contributors. Edit it if it is not right.' : undefined}
+          toleHelperText={toleIsSuggestion ? t('profile:addressScreen.toleSuggestionHint') : undefined}
         />
 
         <Button
-          title="Save Address"
+          title={t('profile:addressScreen.saveButton')}
           icon="checkmark"
           onPress={handleSave}
           loading={saving}

@@ -6,6 +6,7 @@ import TabNavigator from './TabNavigator';
 import Spinner from '../components/common/Spinner';
 import { navigationRef } from './navigationRef';
 import { colors } from '../theme/tokens';
+import { adminLinkingScreens } from '../admin/navigation';
 
 // Keeps screen transitions, tab bars, and the native back-swipe backdrop on
 // FLITO's own palette instead of React Navigation's default white/blue.
@@ -43,6 +44,7 @@ const linking = {
         path: 'signup',
         stringify: { googleIdToken: () => undefined, googleProfile: () => undefined },
       },
+      AdminAccess: 'admin-access',
       ForgotPassword: 'forgot-password',
       ResetPassword: {
         path: 'reset-password',
@@ -65,7 +67,7 @@ const linking = {
           MyQuotes: 'quotes',
           Fleet: 'fleet',
           Earnings: 'earnings',
-          AdminDashboard: 'admin',
+          ...adminLinkingScreens,
         },
       },
       Profile: {

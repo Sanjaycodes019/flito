@@ -5,6 +5,7 @@ const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const { getTree, locate } = require('../services/nepalLocations');
 const { suggestAreaName } = require('../services/reverseGeocode');
+const { fail } = require('../utils/respond');
 
 // Nepal's provinces, districts and local levels (with ward counts). Public
 // and rarely changing, so browsers and proxies may cache it for a day.
@@ -21,7 +22,7 @@ const detectLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
-  message: { success: false, message: 'Too many location lookups. Try again in a few minutes.' },
+  message: { success: false, code: 'LOCATIONS_TOO_MANY_LOOKUPS', message: 'Too many location lookups. Try again in a few minutes.' },
 });
 
 const isCoordinate = (value, limit) => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= limit;
@@ -32,7 +33,7 @@ router.post('/detect', authMiddleware, detectLimiter, async (req, res, next) => 
   try {
     const { lat, lng } = req.body || {};
     if (!isCoordinate(lat, 90) || !isCoordinate(lng, 180)) {
-      return res.status(400).json({ success: false, message: 'lat must be -90 to 90 and lng must be -180 to 180' });
+      return fail(res, 400, 'LOCATIONS_INVALID_COORDINATES', 'lat must be -90 to 90 and lng must be -180 to 180');
     }
 
     const place = locate(lat, lng);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
 import Input, { InputAction } from '../components/common/Input';
@@ -13,6 +14,7 @@ import { isValidEmail, getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
 
 const LoginScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
   const [password, setPassword] = useState('');
@@ -21,7 +23,7 @@ const LoginScreen = ({ navigation }) => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const dispatch = useDispatch();
 
-  const emailError = emailTouched && !isValidEmail(email) ? 'Enter a valid email address' : null;
+  const emailError = emailTouched && !isValidEmail(email) ? t('auth:shared.invalidEmail') : null;
   const canSubmit = isValidEmail(email) && password.length > 0;
 
   const handleLogin = async () => {
@@ -36,7 +38,7 @@ const LoginScreen = ({ navigation }) => {
       dispatch(loginSuccess(data));
     } catch (error) {
       dispatch(loginError(getErrorMessage(error)));
-      notify('Login failed', getErrorMessage(error));
+      notify(t('auth:login.loginFailedTitle'), getErrorMessage(error));
     }
     setLoading(false);
   };
@@ -45,9 +47,9 @@ const LoginScreen = ({ navigation }) => {
     if (!idToken) {
       setGoogleLoading(false);
       if (error === 'not_configured') {
-        notify('Not available yet', 'Google sign-in has not been configured for this app yet. Use email and password instead.');
+        notify(t('auth:google.notConfiguredTitle'), t('auth:google.notConfiguredMessage'));
       } else if (error) {
-        notify('Google sign-in failed', error);
+        notify(t('auth:login.googleSignInFailedTitle'), error);
       }
       return;
     }
@@ -61,7 +63,7 @@ const LoginScreen = ({ navigation }) => {
         // picks a role instead of going through Google a second time.
         navigation.navigate('Signup', { googleIdToken: idToken, googleProfile: err.response.data.profile });
       } else {
-        notify('Google sign-in failed', getErrorMessage(err));
+        notify(t('auth:login.googleSignInFailedTitle'), getErrorMessage(err));
       }
     }
     setGoogleLoading(false);
@@ -70,13 +72,13 @@ const LoginScreen = ({ navigation }) => {
   const { promptGoogleSignIn } = useGoogleAuth(handleGoogleResult);
 
   return (
-    <AuthLayout title="Log In" subtitle="Welcome back to FLITO">
+    <AuthLayout title={t('auth:shared.logIn')} subtitle={t('auth:login.subtitle')}>
       <Input
-        label="Email"
+        label={t('auth:shared.emailLabel')}
         value={email}
         onChangeText={setEmail}
         onBlur={() => setEmailTouched(true)}
-        placeholder="you@example.com"
+        placeholder={t('auth:shared.emailPlaceholder')}
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
@@ -87,10 +89,10 @@ const LoginScreen = ({ navigation }) => {
         testID="login-email-input"
       />
       <Input
-        label="Password"
+        label={t('auth:shared.passwordLabel')}
         value={password}
         onChangeText={setPassword}
-        placeholder="Your password"
+        placeholder={t('auth:login.passwordPlaceholder')}
         secureTextEntry={!showPassword}
         autoComplete="current-password"
         icon="lock"
@@ -100,13 +102,13 @@ const LoginScreen = ({ navigation }) => {
           <InputAction
             icon={showPassword ? 'eyeOff' : 'eye'}
             onPress={() => setShowPassword((v) => !v)}
-            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            accessibilityLabel={showPassword ? t('auth:shared.hidePassword') : t('auth:shared.showPassword')}
           />
         }
       />
 
       <Button
-        title="Forgot password?"
+        title={t('auth:login.forgotPassword')}
         variant="ghost"
         size="sm"
         onPress={() => navigation.navigate('ForgotPassword')}
@@ -114,7 +116,7 @@ const LoginScreen = ({ navigation }) => {
       />
 
       <Button
-        title="Log In"
+        title={t('auth:shared.logIn')}
         icon="checkmark"
         onPress={handleLogin}
         loading={loading}
@@ -124,7 +126,7 @@ const LoginScreen = ({ navigation }) => {
 
       <View style={styles.divider}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or</Text>
+        <Text style={styles.dividerText}>{t('auth:shared.or')}</Text>
         <View style={styles.dividerLine} />
       </View>
 
@@ -136,20 +138,28 @@ const LoginScreen = ({ navigation }) => {
       />
 
       <View style={styles.switchRow}>
-        <Text style={styles.switchPrompt}>Don&apos;t have an account?</Text>
+        <Text style={styles.switchPrompt}>{t('auth:login.noAccountPrompt')}</Text>
         <Button
-          title="Sign Up"
+          title={t('auth:shared.signUp')}
           variant="tertiary"
           icon="add"
           onPress={() => navigation.navigate('Signup')}
         />
       </View>
+      <Button
+        title={t('auth:admin.link')}
+        variant="ghost"
+        size="sm"
+        onPress={() => navigation.navigate('AdminAccess')}
+        style={styles.adminLink}
+      />
     </AuthLayout>
   );
 };
 
 const styles = StyleSheet.create({
   forgotButton: { alignSelf: 'flex-end', marginTop: -spacing.sm },
+  adminLink: { alignSelf: 'center', marginTop: spacing.md },
   loginButton: { marginTop: spacing.sm },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },

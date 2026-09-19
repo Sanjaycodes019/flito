@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Spinner from '../components/common/Spinner';
@@ -10,8 +11,8 @@ import { StatusPill } from '../components/common/SettingsList';
 import DocumentTile from '../components/kyc/DocumentTile';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
-import { KYC_DOCUMENT_LABELS, KYC_ID_TYPE_OPTIONS, MAX_DOCUMENT_BYTES } from '../utils/constants';
-import { formatDate, getErrorMessage } from '../utils/helpers';
+import { KYC_ID_TYPE_OPTIONS, MAX_DOCUMENT_BYTES } from '../utils/constants';
+import { formatDate, getErrorMessage, kycDocumentLabel, kycIdTypeLabel } from '../utils/helpers';
 import { notify, confirmAction } from '../utils/alert';
 import useScreenLayout from '../hooks/useScreenLayout';
 import api from '../services/api';
@@ -21,62 +22,44 @@ import { setUser } from '../redux/slices/authSlice';
 // Stands for "no identity document is complete yet" in missingDocuments.
 const IDENTITY_REQUIREMENT = 'identity';
 
-const STATUS_COPY = {
-  not_submitted: {
-    title: 'Verify your identity',
-    body: 'Upload your documents below, then submit them for review.',
-    color: colors.infoText,
-    icon: 'unverified',
-  },
-  pending: {
-    title: 'Under review',
-    body: "Your documents are being checked. You can't change them until the review is finished.",
-    color: colors.warningText,
-    icon: 'pending',
-  },
-  approved: {
-    title: 'Verified',
-    body: 'Your identity has been verified.',
-    color: colors.successText,
-    icon: 'verified',
-  },
-  rejected: {
-    title: 'Changes needed',
-    body: 'Your documents were not approved. Fix the issue below and submit again.',
-    color: colors.errorText,
-    icon: 'unverified',
-  },
+// Icon and accent color per status; the title and body come from translations.
+const STATUS_META = {
+  not_submitted: { color: colors.infoText, icon: 'unverified' },
+  pending: { color: colors.warningText, icon: 'pending' },
+  approved: { color: colors.successText, icon: 'verified' },
+  rejected: { color: colors.errorText, icon: 'unverified' },
 };
 
 const ID_OPTION = Object.fromEntries(KYC_ID_TYPE_OPTIONS.map((option) => [option.value, option]));
 
-const labelFor = (docType) => KYC_DOCUMENT_LABELS[docType] || docType;
+const labelFor = (docType, t) => kycDocumentLabel(docType, t);
 
 // A document name for use inside a sentence ("your citizenship card"), keeping
-// initialisms such as PAN in capitals.
-const inSentence = (docType) => {
-  const label = labelFor(docType);
+// initialisms such as PAN in capitals. Devanagari has no case, so this is a
+// no-op for Nepali text.
+const inSentence = (docType, t) => {
+  const label = labelFor(docType, t);
   return /^[A-Z][a-z]/.test(label) ? label[0].toLowerCase() + label.slice(1) : label;
 };
 
 // One document slot: its name and state, the uploaded file, and the ways to
 // add, replace or remove it.
-const DocumentRow = ({ docType, doc, emptyPill, canEdit, busy, onUpload, onRemove, first }) => (
+const DocumentRow = ({ docType, doc, emptyPill, canEdit, busy, onUpload, onRemove, first, t }) => (
   <View style={[styles.docRow, !first && styles.docRowDivider]}>
     <View style={styles.docHeader}>
-      <Text style={styles.docLabel}>{labelFor(docType)}</Text>
-      {doc ? <StatusPill label="Uploaded" tone="success" icon="success" /> : emptyPill ? <StatusPill {...emptyPill} /> : null}
+      <Text style={styles.docLabel}>{labelFor(docType, t)}</Text>
+      {doc ? <StatusPill label={t('kyc:pill.uploaded')} tone="success" icon="success" /> : emptyPill ? <StatusPill {...emptyPill} /> : null}
     </View>
 
-    {doc && <DocumentTile doc={doc} label={`View ${inSentence(docType)}`} />}
+    {doc && <DocumentTile doc={doc} label={t('kyc:documentRow.view', { doc: inSentence(docType, t) })} />}
 
     {canEdit && (
       <>
         <PhotoSourceButtons
           onTakePhoto={() => onUpload(docType, 'camera')}
           onChoose={() => onUpload(docType, 'library')}
-          takeLabel={doc ? 'Retake Photo' : 'Take Photo'}
-          chooseLabel={doc ? 'Replace File' : 'Upload File'}
+          takeLabel={doc ? t('kyc:documentRow.retakePhoto') : t('kyc:documentRow.takePhoto')}
+          chooseLabel={doc ? t('kyc:documentRow.replaceFile') : t('kyc:documentRow.uploadFile')}
           chooseIcon="upload"
           busy={busy?.type === docType ? busy.source : null}
           disabled={Boolean(busy) && busy.type !== docType}
@@ -84,7 +67,7 @@ const DocumentRow = ({ docType, doc, emptyPill, canEdit, busy, onUpload, onRemov
         />
         {doc && (
           <Button
-            title="Remove"
+            title={t('kyc:documentRow.remove')}
             icon="trash"
             variant="ghost"
             size="sm"
@@ -102,15 +85,16 @@ const DocumentRow = ({ docType, doc, emptyPill, canEdit, busy, onUpload, onRemov
 // One identity document as an expandable row: its status at a glance, and
 // the upload slot for each of its sides when opened. `optional` marks a
 // document with nothing uploaded that isn't needed to submit.
-const IdentityOption = ({ option, documentsByType, optional, expanded, onToggle, children }) => {
+const IdentityOption = ({ option, documentsByType, optional, expanded, onToggle, t, children }) => {
   const [hovered, setHovered] = useState(false);
-  const meta = ID_OPTION[option.idType] || { label: option.idType, icon: 'idCard' };
+  const meta = ID_OPTION[option.idType] || { icon: 'idCard' };
+  const label = kycIdTypeLabel(option.idType, t);
   const uploadedCount = option.documents.filter((docType) => documentsByType[docType]).length;
 
   let pill = null;
-  if (option.complete) pill = { label: 'Complete', tone: 'success', icon: 'success' };
-  else if (uploadedCount > 0) pill = { label: `${uploadedCount} of ${option.documents.length} uploaded`, tone: 'warning' };
-  else if (optional) pill = { label: 'Optional', tone: 'muted' };
+  if (option.complete) pill = { label: t('kyc:pill.complete'), tone: 'success', icon: 'success' };
+  else if (uploadedCount > 0) pill = { label: t('kyc:pill.progress', { done: uploadedCount, total: option.documents.length }), tone: 'warning' };
+  else if (optional) pill = { label: t('kyc:pill.optional'), tone: 'muted' };
 
   return (
     <View style={styles.option}>
@@ -120,15 +104,15 @@ const IdentityOption = ({ option, documentsByType, optional, expanded, onToggle,
         onHoverOut={() => setHovered(false)}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
-        accessibilityLabel={meta.label}
+        accessibilityLabel={label}
         style={[styles.optionHeader, hovered && styles.optionHeaderHovered]}
       >
         <View style={[styles.optionIcon, option.complete && styles.optionIconComplete]}>
           <Icon name={meta.icon} size={iconSize.md} color={option.complete ? colors.successText : colors.textSecondary} />
         </View>
         <View style={styles.optionText}>
-          <Text style={styles.optionLabel}>{meta.label}</Text>
-          <Text style={styles.optionDetail}>{option.documents.length > 1 ? 'Front and back' : 'One photo'}</Text>
+          <Text style={styles.optionLabel}>{label}</Text>
+          <Text style={styles.optionDetail}>{option.documents.length > 1 ? t('kyc:identity.frontAndBack') : t('kyc:identity.onePhoto')}</Text>
         </View>
         {pill && <StatusPill {...pill} />}
         <Icon name={expanded ? 'chevronUp' : 'chevronDown'} size={iconSize.md} color={colors.textMuted} />
@@ -139,6 +123,7 @@ const IdentityOption = ({ option, documentsByType, optional, expanded, onToggle,
 };
 
 const KycScreen = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const [kyc, setKyc] = useState(null);
@@ -156,9 +141,9 @@ const KycScreen = () => {
       const { data } = await api.get('/users/me/kyc');
       setKyc(data.kyc);
     } catch (error) {
-      notify('Error', getErrorMessage(error));
+      notify(t('kyc:alerts.error'), getErrorMessage(error));
     }
-  }, []);
+  }, [t]);
 
   // Document links expire after 10 minutes, so refresh them whenever the screen shows.
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -178,13 +163,13 @@ const KycScreen = () => {
     try {
       asset = source === 'camera' ? (await takePhoto())[0] : await pickDocument();
     } catch (error) {
-      notify(source === 'camera' ? 'Could not open the camera' : 'Could not open files', getErrorMessage(error));
+      notify(source === 'camera' ? t('kyc:alerts.cameraOpenFailedTitle') : t('kyc:alerts.filesOpenFailedTitle'), getErrorMessage(error));
       return;
     }
     if (!asset) return;
     const size = asset.size || asset.fileSize;
     if (size && size > MAX_DOCUMENT_BYTES) {
-      notify('File too large', 'Documents must be 10 MB or smaller');
+      notify(t('kyc:alerts.fileTooLargeTitle'), t('kyc:alerts.fileTooLargeMessage'));
       return;
     }
 
@@ -193,15 +178,15 @@ const KycScreen = () => {
       const data = await uploadFiles('/users/me/kyc/documents', [asset], { field: 'document', fields: { type: docType } });
       setKyc(data.kyc);
     } catch (error) {
-      notify('Upload failed', getErrorMessage(error));
+      notify(t('kyc:alerts.uploadFailedTitle'), getErrorMessage(error));
     }
     setBusy(null);
   };
 
   const handleRemove = (doc) => confirmAction({
-    title: 'Remove document',
-    message: `Remove your ${inSentence(doc.type)}?`,
-    confirmLabel: 'Remove',
+    title: t('kyc:alerts.removeDocumentTitle'),
+    message: t('kyc:alerts.removeDocumentMessage', { doc: inSentence(doc.type, t) }),
+    confirmLabel: t('kyc:alerts.removeConfirmLabel'),
     destructive: true,
     onConfirm: async () => {
       setBusy({ type: doc.type, source: 'remove' });
@@ -209,7 +194,7 @@ const KycScreen = () => {
         const { data } = await api.delete(`/users/me/kyc/documents/${doc._id}`);
         setKyc(data.kyc);
       } catch (error) {
-        notify('Error', getErrorMessage(error));
+        notify(t('kyc:alerts.error'), getErrorMessage(error));
       }
       setBusy(null);
     },
@@ -224,13 +209,14 @@ const KycScreen = () => {
       dispatch(setUser(data.user));
       submitted = true;
     } catch (error) {
-      notify('Could not submit', getErrorMessage(error));
+      notify(t('kyc:alerts.submitFailedTitle'), getErrorMessage(error));
     }
     setSubmitting(false);
-    if (submitted) notify('Submitted for review', "You'll be able to see the result here once your documents are checked.");
+    if (submitted) notify(t('kyc:alerts.submittedTitle'), t('kyc:alerts.submittedMessage'));
   };
 
-  const copy = STATUS_COPY[kyc.status] || STATUS_COPY.not_submitted;
+  const statusKey = STATUS_META[kyc.status] ? kyc.status : 'not_submitted';
+  const copy = { ...STATUS_META[statusKey], title: t(`kyc:status.${statusKey}.title`), body: t(`kyc:status.${statusKey}.body`) };
   const documentsByType = Object.fromEntries(kyc.documents.map((doc) => [doc.type, doc]));
   // Reviewers check the address alongside the documents, so it's needed to submit.
   const addressMissing = kyc.addressComplete === false;
@@ -246,29 +232,28 @@ const KycScreen = () => {
   const isExpanded = (option) => (kyc.canEdit ? expanded[option.idType] ?? hasUpload(option) : true);
   const toggle = (option) => setExpanded((current) => ({ ...current, [option.idType]: !isExpanded(option) }));
 
-  const rowProps = { canEdit: kyc.canEdit, busy, onUpload: handleUpload, onRemove: handleRemove };
+  const rowProps = { canEdit: kyc.canEdit, busy, onUpload: handleUpload, onRemove: handleRemove, t };
 
   const missingNames = kyc.missingDocuments.map((item) => (
-    item === IDENTITY_REQUIREMENT ? 'an identity document' : inSentence(item)
+    item === IDENTITY_REQUIREMENT ? t('kyc:toDo.identityDocument') : inSentence(item, t)
   ));
+  const joinWord = t('kyc:toDo.joinWord');
   const toDo = [];
-  if (addressMissing) toDo.push('add your address');
-  if (missingNames.length) toDo.push(`upload ${missingNames.join(' and ')}`);
-  const toDoText = toDo.join(' and ');
-  const submitHint = toDoText ? `${toDoText[0].toUpperCase()}${toDoText.slice(1)} to submit.` : null;
+  if (addressMissing) toDo.push(t('kyc:toDo.address'));
+  if (missingNames.length) toDo.push(t('kyc:toDo.upload', { items: missingNames.join(joinWord) }));
+  const toDoText = toDo.join(joinWord);
+  const submitHint = toDoText ? t('kyc:toDo.submitHint', { toDo: `${toDoText[0].toUpperCase()}${toDoText.slice(1)}` }) : null;
 
-  let identityHint = 'The identity documents you submitted.';
+  let identityHint = t('kyc:identity.hintSubmitted');
   if (kyc.canEdit) {
-    identityHint = identityRequired
-      ? 'Upload at least one. Cards need both sides. Once one is complete, the others are optional.'
-      : 'Optional. Your driving license is your identity document, but you can add these too.';
+    identityHint = identityRequired ? t('kyc:identity.hintRequired') : t('kyc:identity.hintOptional');
   }
 
   let identityPill = null;
   if (kyc.canEdit) {
-    if (!identityRequired) identityPill = { label: 'Optional', tone: 'muted' };
-    else if (identity.complete) identityPill = { label: 'Complete', tone: 'success', icon: 'success' };
-    else identityPill = { label: 'Required', tone: 'warning' };
+    if (!identityRequired) identityPill = { label: t('kyc:pill.optional'), tone: 'muted' };
+    else if (identity.complete) identityPill = { label: t('kyc:pill.complete'), tone: 'success', icon: 'success' };
+    else identityPill = { label: t('kyc:pill.required'), tone: 'warning' };
   }
 
   const identitySection = identityOptions.length > 0 && (
@@ -276,7 +261,7 @@ const KycScreen = () => {
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeading}>
           <Text style={styles.sectionTitle} accessibilityRole="header">
-            {identityRequired ? 'Identity Document' : 'Other Identity Documents'}
+            {identityRequired ? t('kyc:identity.requiredTitle') : t('kyc:identity.otherTitle')}
           </Text>
           <Text style={styles.sectionHint}>{identityHint}</Text>
         </View>
@@ -291,6 +276,7 @@ const KycScreen = () => {
           optional={!identityRequired || identity.complete}
           expanded={isExpanded(option)}
           onToggle={() => toggle(option)}
+          t={t}
         >
           {option.documents.map((docType, index) => (
             <DocumentRow
@@ -310,8 +296,8 @@ const KycScreen = () => {
     <Card style={styles.section} key="required">
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeading}>
-          <Text style={styles.sectionTitle} accessibilityRole="header">Required Documents</Text>
-          <Text style={styles.sectionHint}>Needed for your account type.</Text>
+          <Text style={styles.sectionTitle} accessibilityRole="header">{t('kyc:requiredSection.title')}</Text>
+          <Text style={styles.sectionHint}>{t('kyc:requiredSection.hint')}</Text>
         </View>
       </View>
       <View style={styles.sectionRows}>
@@ -320,7 +306,7 @@ const KycScreen = () => {
             key={docType}
             docType={docType}
             doc={documentsByType[docType]}
-            emptyPill={{ label: 'Required', tone: 'warning' }}
+            emptyPill={{ label: t('kyc:pill.required'), tone: 'warning' }}
             first={index === 0}
             {...rowProps}
           />
@@ -341,9 +327,9 @@ const KycScreen = () => {
           <Text style={[styles.bannerTitle, { color: copy.color }]}>{copy.title}</Text>
         </View>
         <Text style={styles.bannerBody}>{copy.body}</Text>
-        {kyc.rejectionReason ? <Text style={styles.reason}>Reason: {kyc.rejectionReason}</Text> : null}
+        {kyc.rejectionReason ? <Text style={styles.reason}>{t('kyc:banner.reason', { reason: kyc.rejectionReason })}</Text> : null}
         {kyc.status === 'pending' && kyc.submittedAt ? (
-          <Text style={styles.meta}>Submitted {formatDate(kyc.submittedAt)}</Text>
+          <Text style={styles.meta}>{t('kyc:banner.submitted', { date: formatDate(kyc.submittedAt) })}</Text>
         ) : null}
       </Card>
 
@@ -354,11 +340,11 @@ const KycScreen = () => {
               <Icon name="location" size={iconSize.md} color={colors.warningText} />
             </View>
             <View style={styles.sectionHeading}>
-              <Text style={styles.sectionTitle} accessibilityRole="header">Add your address</Text>
-              <Text style={styles.sectionHint}>Reviewers check it along with your documents, so it&apos;s needed before you submit.</Text>
+              <Text style={styles.sectionTitle} accessibilityRole="header">{t('kyc:addressCard.title')}</Text>
+              <Text style={styles.sectionHint}>{t('kyc:addressCard.hint')}</Text>
             </View>
           </View>
-          <Button title="Add Address" icon="location" variant="tertiary" onPress={() => navigation.navigate('Address')} />
+          <Button title={t('kyc:addressCard.action')} icon="location" variant="tertiary" onPress={() => navigation.navigate('Address')} />
         </Card>
       )}
 
@@ -370,8 +356,8 @@ const KycScreen = () => {
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionHeading}>
-              <Text style={styles.sectionTitle} accessibilityRole="header">Optional Documents</Text>
-              <Text style={styles.sectionHint}>Not needed to get verified, but they help.</Text>
+              <Text style={styles.sectionTitle} accessibilityRole="header">{t('kyc:optionalSection.title')}</Text>
+              <Text style={styles.sectionHint}>{t('kyc:optionalSection.hint')}</Text>
             </View>
           </View>
           <View style={styles.sectionRows}>
@@ -380,7 +366,7 @@ const KycScreen = () => {
                 key={docType}
                 docType={docType}
                 doc={documentsByType[docType]}
-                emptyPill={{ label: 'Optional', tone: 'muted' }}
+                emptyPill={{ label: t('kyc:pill.optional'), tone: 'muted' }}
                 first={index === 0}
                 {...rowProps}
               />
@@ -392,7 +378,7 @@ const KycScreen = () => {
       {kyc.canEdit && (
         <>
           <Button
-            title={kyc.status === 'rejected' ? 'Resubmit for Review' : 'Submit for Review'}
+            title={kyc.status === 'rejected' ? t('kyc:submit.resubmit') : t('kyc:submit.submit')}
             icon="checkmark"
             onPress={handleSubmit}
             loading={submitting}

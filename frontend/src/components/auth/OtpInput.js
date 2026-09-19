@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { View, TextInput, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { webInputReset } from '../common/Input';
 import { colors, spacing, radius, type } from '../../theme/tokens';
 
@@ -7,6 +8,7 @@ import { colors, spacing, radius, type } from '../../theme/tokens';
 // far, `onChange` receives the full updated string on every keystroke,
 // including a pasted code landing across every box at once.
 const OtpInput = ({ length = 6, value = '', onChange, error, editable = true, autoFocus = true }) => {
+  const { t } = useTranslation();
   const inputs = useRef([]);
   const [focusedIndex, setFocusedIndex] = useState(null);
 
@@ -60,7 +62,7 @@ const OtpInput = ({ length = 6, value = '', onChange, error, editable = true, au
               error && styles.boxError,
               !editable && styles.boxDisabled,
             ]}
-            accessibilityLabel={`Digit ${index + 1} of ${length}`}
+            accessibilityLabel={t('auth:otpInput.digitLabel', { index: index + 1, length })}
             textContentType="oneTimeCode"
             selectTextOnFocus
           />

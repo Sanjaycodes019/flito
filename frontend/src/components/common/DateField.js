@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SelectField from './SelectField';
 import Button from './Button';
 import { colors, spacing, type } from '../../theme/tokens';
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -23,6 +22,8 @@ const parse = (value) => {
 // phone and on the web. `value` and `onChange` use "YYYY-MM-DD", and onChange
 // gets null until all three are chosen. `years` lists the years to offer.
 const DateField = ({ label, value, onChange, years, required = false, error, helperText, containerStyle }) => {
+  const { t } = useTranslation();
+  const months = t('common:dateField.months', { returnObjects: true });
   const [parts, setParts] = useState(() => parse(value));
 
   // A date set from outside replaces what is shown.
@@ -45,7 +46,7 @@ const DateField = ({ label, value, onChange, years, required = false, error, hel
 
   const started = Boolean(parts.year || parts.month || parts.day);
   const dayOptions = Array.from({ length: daysIn(parts.year, parts.month) }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
-  const monthOptions = MONTHS.map((name, i) => ({ value: i + 1, label: name }));
+  const monthOptions = months.map((name, i) => ({ value: i + 1, label: name }));
   const yearOptions = years.map((year) => ({ value: year, label: String(year) }));
 
   return (
@@ -56,7 +57,7 @@ const DateField = ({ label, value, onChange, years, required = false, error, hel
           {required && <Text style={styles.required}> *</Text>}
         </Text>
         {started && (
-          <Button title="Clear" variant="ghost" size="sm" onPress={clear} accessibilityLabel={`Clear ${label.toLowerCase()}`} style={styles.clear} />
+          <Button title={t('common:dateField.clear')} variant="ghost" size="sm" onPress={clear} accessibilityLabel={t('common:dateField.clearLabel', { label: label.toLowerCase() })} style={styles.clear} />
         )}
       </View>
       <View style={styles.row}>
@@ -66,7 +67,7 @@ const DateField = ({ label, value, onChange, years, required = false, error, hel
           value={parts.day}
           options={dayOptions}
           onChange={update('day')}
-          placeholder="Day"
+          placeholder={t('common:dateField.day')}
           containerStyle={styles.day}
         />
         <SelectField
@@ -75,7 +76,7 @@ const DateField = ({ label, value, onChange, years, required = false, error, hel
           value={parts.month}
           options={monthOptions}
           onChange={update('month')}
-          placeholder="Month"
+          placeholder={t('common:dateField.month')}
           containerStyle={styles.month}
         />
         <SelectField
@@ -84,7 +85,7 @@ const DateField = ({ label, value, onChange, years, required = false, error, hel
           value={parts.year}
           options={yearOptions}
           onChange={update('year')}
-          placeholder="Year"
+          placeholder={t('common:dateField.year')}
           containerStyle={styles.year}
         />
       </View>

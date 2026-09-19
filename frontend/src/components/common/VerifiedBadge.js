@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/tokens';
 
 // FLITO's verified mark: a rounded 12-point seal in the brand amber with a
@@ -24,18 +25,21 @@ const SEAL = `${Array.from({ length: POINTS * 2 }, (_, i) => {
 
 const TICK = 'M7.6 12.2 L10.5 15.1 L16.5 9';
 
-const VerifiedBadge = ({ size = 18, label = 'Verified', style }) => (
-  <View
-    accessible
-    accessibilityRole="image"
-    accessibilityLabel={label}
-    style={[{ width: size, height: size }, style]}
-  >
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d={SEAL} fill={colors.primary} stroke={colors.primary} strokeWidth={2.2} strokeLinejoin="round" />
-      <Path d={TICK} fill="none" stroke={colors.white} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  </View>
-);
+const VerifiedBadge = ({ size = 18, label, style }) => {
+  const { t } = useTranslation();
+  return (
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={label ?? t('common:verifiedBadge.label')}
+      style={[{ width: size, height: size }, style]}
+    >
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path d={SEAL} fill={colors.primary} stroke={colors.primary} strokeWidth={2.2} strokeLinejoin="round" />
+        <Path d={TICK} fill="none" stroke={colors.white} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    </View>
+  );
+};
 
 export default VerifiedBadge;

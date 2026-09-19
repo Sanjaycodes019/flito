@@ -1,9 +1,12 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import SelectField from '../common/SelectField';
 import Input from '../common/Input';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import i18n from '../../i18n';
+import { localizedName, localizedCategory } from '../../utils/helpers';
 
 export const TOLE_MAX_LENGTH = 100;
 
@@ -17,14 +20,18 @@ export const emptyPlace = { provinceId: null, districtId: null, localLevelId: nu
 export const AREA_FIELDS = ['provinceId', 'districtId', 'localLevelId'];
 
 // What still needs choosing, keyed by field. `whose` words the messages for
-// the form: "your" on the user's own address, "the" on a load's pickup.
-export const missingPlaceFields = (place, whose = 'your') => ({
-  provinceId: !place.provinceId && `Choose ${whose} province`,
-  districtId: !place.districtId && `Choose ${whose} district`,
-  localLevelId: !place.localLevelId && `Choose ${whose} municipality`,
-  ward: !place.ward && `Choose ${whose} ward`,
-  tole: !(place.tole || '').trim() && `Enter ${whose} tole, village or area`,
-});
+// the form: "your" on the user's own address, "the" on a load's pickup. Each
+// message has a translated "_the" variant in common.json for that case.
+export const missingPlaceFields = (place, whose = 'your') => {
+  const suffix = whose === 'the' ? '_the' : '';
+  return {
+    provinceId: !place.provinceId && i18n.t(`common:address.missing.province${suffix}`),
+    districtId: !place.districtId && i18n.t(`common:address.missing.district${suffix}`),
+    localLevelId: !place.localLevelId && i18n.t(`common:address.missing.municipality${suffix}`),
+    ward: !place.ward && i18n.t(`common:address.missing.ward${suffix}`),
+    tole: !(place.tole || '').trim() && i18n.t(`common:address.missing.tole${suffix}`),
+  };
+};
 
 export const isPlaceComplete = (place) => !Object.values(missingPlaceFields(place)).some(Boolean);
 
@@ -54,7 +61,7 @@ export const mergeDetectedPlace = (current, detected) => ({
 export const shortPlaceName = (tree, place) => {
   const localLevel = tree.localLevels.find((l) => l.id === place.localLevelId);
   const district = tree.districts.find((d) => d.id === place.districtId);
-  const area = localLevel?.name || district?.name;
+  const area = localizedName(localLevel) || localizedName(district);
   const tole = (place.tole || '').trim();
   if (!area) return null;
   return tole && tole.toLowerCase() !== area.toLowerCase() ? `${tole}, ${area}` : area;
@@ -74,35 +81,45 @@ const NepalAddressFields = ({
   columns = false,
   labelPrefix,
   toleHelperText,
-  tolePlaceholder = 'e.g. Basantapur',
+  tolePlaceholder,
   includeWardAndTole = true,
   required = true,
 }) => {
+  const { t } = useTranslation();
+  const resolvedTolePlaceholder = tolePlaceholder ?? t('common:address.tolePlaceholderExample');
   const named = (label) => (labelPrefix ? `${labelPrefix} ${label.toLowerCase()}` : label);
 
-  const provinceOptions = useMemo(() => tree.provinces.map((p) => ({ value: p.id, label: p.name })), [tree]);
+  // `t` isn't read here, but it changes reference on every language switch,
+  // so it doubles as the memo's cue to recompute (localizedName/localizedCategory
+  // read i18n.language directly, which useMemo can't otherwise see).
+  const provinceOptions = useMemo(() => tree.provinces.map((p) => ({ value: p.id, label: localizedName(p) })), [tree, t]);
 
   const districtOptions = useMemo(() => {
-    const provinceName = Object.fromEntries(tree.provinces.map((p) => [p.id, p.name]));
+    const provinceName = Object.fromEntries(tree.provinces.map((p) => [p.id, localizedName(p)]));
     const districts = value.provinceId
       ? [
         ...tree.districts.filter((d) => d.provinceId === value.provinceId),
         ...tree.districts.filter((d) => d.provinceId !== value.provinceId),
       ]
       : tree.districts;
-    return districts.map((d) => ({ value: d.id, label: d.name, description: provinceName[d.provinceId], keywords: d.aliases }));
-  }, [tree, value.provinceId]);
+    return districts.map((d) => ({ value: d.id, label: localizedName(d), description: provinceName[d.provinceId], keywords: d.aliases }));
+  }, [tree, value.provinceId, t]);
 
   const localLevelOptions = useMemo(() => tree.localLevels
     .filter((l) => l.districtId === value.districtId)
-    .map((l) => ({ value: l.id, label: l.name, description: `${l.category}, ${l.wards} wards`, keywords: l.aliases })),
-  [tree, value.districtId]);
+    .map((l) => ({
+      value: l.id,
+      label: localizedName(l),
+      description: t('common:address.localLevelDescription', { category: localizedCategory(l), count: l.wards }),
+      keywords: l.aliases,
+    })),
+  [tree, value.districtId, t]);
 
   const localLevel = useMemo(() => tree.localLevels.find((l) => l.id === value.localLevelId), [tree, value.localLevelId]);
 
   const wardOptions = useMemo(() => (localLevel
-    ? Array.from({ length: localLevel.wards }, (_, i) => ({ value: i + 1, label: `Ward ${i + 1}` }))
-    : []), [localLevel]);
+    ? Array.from({ length: localLevel.wards }, (_, i) => ({ value: i + 1, label: t('common:address.ward', { number: i + 1 }) }))
+    : []), [localLevel, t]);
 
   const choose = (key) => (next) => onChange(choosePlaceField(tree, value, key, next), key);
 
@@ -113,24 +130,24 @@ const NepalAddressFields = ({
     <View>
       <View style={pairStyle}>
         <SelectField
-          label="Province"
-          accessibilityLabel={named('Province')}
+          label={t('common:address.province')}
+          accessibilityLabel={named(t('common:address.province'))}
           required={required}
           value={value.provinceId}
           options={provinceOptions}
           onChange={choose('provinceId')}
-          placeholder="Select province"
+          placeholder={t('common:address.selectProvince')}
           error={errors.provinceId}
           containerStyle={halfStyle}
         />
         <SelectField
-          label="District"
-          accessibilityLabel={named('District')}
+          label={t('common:address.district')}
+          accessibilityLabel={named(t('common:address.district'))}
           required={required}
           value={value.districtId}
           options={districtOptions}
           onChange={choose('districtId')}
-          placeholder="Select district"
+          placeholder={t('common:address.selectDistrict')}
           error={errors.districtId}
           containerStyle={halfStyle}
         />
@@ -138,26 +155,26 @@ const NepalAddressFields = ({
 
       <View style={pairStyle}>
         <SelectField
-          label="Municipality"
-          accessibilityLabel={named('Municipality')}
+          label={t('common:address.municipality')}
+          accessibilityLabel={named(t('common:address.municipality'))}
           required={required}
           value={value.localLevelId}
           options={localLevelOptions}
           onChange={choose('localLevelId')}
-          placeholder={value.districtId ? 'Select municipality' : 'Choose a district first'}
+          placeholder={value.districtId ? t('common:address.selectMunicipality') : t('common:address.chooseDistrictFirst')}
           disabled={!value.districtId}
           error={errors.localLevelId}
           containerStyle={halfStyle}
         />
         {includeWardAndTole && (
           <SelectField
-            label="Ward Number"
-            accessibilityLabel={named('Ward Number')}
+            label={t('common:address.wardNumber')}
+            accessibilityLabel={named(t('common:address.wardNumber'))}
             required={required}
             value={value.ward}
             options={wardOptions}
             onChange={choose('ward')}
-            placeholder={localLevel ? 'Select ward' : 'Choose a municipality first'}
+            placeholder={localLevel ? t('common:address.selectWard') : t('common:address.chooseMunicipalityFirst')}
             disabled={!localLevel}
             error={errors.ward}
             containerStyle={halfStyle}
@@ -167,12 +184,12 @@ const NepalAddressFields = ({
 
       {includeWardAndTole && (
         <Input
-          label="Tole, Village or Area"
-          accessibilityLabel={named('Tole, Village or Area')}
+          label={t('common:address.toleVillageArea')}
+          accessibilityLabel={named(t('common:address.toleVillageArea'))}
           required={required}
           value={value.tole}
           onChangeText={(tole) => onChange({ ...value, tole }, 'tole')}
-          placeholder={tolePlaceholder}
+          placeholder={resolvedTolePlaceholder}
           icon="location"
           maxLength={TOLE_MAX_LENGTH}
           error={errors.tole}
@@ -186,6 +203,7 @@ const NepalAddressFields = ({
 // Shown after "Use Current Location": how precise the fix was, and whether
 // the point is inside a national park (which belongs to no municipality).
 export const DetectedLocationNotice = ({ detected, hint, style }) => {
+  const { t } = useTranslation();
   const rough = detected.accuracy > ROUGH_ACCURACY_M;
   const ink = rough ? colors.warningText : colors.infoText;
   return (
@@ -198,17 +216,17 @@ export const DetectedLocationNotice = ({ detected, hint, style }) => {
     >
       <View style={styles.noticeHeader}>
         <Icon name={rough ? 'warning' : 'info'} size={iconSize.md} color={ink} />
-        <Text style={[styles.noticeTitle, { color: ink }]}>Filled in from your location</Text>
+        <Text style={[styles.noticeTitle, { color: ink }]}>{t('common:address.filledFromLocation')}</Text>
       </View>
       {typeof detected.accuracy === 'number' && (
         <Text style={styles.noticeText}>
-          Accurate to about {Math.round(detected.accuracy)} m.
-          {rough ? " That's rough, so check each field carefully." : ''}
+          {t('common:address.accurateTo', { meters: Math.round(detected.accuracy) })}
+          {rough ? t('common:address.roughAccuracyNote') : ''}
         </Text>
       )}
       {detected.protectedArea ? (
         <Text style={styles.noticeText}>
-          You seem to be inside {detected.protectedArea}, which isn&apos;t part of a municipality. Choose the municipality below.
+          {t('common:address.insideProtectedArea', { protectedArea: detected.protectedArea })}
         </Text>
       ) : null}
       {hint ? <Text style={styles.noticeText}>{hint}</Text> : null}

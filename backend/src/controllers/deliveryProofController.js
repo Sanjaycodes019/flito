@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const storage = require('../services/storage');
 const { sendPushToUsers } = require('../services/push');
+const { fail } = require('../utils/respond');
 
 const MAX_DELIVERY_PHOTOS = 5;
 
@@ -17,17 +18,17 @@ const canAddProof = (booking) =>
 exports.loadProofBooking = async (req, res, next) => {
   try {
     if (!storage.isConfigured()) {
-      return res.status(503).json({ success: false, message: 'File uploads are not configured on this server' });
+      return fail(res, 503, 'DELIVERY_UPLOADS_NOT_CONFIGURED', 'File uploads are not configured on this server');
     }
 
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return fail(res, 404, 'DELIVERY_BOOKING_NOT_FOUND', 'Booking not found');
 
     if (idOf(booking.driverId) !== req.user.userId) {
-      return res.status(403).json({ success: false, message: 'Only the assigned driver can add proof of delivery' });
+      return fail(res, 403, 'DELIVERY_FORBIDDEN', 'Only the assigned driver can add proof of delivery');
     }
     if (!canAddProof(booking)) {
-      return res.status(400).json({ success: false, message: 'Proof of delivery can be added once the load has been picked up' });
+      return fail(res, 400, 'DELIVERY_NOT_READY', 'Proof of delivery can be added once the load has been picked up');
     }
 
     req.booking = booking;
@@ -44,13 +45,16 @@ exports.addDeliveryProof = async (req, res, next) => {
     const existing = booking.deliveryPhotos.length;
 
     if (!files.length) {
-      return res.status(400).json({ success: false, message: 'Attach at least one photo' });
+      return fail(res, 400, 'DELIVERY_PHOTO_REQUIRED', 'Attach at least one photo');
     }
     if (existing + files.length > MAX_DELIVERY_PHOTOS) {
-      return res.status(400).json({
-        success: false,
-        message: `A booking can have at most ${MAX_DELIVERY_PHOTOS} delivery photos (it has ${existing})`,
-      });
+      return fail(
+        res,
+        400,
+        'DELIVERY_MAX_PHOTOS',
+        `A booking can have at most ${MAX_DELIVERY_PHOTOS} delivery photos (it has ${existing})`,
+        { max: MAX_DELIVERY_PHOTOS, count: existing },
+      );
     }
 
     const uploaded = await storage.uploadImages(files, { folder: `flito/delivery/${booking._id}` });
@@ -76,7 +80,7 @@ exports.addDeliveryProof = async (req, res, next) => {
 
     if (!updated) {
       await storage.deleteAssets(uploaded.map((photo) => photo.publicId));
-      return res.status(409).json({ success: false, message: 'This booking changed while uploading. Refresh and try again.' });
+      return fail(res, 409, 'DELIVERY_BOOKING_CHANGED', 'This booking changed while uploading. Refresh and try again.');
     }
 
     [updated.shipperId, updated.ownerId].forEach((id) => req.io?.to(`user-${id}`)
@@ -100,7 +104,7 @@ exports.addDeliverySignature = async (req, res, next) => {
     const { booking } = req;
 
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Attach the signature image' });
+      return fail(res, 400, 'DELIVERY_SIGNATURE_FILE_REQUIRED', 'Attach the signature image');
     }
 
     const [uploaded] = await storage.uploadImages([req.file], { folder: `flito/delivery/${booking._id}/signature` });
@@ -114,7 +118,7 @@ exports.addDeliverySignature = async (req, res, next) => {
 
     if (!updated) {
       await storage.deleteAssets([uploaded.publicId]);
-      return res.status(409).json({ success: false, message: 'This booking changed while uploading. Refresh and try again.' });
+      return fail(res, 409, 'DELIVERY_BOOKING_CHANGED', 'This booking changed while uploading. Refresh and try again.');
     }
 
     if (previous?.publicId) await storage.deleteAssets([previous.publicId]);

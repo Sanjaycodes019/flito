@@ -27,11 +27,17 @@ const PENDING_TRUCK = {
   ],
 };
 
-const renderDashboard = ({ users = [], trucks = [PENDING_TRUCK] } = {}) => {
-  api.get.mockImplementation((url) => {
+const paginationFor = (items) => ({ page: 1, limit: 10, total: items.length, totalPages: Math.max(1, Math.ceil(items.length / 10)) });
+
+const noUsers = () => ({ users: [], pagination: paginationFor([]) });
+
+// `userList(page)` answers the users list, which only loads once its section opens.
+const renderDashboard = ({ users = [], trucks = [PENDING_TRUCK], userList = noUsers } = {}) => {
+  api.get.mockImplementation((url, config) => {
+    if (url === '/admin/users') return Promise.resolve({ data: userList(config?.params?.page || 1) });
     if (url === '/admin/stats') return Promise.resolve({ data: { stats: { userCount: 5, loadCount: 2, bookingCount: 1, pendingKyc: users.length, pendingTrucks: trucks.length } } });
-    if (url === '/admin/kyc/pending') return Promise.resolve({ data: { users } });
-    if (url === '/admin/trucks/pending') return Promise.resolve({ data: { trucks } });
+    if (url === '/admin/kyc/pending') return Promise.resolve({ data: { users, pagination: paginationFor(users) } });
+    if (url === '/admin/trucks/pending') return Promise.resolve({ data: { trucks, pagination: paginationFor(trucks) } });
     return Promise.reject(new Error(`unmocked GET ${url}`));
   });
   return renderWithProviders(<AdminDashboardScreen />, { user: fakeUser('admin') });
@@ -76,5 +82,105 @@ describe('truck verification queue', () => {
       decision: 'rejected',
       reason: 'The bluebook photo is blurry',
     }));
+  });
+});
+
+const { confirmAction } = require('../src/utils/alert');
+
+const person = (id, firstName, status, role = 'shipper') => ({
+  _id: id, firstName, lastName: 'Test', role, status, kycStatus: 'approved', email: `${firstName.toLowerCase()}@flito.test`, createdAt: '2026-09-16T00:00:00Z',
+});
+
+// Users load only when their section opens (the stat tile says 5 users).
+const openUsers = async (screen) => {
+  fireEvent.press(await screen.findByText('Users (5)'));
+  return screen;
+};
+
+describe('users', () => {
+  const ram = person('u1', 'Ram', 'active');
+  const sita = person('u2', 'Sita', 'suspended');
+  const hari = person('u3', 'Hari', 'banned', 'driver');
+  const me = person('admin-id', 'Me', 'active', 'admin');
+  const userList = () => ({ users: [ram, sita, hari, me], pagination: paginationFor([ram, sita, hari, me]) });
+
+  it('waits until the section is opened to load anyone', async () => {
+    const screen = renderDashboard({ userList });
+    await screen.findByText('Truck Verification Queue (1)');
+
+    expect(api.get).not.toHaveBeenCalledWith('/admin/users', expect.anything());
+    await openUsers(screen);
+    expect(await screen.findByText('Ram Test')).toBeTruthy();
+    expect(api.get).toHaveBeenCalledWith('/admin/users', { params: { page: 1, limit: 10 } });
+  });
+
+  it('offers each account only what fits where it stands, and nothing on the admin\'s own', async () => {
+    const screen = await openUsers(renderDashboard({ userList }));
+    await screen.findByText('Ram Test');
+
+    // Ram is active (suspend, ban); Sita is suspended (reactivate, ban); Hari is banned (reactivate).
+    expect(screen.getAllByText('Suspend')).toHaveLength(1);
+    expect(screen.getAllByText('Ban')).toHaveLength(2);
+    expect(screen.getAllByText('Reactivate')).toHaveLength(2);
+  });
+
+  it('suspends a user, after asking', async () => {
+    const screen = await openUsers(renderDashboard({ userList }));
+    await screen.findByText('Ram Test');
+
+    fireEvent.press(screen.getByText('Suspend'));
+
+    expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Suspend this user?', destructive: true, confirmLabel: 'Suspend',
+    }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/admin/users/u1/status', { status: 'suspended' }));
+  });
+
+  it('reactivates a user without treating it as destructive', async () => {
+    const screen = await openUsers(renderDashboard({ userList }));
+    await screen.findByText('Sita Test');
+
+    fireEvent.press(screen.getAllByText('Reactivate')[0]);
+
+    expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({ title: 'Reactivate this user?', destructive: false }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/admin/users/u2/status', { status: 'active' }));
+  });
+
+  it('refreshes the page the admin is on after a change', async () => {
+    const screen = await openUsers(renderDashboard({ userList }));
+    await screen.findByText('Ram Test');
+    api.get.mockClear();
+
+    fireEvent.press(screen.getByText('Suspend'));
+
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith('/admin/users', { params: { page: 1, limit: 10 } }));
+  });
+
+  it('pages through the list', async () => {
+    const pages = {
+      1: { users: [ram], pagination: { page: 1, limit: 10, total: 25, totalPages: 3 } },
+      2: { users: [sita], pagination: { page: 2, limit: 10, total: 25, totalPages: 3 } },
+    };
+    const screen = await openUsers(renderDashboard({ userList: (page) => pages[page] }));
+
+    expect(await screen.findByText('Page 1 of 3')).toBeTruthy();
+    expect(screen.getByText('Ram Test')).toBeTruthy();
+
+    // No page before the first.
+    fireEvent.press(screen.getByText('Previous'));
+    expect(api.get).not.toHaveBeenCalledWith('/admin/users', { params: { page: 0, limit: 10 } });
+
+    fireEvent.press(screen.getByText('Next'));
+    expect(await screen.findByText('Page 2 of 3')).toBeTruthy();
+    expect(screen.getByText('Sita Test')).toBeTruthy();
+    expect(screen.queryByText('Ram Test')).toBeNull();
+    expect(api.get).toHaveBeenCalledWith('/admin/users', { params: { page: 2, limit: 10 } });
+  });
+
+  it('shows no page controls when everything fits on one page', async () => {
+    const screen = await openUsers(renderDashboard({ userList }));
+    await screen.findByText('Ram Test');
+
+    expect(screen.queryByText('Next')).toBeNull();
   });
 });

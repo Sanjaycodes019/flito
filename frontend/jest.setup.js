@@ -50,6 +50,13 @@ jest.mock('expo-notifications', () => ({
 jest.mock('expo-device', () => ({ isDevice: false }));
 jest.mock('expo-constants', () => ({ expoConfig: { extra: {} } }));
 
+// Fixes the app's language to English for tests regardless of the host
+// machine's locale, matching every test's English text assertions. See
+// jest.setupAfterEnv.js for where i18next itself is initialized.
+jest.mock('expo-localization', () => ({
+  getLocales: () => [{ languageCode: 'en' }],
+}));
+
 jest.mock('expo-auth-session', () => ({
   makeRedirectUri: jest.fn(() => 'flito://redirect'),
   useAuthRequest: jest.fn(() => [null, null, jest.fn()]),

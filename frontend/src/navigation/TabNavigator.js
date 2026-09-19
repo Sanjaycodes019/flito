@@ -1,51 +1,32 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import HomeStackNavigator from './HomeStackNavigator';
 import ProfileStackNavigator from './ProfileStackNavigator';
-import Icon from '../theme/icons';
-import { colors, type } from '../theme/tokens';
+import AppTabBar from './AppTabBar';
+import { SIDEBAR_WIDTH } from '../components/navigation/Sidebar';
 import useBreakpoint from '../hooks/useBreakpoint';
 
 const Tab = createBottomTabNavigator();
 
-// Each tab shows its filled icon while active and its outline icon otherwise,
-// the same active/inactive language a StatusBadge or Button conveys with
-// color: filled and on-brand means "this is where you are."
-const TAB_ICON = {
-  HomeTab: { active: 'homeActive', inactive: 'home' },
-  Profile: { active: 'profileActive', inactive: 'profile' },
-};
-
-// A bottom tab bar suits phones and tablets. On a laptop it reads as a phone
-// app stretched across the screen, so from desktop width up it is hidden and
-// the stack headers carry the Home and Profile links instead
-// (see stackScreenOptions).
+// Two tabs, Home and Profile, drawn by AppTabBar: a bottom bar on phones and
+// tablets, a sidebar on a laptop. The sidebar is pinned over the left edge, so
+// on a laptop the pages are pushed right to clear it. (Admins draw their own
+// sidebar inside each admin page, so they need no gap.)
 const TabNavigator = () => {
+  const { t } = useTranslation();
   const { isDesktop } = useBreakpoint();
+  const isAdmin = useSelector((state) => state.auth.user?.role) === 'admin';
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false, // each stack screen sets its own header
-        tabBarActiveTintColor: colors.primaryText,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: isDesktop
-          ? { display: 'none' }
-          : {
-            backgroundColor: colors.surface,
-            borderTopColor: colors.divider,
-            height: 60,
-            paddingBottom: 8,
-            paddingTop: 6,
-          },
-        tabBarLabelStyle: { fontSize: type.caption.fontSize, fontWeight: '600' },
-        tabBarIcon: ({ color, focused, size }) => (
-          <Icon name={focused ? TAB_ICON[route.name].active : TAB_ICON[route.name].inactive} size={size ?? 22} color={color} />
-        ),
-      })}
+      tabBar={(props) => <AppTabBar {...props} />}
+      sceneContainerStyle={isDesktop && !isAdmin ? { paddingLeft: SIDEBAR_WIDTH } : undefined}
+      screenOptions={{ headerShown: false }} // each stack screen sets its own header
     >
-      <Tab.Screen name="HomeTab" component={HomeStackNavigator} options={{ title: 'Home' }} />
-      <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ title: 'Profile' }} />
+      <Tab.Screen name="HomeTab" component={HomeStackNavigator} options={{ title: t('navigation:tabs.home') }} />
+      <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ title: t('navigation:tabs.profile') }} />
     </Tab.Navigator>
   );
 };

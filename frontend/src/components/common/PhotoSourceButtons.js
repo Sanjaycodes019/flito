@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Button from './Button';
 import { spacing } from '../../theme/tokens';
 
@@ -11,35 +12,38 @@ import { spacing } from '../../theme/tokens';
 const PhotoSourceButtons = ({
   onTakePhoto,
   onChoose,
-  takeLabel = 'Take Photo',
-  chooseLabel = 'Choose Photo',
+  takeLabel,
+  chooseLabel,
   chooseIcon = 'image',
   busy = null,
   disabled = false,
   variant = 'tertiary',
   style,
-}) => (
-  <View style={[styles.row, style]}>
-    <Button
-      title={takeLabel}
-      icon="camera"
-      variant={variant}
-      onPress={onTakePhoto}
-      loading={busy === 'camera'}
-      disabled={disabled || (Boolean(busy) && busy !== 'camera')}
-      style={styles.button}
-    />
-    <Button
-      title={chooseLabel}
-      icon={chooseIcon}
-      variant={variant}
-      onPress={onChoose}
-      loading={busy === 'library'}
-      disabled={disabled || (Boolean(busy) && busy !== 'library')}
-      style={styles.button}
-    />
-  </View>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <View style={[styles.row, style]}>
+      <Button
+        title={takeLabel ?? t('common:photo.takePhoto')}
+        icon="camera"
+        variant={variant}
+        onPress={onTakePhoto}
+        loading={busy === 'camera'}
+        disabled={disabled || (Boolean(busy) && busy !== 'camera')}
+        style={styles.button}
+      />
+      <Button
+        title={chooseLabel ?? t('common:photo.choosePhoto')}
+        icon={chooseIcon}
+        variant={variant}
+        onPress={onChoose}
+        loading={busy === 'library'}
+        disabled={disabled || (Boolean(busy) && busy !== 'library')}
+        style={styles.button}
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm },

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing, radius, type } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
@@ -22,18 +23,28 @@ const STATUS_STYLE = {
   rejected: { tint: colors.errorMuted, text: colors.errorText, icon: 'error' },
   accepted: { tint: colors.successMuted, text: colors.successText, icon: 'success' },
   expired: { tint: colors.surfaceMuted, text: colors.textMuted, icon: 'time' },
+  approved: { tint: colors.successMuted, text: colors.successText, icon: 'success' },
+  not_submitted: { tint: colors.surfaceMuted, text: colors.textMuted, icon: 'pending' },
+  active: { tint: colors.successMuted, text: colors.successText, icon: 'success' },
+  suspended: { tint: colors.warningMuted, text: colors.warningText, icon: 'warning' },
+  banned: { tint: colors.errorMuted, text: colors.errorText, icon: 'error' },
+  maintenance: { tint: colors.warningMuted, text: colors.warningText, icon: 'warning' },
+  inactive: { tint: colors.surfaceMuted, text: colors.textMuted, icon: 'info' },
 };
 
-// Label text stays generated from the raw status string (never guessed
-// per-status copy), so a new backend status renders sensibly by default.
-const label = (status) => (status || '').replace(/_/g, ' ');
+// Label text falls back to the raw status string (never guessed per-status
+// copy) when there's no translation for it, so a new backend status still
+// renders sensibly by default.
+const fallbackLabel = (status) => (status || '').replace(/_/g, ' ');
 
 const StatusBadge = ({ status, showIcon = true }) => {
+  const { t } = useTranslation();
   const config = STATUS_STYLE[status] || { tint: colors.surfaceMuted, text: colors.textMuted, icon: 'info' };
+  const label = t(`common:status.${status}`, fallbackLabel(status));
   return (
     <View style={[styles.badge, { backgroundColor: config.tint, borderColor: config.text }]}>
       {showIcon && <Icon name={config.icon} size={12} color={config.text} style={styles.icon} />}
-      <Text style={[styles.text, { color: config.text }]}>{label(status)}</Text>
+      <Text style={[styles.text, { color: config.text }]}>{label}</Text>
     </View>
   );
 };

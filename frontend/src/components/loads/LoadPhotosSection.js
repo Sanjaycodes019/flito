@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import PhotoStrip from '../common/PhotoStrip';
 import PhotoSourceButtons from '../common/PhotoSourceButtons';
 import { colors, spacing, type } from '../../theme/tokens';
@@ -10,6 +11,7 @@ import api from '../../services/api';
 import { pickImages, takePhoto, uploadPhotos } from '../../services/uploads';
 
 const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
+  const { t } = useTranslation();
   // Which source is working: 'camera', 'library', 'remove' or null.
   const [busy, setBusy] = useState(null);
   const photos = load.photos || [];
@@ -27,15 +29,15 @@ const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
         await onChanged();
       }
     } catch (error) {
-      notify('Upload failed', getErrorMessage(error));
+      notify(t('loads:photosSection.uploadFailedTitle'), getErrorMessage(error));
     }
     setBusy(null);
   };
 
   const handleRemove = (photo) => confirmAction({
-    title: 'Remove photo',
-    message: 'Remove this photo from the load?',
-    confirmLabel: 'Remove',
+    title: t('loads:photosSection.removeTitle'),
+    message: t('loads:photosSection.removeMessage'),
+    confirmLabel: t('loads:photosSection.removeConfirmLabel'),
     destructive: true,
     onConfirm: async () => {
       setBusy('remove');
@@ -43,7 +45,7 @@ const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
         await api.delete(`/loads/${load._id}/photos/${photo._id}`);
         await onChanged();
       } catch (error) {
-        notify('Error', getErrorMessage(error));
+        notify(t('loads:photosSection.errorTitle'), getErrorMessage(error));
       }
       setBusy(null);
     },
@@ -51,19 +53,21 @@ const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.title}>Photos{photos.length ? ` (${photos.length})` : ''}</Text>
+      <Text style={styles.title}>
+        {photos.length ? t('loads:photosSection.titleWithCount', { count: photos.length }) : t('loads:photosSection.title')}
+      </Text>
 
       {photos.length ? (
         <PhotoStrip photos={photos} onRemove={canEdit ? handleRemove : undefined} />
       ) : (
-        <Text style={styles.hint}>Photos help owners judge the cargo and quote accurately.</Text>
+        <Text style={styles.hint}>{t('loads:photosSection.hint')}</Text>
       )}
 
       {canEdit && remaining > 0 && (
         <PhotoSourceButtons
           onTakePhoto={() => handleAdd('camera')}
           onChoose={() => handleAdd('library')}
-          chooseLabel="Choose Photos"
+          chooseLabel={t('loads:common.choosePhotos')}
           busy={busy}
         />
       )}

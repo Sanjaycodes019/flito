@@ -1,0 +1,33 @@
+{
+  "auth": {
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password"
+  },
+  "tabs": {
+    "home": "Home",
+    "profile": "Profile"
+  },
+  "homeStack": {
+    "dashboard": "Dashboard",
+    "home": "FLITO",
+    "createLoad": "Post a Load",
+    "truckMatches": "Choose a Truck",
+    "loadsList": "Loads",
+    "loadDetail": "Load Details",
+    "bookings": "Bookings",
+    "jobs": "My Jobs",
+    "bookingDetail": "Booking Details",
+    "myQuotes": "Offers",
+    "fleet": "My Fleet",
+    "earnings": "Earnings",
+    "adminDashboard": "Admin Dashboard"
+  },
+  "profileStack": {
+    "profile": "Profile",
+    "editProfile": "Edit Profile",
+    "kyc": "Identity Verification",
+    "verifyEmail": "Verify Email",
+    "address": "Address"
+  },
+  "menu": "Menu"
+}

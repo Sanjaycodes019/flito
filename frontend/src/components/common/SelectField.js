@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import Input from './Input';
 import Icon from '../../theme/icons';
@@ -46,16 +47,18 @@ const SelectField = ({
   value,
   options,
   onChange,
-  placeholder = 'Select',
+  placeholder,
   disabled = false,
   required = false,
   error,
   helperText,
   containerStyle,
 }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [hovered, setHovered] = useState(false);
+  const resolvedPlaceholder = placeholder ?? t('common:selectField.select');
 
   const selected = options.find((option) => option.value === value);
   const searchable = options.length >= SEARCH_FROM;
@@ -105,7 +108,7 @@ const SelectField = ({
           style={[styles.value, !selected && styles.placeholder, disabled && styles.valueDisabled]}
           numberOfLines={1}
         >
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : resolvedPlaceholder}
         </Text>
         <Icon name="chevronDown" size={iconSize.md} color={disabled ? colors.disabledText : colors.textMuted} />
       </Pressable>
@@ -120,7 +123,7 @@ const SelectField = ({
           <Input
             value={query}
             onChangeText={setQuery}
-            placeholder={`Search ${label.toLowerCase()}`}
+            placeholder={t('common:selectField.searchPlaceholder', { label: label.toLowerCase() })}
             icon="search"
             autoCorrect={false}
             autoCapitalize="none"
@@ -129,7 +132,7 @@ const SelectField = ({
           />
         )}
         {visible.length === 0 ? (
-          <Text style={styles.empty}>No matches. Try a different spelling.</Text>
+          <Text style={styles.empty}>{t('common:selectField.noMatches')}</Text>
         ) : (
           <View style={styles.list}>
             {visible.map((option) => (

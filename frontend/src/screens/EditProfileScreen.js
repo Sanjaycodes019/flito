@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -19,6 +20,7 @@ import useScreenLayout from '../hooks/useScreenLayout';
 const NAME_LOCKED_KYC_STATUSES = ['pending', 'approved'];
 
 const EditProfileScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   // Read live from the store, so an address saved on the Address screen
   // shows here straight away.
@@ -45,7 +47,7 @@ const EditProfileScreen = ({ navigation }) => {
           companyName: user.companyName || '',
         });
       } catch (error) {
-        notify('Error', getErrorMessage(error));
+        notify(t('profile:editProfile.loadFailedTitle'), getErrorMessage(error));
       }
     })();
   }, []);
@@ -74,11 +76,11 @@ const EditProfileScreen = ({ navigation }) => {
       saved = data.user;
       dispatch(setUser(saved));
     } catch (error) {
-      notify('Could not save', getErrorMessage(error));
+      notify(t('profile:editProfile.saveFailedTitle'), getErrorMessage(error));
     }
     setSaving(false);
 
-    if (saved) notify('Profile updated', 'Your changes have been saved', () => navigation.goBack());
+    if (saved) notify(t('profile:editProfile.savedTitle'), t('profile:editProfile.savedMessage'), () => navigation.goBack());
   };
 
   return (
@@ -86,7 +88,7 @@ const EditProfileScreen = ({ navigation }) => {
       <Card style={!layout.isPhone && styles.cardWide}>
         <View style={pairStyle}>
           <Input
-            label="First Name"
+            label={t('profile:editProfile.firstName')}
             value={form.firstName}
             onChangeText={update('firstName')}
             editable={!namesLocked}
@@ -94,7 +96,7 @@ const EditProfileScreen = ({ navigation }) => {
             containerStyle={halfStyle}
           />
           <Input
-            label="Last Name"
+            label={t('profile:editProfile.lastName')}
             value={form.lastName}
             onChangeText={update('lastName')}
             editable={!namesLocked}
@@ -106,24 +108,24 @@ const EditProfileScreen = ({ navigation }) => {
           <View style={styles.lockNote}>
             <Icon name="lock" size={iconSize.xs} color={colors.textMuted} style={styles.lockIcon} />
             <Text style={styles.note}>
-              Your name is matched to your identity documents, so it can&apos;t be changed while they are under review or approved.
+              {t('profile:editProfile.nameLockNote')}
             </Text>
           </View>
         )}
 
         <View style={styles.labelRow}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>{t('profile:editProfile.email')}</Text>
           <View style={[styles.verifiedPill, account.emailVerified ? styles.verifiedPillOn : styles.verifiedPillOff]}>
             <Icon name={account.emailVerified ? 'verified' : 'unverified'} size={12} color={account.emailVerified ? colors.successText : colors.warningText} />
             <Text style={[styles.verifiedPillText, { color: account.emailVerified ? colors.successText : colors.warningText }]}>
-              {account.emailVerified ? 'Verified' : 'Not verified'}
+              {account.emailVerified ? t('profile:editProfile.verified') : t('profile:editProfile.notVerified')}
             </Text>
           </View>
         </View>
         <Input
           value={form.email}
           onChangeText={update('email')}
-          placeholder="you@example.com"
+          placeholder={t('profile:editProfile.emailPlaceholder')}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
@@ -131,28 +133,28 @@ const EditProfileScreen = ({ navigation }) => {
           editable={!account.hasGoogle}
           helperText={
             account.hasGoogle
-              ? 'Managed by your Google account.'
+              ? t('profile:editProfile.emailHintGoogle')
               : account.hasPassword
-                ? 'Changing this re-verifies your email.'
+                ? t('profile:editProfile.emailHintPassword')
                 : undefined
           }
         />
 
         <Input
-          label="Phone Number"
+          label={t('profile:editProfile.phoneLabel')}
           value={form.phone}
           onChangeText={update('phone')}
-          placeholder="+9779841234567 (optional)"
+          placeholder={t('profile:editProfile.phonePlaceholder')}
           keyboardType="phone-pad"
           icon="phone"
         />
 
         {isOwner && (
           <Input
-            label="Company Name"
+            label={t('profile:editProfile.companyLabel')}
             value={form.companyName}
             onChangeText={update('companyName')}
-            placeholder="Optional"
+            placeholder={t('profile:editProfile.companyPlaceholder')}
             icon="owner"
           />
         )}
@@ -160,15 +162,15 @@ const EditProfileScreen = ({ navigation }) => {
         {/* The address has its own screen: province, district, municipality
             and ward come from official lists, with "use current location". */}
         <View style={styles.addressBlock}>
-          <Text style={styles.label}>Address</Text>
+          <Text style={styles.label}>{t('profile:editProfile.addressLabel')}</Text>
           <View style={styles.addressRow}>
             <Icon name="location" size={iconSize.sm} color={colors.textMuted} />
             <Text style={[styles.addressText, !savedAddress && styles.addressTextMuted]}>
-              {savedAddress?.formatted || 'Not added'}
+              {savedAddress?.formatted || t('profile:editProfile.addressNotAdded')}
             </Text>
           </View>
           <Button
-            title={savedAddress ? 'Change Address' : 'Add Address'}
+            title={savedAddress ? t('profile:editProfile.changeAddress') : t('profile:editProfile.addAddress')}
             icon="location"
             variant="tertiary"
             size="sm"
@@ -179,11 +181,11 @@ const EditProfileScreen = ({ navigation }) => {
 
         <View style={styles.readOnlyRow}>
           <Icon name={account.role === 'owner' ? 'owner' : account.role === 'driver' ? 'driver' : 'shipper'} size={iconSize.xs} color={colors.textMuted} style={styles.lockIcon} />
-          <Text style={styles.readOnly}>{account.role} account</Text>
+          <Text style={styles.readOnly}>{t('profile:editProfile.roleAccount', { role: t(`profile:roles.${account.role}`, account.role) })}</Text>
         </View>
 
         <Button
-          title="Save Changes"
+          title={t('profile:editProfile.saveChanges')}
           icon="checkmark"
           onPress={handleSave}
           loading={saving}

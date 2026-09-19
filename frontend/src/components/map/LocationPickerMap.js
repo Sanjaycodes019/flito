@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 import MapCanvas from './MapCanvas';
 import Button from '../common/Button';
 import { buildMapHtml } from './mapHtml';
@@ -12,6 +13,7 @@ const samePoint = (a, b) => (!a && !b) || (a && b && a.lat === b.lat && a.lng ==
 // separate from TrackingMap: this one is interactive and single-marker,
 // TrackingMap is read-only and multi-marker.
 const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = true }) => {
+  const { t } = useTranslation();
   const canvasRef = useRef(null);
   const [locating, setLocating] = useState(false);
   // The point the map itself last showed, so a pin the user just placed isn't
@@ -36,7 +38,7 @@ const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = t
     try {
       const { granted } = await Location.requestForegroundPermissionsAsync();
       if (!granted) {
-        throw new Error('Allow location access to use your current position');
+        throw new Error(t('loads:locationPicker.locationPermissionDenied'));
       }
       const { coords } = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       onChange({ lat: coords.latitude, lng: coords.longitude });
@@ -64,11 +66,11 @@ const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = t
       </View>
       <View style={styles.row}>
         <Text style={styles.hint}>
-          {value ? `${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}` : 'Tap the map to set the exact point'}
+          {value ? `${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}` : t('loads:locationPicker.tapToSetPoint')}
         </Text>
         {showLocateButton && (
           <Button
-            title="Use My Location"
+            title={t('loads:locationPicker.useMyLocation')}
             icon="gps"
             variant="tertiary"
             size="sm"

@@ -1,0 +1,153 @@
+{
+  "roles": {
+    "shipper": "Shipper",
+    "owner": "Truck Owner",
+    "driver": "Driver",
+    "admin": "Admin"
+  },
+  "photoButton": {
+    "addLabel": "Add profile photo",
+    "changeLabel": "Change profile photo",
+    "addOverlay": "Add photo",
+    "changeOverlay": "Change"
+  },
+  "strength": {
+    "title": "Profile strength",
+    "percentValue": "{{percent}}%",
+    "complete": "Your profile is complete",
+    "waitingReview": "Waiting on your identity review",
+    "steps": {
+      "photo": "Add a profile photo",
+      "verifyEmail": "Verify your email",
+      "phone": "Add your phone number",
+      "company": "Add your company name",
+      "address": "Add your address",
+      "identityFix": "Fix your identity documents",
+      "identityVerify": "Verify your identity"
+    },
+    "stepsDone": "{{done}} of {{total}} steps done"
+  },
+  "kyc": {
+    "not_submitted": {
+      "value": "Submit an ID document to get verified",
+      "pill": "Not verified"
+    },
+    "pending": {
+      "value": "Your documents are under review",
+      "pill": "Under review"
+    },
+    "approved": {
+      "value": "Your documents were approved",
+      "pill": "Verified"
+    },
+    "rejected": {
+      "value": "Your documents need changes",
+      "pill": "Action needed"
+    }
+  },
+  "summary": {
+    "nameFallback": "Your name",
+    "verifiedByFlito": "Verified by FLITO",
+    "ratingsNone": "No ratings yet",
+    "rating_one": "{{count}} rating",
+    "rating_other": "{{count}} ratings",
+    "memberSince": "Member since"
+  },
+  "sections": {
+    "personalInfo": {
+      "title": "Personal Information",
+      "description": "How shippers, owners and drivers see you",
+      "edit": "Edit"
+    },
+    "verification": {
+      "title": "Verification",
+      "description": "Verified accounts are trusted with quotes and bookings"
+    },
+    "signIn": {
+      "title": "Sign-in and Security"
+    }
+  },
+  "rows": {
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "company": "Company",
+    "address": "Address",
+    "notAdded": "Not added",
+    "email": "Email",
+    "identity": "Identity",
+    "signInMethod": "Sign-in Method",
+    "signInEmailPassword": "Email and password",
+    "signInGoogle": "Google",
+    "signInEmailOnly": "Email",
+    "signInJoiner": " and ",
+    "logOut": "Log Out",
+    "logOutLabel": "Log out",
+    "notVerified": "Not verified",
+    "verified": "Verified"
+  },
+  "logout": {
+    "title": "Log out",
+    "message": "Are you sure you want to log out?",
+    "confirmLabel": "Log out"
+  },
+  "photoMenu": {
+    "title": "Profile Photo",
+    "hint": "A clear photo of your face helps people recognize you.",
+    "takePhoto": "Take Photo",
+    "uploadPhoto": "Upload Photo",
+    "removePhoto": "Remove Photo",
+    "note": "JPEG, PNG, WebP or HEIC, up to 5 MB"
+  },
+  "alerts": {
+    "cameraOpenFailedTitle": "Could not open the camera",
+    "photosOpenFailedTitle": "Could not open photos",
+    "photoTooLargeTitle": "Photo too large",
+    "photoTooLargeMessage": "Choose a photo of 5 MB or smaller",
+    "updatePhotoFailedTitle": "Could not update photo",
+    "removePhotoTitle": "Remove profile photo",
+    "removePhotoMessage": "Your photo will be replaced with your role icon.",
+    "removePhotoConfirmLabel": "Remove",
+    "removePhotoFailedTitle": "Could not remove photo"
+  },
+  "version": "FLITO version {{version}}",
+  "editProfile": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "nameLockNote": "Your name is matched to your identity documents, so it can't be changed while they are under review or approved.",
+    "email": "Email",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "emailPlaceholder": "you@example.com",
+    "emailHintGoogle": "Managed by your Google account.",
+    "emailHintPassword": "Changing this re-verifies your email.",
+    "phoneLabel": "Phone Number",
+    "phonePlaceholder": "+9779841234567 (optional)",
+    "companyLabel": "Company Name",
+    "companyPlaceholder": "Optional",
+    "addressLabel": "Address",
+    "addressNotAdded": "Not added",
+    "changeAddress": "Change Address",
+    "addAddress": "Add Address",
+    "roleAccount": "{{role}} account",
+    "saveChanges": "Save Changes",
+    "loadFailedTitle": "Error",
+    "saveFailedTitle": "Could not save",
+    "savedTitle": "Profile updated",
+    "savedMessage": "Your changes have been saved"
+  },
+  "addressScreen": {
+    "useLocationTitle": "Use your current location",
+    "useLocationHint": "Fills in your province, district and municipality. You choose the ward.",
+    "useLocationButton": "Use Current Location",
+    "detectedHint": "Choose your ward and check everything before saving.",
+    "toleSuggestionHint": "Suggested from OpenStreetMap (c) OpenStreetMap contributors. Edit it if it is not right.",
+    "saveButton": "Save Address",
+    "saveFailedTitle": "Could not save your address",
+    "savedTitle": "Address saved",
+    "savedFallbackMessage": "Your address has been updated."
+  },
+  "hero": {
+    "edit": "Edit profile",
+    "photo": "Photo"
+  }
+}

@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
+import LanguageToggle from '../common/LanguageToggle';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 import useBreakpoint from '../../hooks/useBreakpoint';
@@ -16,10 +18,10 @@ const webScrollbar = Platform.OS === 'web'
   ? { scrollbarWidth: 'thin', scrollbarColor: `${colors.borderStrong} transparent` }
   : null;
 
-const FEATURES = [
-  { icon: 'load', text: 'Post a load and get competing quotes from truck owners' },
-  { icon: 'verified', text: 'Verified owners and drivers on every booking' },
-  { icon: 'gps', text: 'Live tracking from pickup to delivery' },
+const getFeatures = (t) => [
+  { icon: 'load', text: t('auth:layout.featureLoadQuotes') },
+  { icon: 'verified', text: t('auth:layout.featureVerified') },
+  { icon: 'gps', text: t('auth:layout.featureTracking') },
 ];
 
 // Shared shell for Log In, Sign Up, Forgot Password and Reset Password, so
@@ -31,32 +33,38 @@ const FEATURES = [
 //
 // The FLITO logo mark and wordmark keep the true brand amber: WCAG contrast
 // minimums do not apply to logotype (see theme/tokens.js primaryText).
-const BrandPanel = () => (
-  <View style={styles.brand}>
-    <View style={styles.brandInner}>
-      <View style={styles.brandRow}>
-        <Image source={LOGO} style={styles.brandLogo} resizeMode="contain" accessible={false} />
-        <Text style={styles.brandWordmark}>FLITO</Text>
-      </View>
-      <Text style={styles.brandTagline}>Freight & Load Interchange for Truck Operations</Text>
-      <Text style={styles.brandHeadline} accessibilityRole="header">
-        Move freight across Nepal without empty return trips.
-      </Text>
-      <View style={styles.features}>
-        {FEATURES.map((feature) => (
-          <View key={feature.text} style={styles.feature}>
-            <View style={styles.featureIcon}>
-              <Icon name={feature.icon} size={iconSize.md} color={colors.primary} />
+const BrandPanel = () => {
+  const { t } = useTranslation();
+  const features = getFeatures(t);
+
+  return (
+    <View style={styles.brand}>
+      <View style={styles.brandInner}>
+        <View style={styles.brandRow}>
+          <Image source={LOGO} style={styles.brandLogo} resizeMode="contain" accessible={false} />
+          <Text style={styles.brandWordmark}>FLITO</Text>
+        </View>
+        <Text style={styles.brandTagline}>{t('auth:layout.tagline')}</Text>
+        <Text style={styles.brandHeadline} accessibilityRole="header">
+          {t('auth:layout.headline')}
+        </Text>
+        <View style={styles.features}>
+          {features.map((feature) => (
+            <View key={feature.text} style={styles.feature}>
+              <View style={styles.featureIcon}>
+                <Icon name={feature.icon} size={iconSize.md} color={colors.primary} />
+              </View>
+              <Text style={styles.featureText}>{feature.text}</Text>
             </View>
-            <Text style={styles.featureText}>{feature.text}</Text>
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
     </View>
-  </View>
-);
+  );
+};
 
 const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
+  const { t } = useTranslation();
   const { isPhone, isDesktop } = useBreakpoint();
 
   const formColumn = (
@@ -72,7 +80,7 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
               small screens). On desktop the brand panel carries the logo and
               wordmark, so the form column shows only the title. */}
           {!isDesktop && (
-            <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="FLITO" />
+            <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel={t('auth:layout.logoAccessibilityLabel')} />
           )}
           <Text style={[styles.title, !isPhone && styles.titleWide]} accessibilityRole="header">{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -85,6 +93,7 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <LanguageToggle compact style={styles.languageToggle} />
       {isDesktop ? (
         <View style={styles.split}>
           <BrandPanel />
@@ -97,6 +106,12 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  languageToggle: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    zIndex: 1,
+  },
 
   // Desktop split
   split: { flex: 1, flexDirection: 'row' },

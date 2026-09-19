@@ -4,7 +4,9 @@ const storage = require('../services/storage');
 const { publicUser } = require('../services/userView');
 const { kycView } = require('../services/kycView');
 const { isAddressComplete } = require('../services/nepalLocations');
-const { issueVerificationCode } = require('../services/verification');
+const { issueCode } = require('../services/verification');
+const { fail } = require('../utils/respond');
+const { languageOf } = require('../utils/language');
 const {
   EDITABLE_KYC_STATUSES,
   NAME_LOCKED_KYC_STATUSES,
@@ -22,14 +24,14 @@ exports.lookupDriver = async (req, res, next) => {
   try {
     const { phone } = req.query;
     if (!phone) {
-      return res.status(400).json({ success: false, message: 'phone query param is required' });
+      return fail(res, 400, 'USERS_PHONE_QUERY_REQUIRED', 'phone query param is required');
     }
 
     const driver = await User.findOne({ phone, role: 'driver' })
       .select('firstName lastName phone rating kycStatus status');
 
     if (!driver) {
-      return res.status(404).json({ success: false, message: 'No driver found with that phone number' });
+      return fail(res, 404, 'USERS_DRIVER_NOT_FOUND', 'No driver found with that phone number');
     }
 
     res.json({ success: true, driver });
@@ -42,28 +44,32 @@ exports.lookupDriver = async (req, res, next) => {
 exports.updateProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.userId).select('+password +googleId');
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) return fail(res, 404, 'USERS_NOT_FOUND', 'User not found');
 
     const { firstName, lastName, email, phone, companyName, address } = req.body;
 
     const nameChanging = (firstName !== undefined && firstName !== (user.firstName || ''))
       || (lastName !== undefined && lastName !== (user.lastName || ''));
     if (nameChanging && NAME_LOCKED_KYC_STATUSES.includes(user.kycStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: "Your name is checked against your KYC documents, so it can't change while they are under review or approved",
-      });
+      return fail(
+        res,
+        400,
+        'USERS_NAME_LOCKED',
+        "Your name is checked against your KYC documents, so it can't change while they are under review or approved",
+      );
     }
     if (companyName !== undefined && user.role !== 'owner') {
-      return res.status(400).json({ success: false, message: 'Only truck owners have a company name' });
+      return fail(res, 400, 'USERS_COMPANY_NAME_NOT_ALLOWED', 'Only truck owners have a company name');
     }
     // Email is how a password (or Google-only) account logs in; clearing it
     // with no other way in would lock the owner out of their own account.
     if (email !== undefined && !email && user.password && !user.googleId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is how you log in, so it cannot be removed. Add a phone number first if you want to change it.',
-      });
+      return fail(
+        res,
+        400,
+        'USERS_EMAIL_REQUIRED_FOR_LOGIN',
+        'Email is how you log in, so it cannot be removed. Add a phone number first if you want to change it.',
+      );
     }
 
     if (firstName !== undefined) user.firstName = firstName;
@@ -85,7 +91,8 @@ exports.updateProfile = async (req, res, next) => {
 
     if (emailChanging && user.email) {
       try {
-        await issueVerificationCode(user);
+        // A new address gets its code straight away, whatever was sent before.
+        await issueCode(user, 'verifyEmail', { ignoreCooldown: true, language: languageOf(req) });
       } catch (err) {
         console.error('[updateProfile] verification email failed:', err.message);
       }
@@ -95,7 +102,7 @@ exports.updateProfile = async (req, res, next) => {
   } catch (error) {
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue || {})[0] || 'field';
-      return res.status(409).json({ success: false, message: `That ${field} is already in use` });
+      return fail(res, 409, 'USERS_FIELD_IN_USE', `That ${field} is already in use`, { field });
     }
     next(error);
   }
@@ -131,7 +138,7 @@ exports.unregisterPushToken = async (req, res, next) => {
 // is nowhere to store them.
 exports.requireStorage = (req, res, next) => {
   if (!storage.isConfigured()) {
-    return res.status(503).json({ success: false, message: 'File uploads are not configured on this server' });
+    return fail(res, 503, 'USERS_STORAGE_NOT_CONFIGURED', 'File uploads are not configured on this server');
   }
   next();
 };
@@ -142,7 +149,7 @@ const loadOwnUser = (userId) => User.findById(userId).select('+password +googleI
 exports.uploadAvatar = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Attach an image for your profile photo' });
+      return fail(res, 400, 'USERS_AVATAR_FILE_REQUIRED', 'Attach an image for your profile photo');
     }
 
     const uploaded = await storage.uploadAvatar(req.file, { folder: `flito/avatars/${req.user.userId}` });
@@ -150,7 +157,7 @@ exports.uploadAvatar = async (req, res, next) => {
     const before = await User.findByIdAndUpdate(req.user.userId, { avatar: uploaded }, { new: false });
     if (!before) {
       await storage.deleteAssets([uploaded.publicId]);
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return fail(res, 404, 'USERS_NOT_FOUND', 'User not found');
     }
     if (before.avatar?.publicId && before.avatar.publicId !== uploaded.publicId) {
       await storage.deleteAssets([before.avatar.publicId]);
@@ -165,7 +172,7 @@ exports.uploadAvatar = async (req, res, next) => {
 exports.deleteAvatar = async (req, res, next) => {
   try {
     const before = await User.findByIdAndUpdate(req.user.userId, { $unset: { avatar: '' } }, { new: false });
-    if (!before) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!before) return fail(res, 404, 'USERS_NOT_FOUND', 'User not found');
 
     if (before.avatar?.publicId) await storage.deleteAssets([before.avatar.publicId]);
     res.json({ success: true, user: publicUser(await loadOwnUser(req.user.userId)) });
@@ -179,7 +186,7 @@ exports.deleteAvatar = async (req, res, next) => {
 exports.getMyKyc = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) return fail(res, 404, 'USERS_NOT_FOUND', 'User not found');
     res.json({ success: true, kyc: kycView(user) });
   } catch (error) {
     next(error);
@@ -191,17 +198,20 @@ exports.getMyKyc = async (req, res, next) => {
 exports.loadEditableKycUser = async (req, res, next) => {
   try {
     if (!storage.isConfigured()) {
-      return res.status(503).json({ success: false, message: 'File uploads are not configured on this server' });
+      return fail(res, 503, 'USERS_STORAGE_NOT_CONFIGURED', 'File uploads are not configured on this server');
     }
 
     const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) return fail(res, 404, 'USERS_NOT_FOUND', 'User not found');
 
     if (!EDITABLE_KYC_STATUSES.includes(user.kycStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: `Documents can't be changed while your verification is ${statusPhrase(user.kycStatus)}`,
-      });
+      return fail(
+        res,
+        400,
+        'USERS_KYC_NOT_EDITABLE',
+        `Documents can't be changed while your verification is ${statusPhrase(user.kycStatus)}`,
+        { status: user.kycStatus },
+      );
     }
 
     req.kycUser = user;
@@ -217,13 +227,16 @@ exports.uploadKycDocument = async (req, res, next) => {
     const { type } = req.body;
 
     if (!allowedDocumentsFor(user).includes(type)) {
-      return res.status(400).json({
-        success: false,
-        message: `type must be one of: ${allowedDocumentsFor(user).join(', ')}`,
-      });
+      return fail(
+        res,
+        400,
+        'USERS_INVALID_DOCUMENT_TYPE',
+        `type must be one of: ${allowedDocumentsFor(user).join(', ')}`,
+        { allowedTypes: allowedDocumentsFor(user) },
+      );
     }
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Attach a document file' });
+      return fail(res, 400, 'USERS_DOCUMENT_FILE_REQUIRED', 'Attach a document file');
     }
 
     const stored = await storage.uploadPrivateDocument(req.file, { folder: `flito/kyc/${user._id}` });
@@ -270,7 +283,7 @@ exports.uploadKycDocument = async (req, res, next) => {
 
     if (!updated) {
       await storage.deleteAssets([stored.publicId], { type: 'authenticated' });
-      return res.status(400).json({ success: false, message: 'Your documents were submitted in the meantime and can no longer be changed' });
+      return fail(res, 400, 'USERS_KYC_LOCKED', 'Your documents were submitted in the meantime and can no longer be changed');
     }
 
     if (previous) await storage.deleteAssets([previous.publicId], { type: 'authenticated' });
@@ -285,7 +298,7 @@ exports.deleteKycDocument = async (req, res, next) => {
   try {
     const user = req.kycUser;
     const doc = user.kycDocuments.id(req.params.docId);
-    if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    if (!doc) return fail(res, 404, 'USERS_DOCUMENT_NOT_FOUND', 'Document not found');
 
     const updated = await User.findOneAndUpdate(
       { _id: user._id, kycStatus: { $in: EDITABLE_KYC_STATUSES } },
@@ -293,7 +306,7 @@ exports.deleteKycDocument = async (req, res, next) => {
       { new: true },
     );
     if (!updated) {
-      return res.status(400).json({ success: false, message: 'Your documents were submitted in the meantime and can no longer be changed' });
+      return fail(res, 400, 'USERS_KYC_LOCKED', 'Your documents were submitted in the meantime and can no longer be changed');
     }
 
     await storage.deleteAssets([doc.publicId], { type: 'authenticated' });
@@ -306,27 +319,34 @@ exports.deleteKycDocument = async (req, res, next) => {
 exports.submitKyc = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user) return fail(res, 404, 'USERS_NOT_FOUND', 'User not found');
 
     if (!EDITABLE_KYC_STATUSES.includes(user.kycStatus)) {
-      return res.status(400).json({ success: false, message: `Your verification is already ${statusPhrase(user.kycStatus)}` });
+      return fail(
+        res,
+        400,
+        'USERS_KYC_ALREADY_SUBMITTED',
+        `Your verification is already ${statusPhrase(user.kycStatus)}`,
+        { status: user.kycStatus },
+      );
     }
 
     // Reviewers check the address alongside the documents.
     if (!isAddressComplete(user.address)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Add your address before submitting for verification',
-        code: 'ADDRESS_REQUIRED',
-      });
+      return fail(res, 400, 'ADDRESS_REQUIRED', 'Add your address before submitting for verification');
     }
 
     const missing = missingDocuments(user);
     if (missing.length) {
+      // `missingDocuments` stays a top-level field (existing tests assert on
+      // it directly); `extra.documents` carries the same raw list for the
+      // frontend's Nepali translation of `message`.
       return res.status(400).json({
         success: false,
+        code: 'USERS_MISSING_KYC_DOCUMENTS',
         message: `Upload these documents first: ${missing.join(', ')}`,
         missingDocuments: missing,
+        extra: { documents: missing },
       });
     }
 
@@ -346,7 +366,7 @@ exports.submitKyc = async (req, res, next) => {
       { new: true },
     );
     if (!updated) {
-      return res.status(409).json({ success: false, message: 'Your documents changed while submitting. Refresh and try again.' });
+      return fail(res, 409, 'USERS_KYC_SUBMIT_CONFLICT', 'Your documents changed while submitting. Refresh and try again.');
     }
 
     res.json({ success: true, kyc: kycView(updated), user: publicUser(updated) });

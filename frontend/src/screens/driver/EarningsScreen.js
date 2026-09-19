@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
 import Spinner from '../../components/common/Spinner';
 import EmptyState from '../../components/common/EmptyState';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
-import { formatCurrency, formatDate, getErrorMessage, pluralize } from '../../utils/helpers';
+import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
 import api from '../../services/api';
 import { notify } from '../../utils/alert';
 import useScreenLayout from '../../hooks/useScreenLayout';
 
 const EarningsScreen = () => {
+  const { t } = useTranslation();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -21,9 +23,9 @@ const EarningsScreen = () => {
       const { data } = await api.get('/bookings');
       setBookings(data.bookings.filter((b) => b.status === 'completed'));
     } catch (error) {
-      notify('Error', getErrorMessage(error));
+      notify(t('bookings:earnings.errorTitle'), getErrorMessage(error));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     (async () => {
@@ -55,18 +57,18 @@ const EarningsScreen = () => {
           <View style={styles.summaryIconWrap}>
             <Icon name="earnings" size={iconSize.lg} color={colors.primaryText} />
           </View>
-          <Text style={styles.summaryLabel}>Total Earnings</Text>
+          <Text style={styles.summaryLabel}>{t('bookings:earnings.totalLabel')}</Text>
           <Text style={styles.summaryValue}>{formatCurrency(total)}</Text>
-          <Text style={styles.summaryMeta}>{pluralize(bookings.length, 'completed job')}</Text>
+          <Text style={styles.summaryMeta}>{t('bookings:earnings.completedJob', { count: bookings.length })}</Text>
         </Card>
       }
       ListEmptyComponent={
-        <EmptyState icon="earnings" title="No completed jobs yet" message="Your finished deliveries will appear here." />
+        <EmptyState icon="earnings" title={t('bookings:earnings.emptyTitle')} message={t('bookings:earnings.emptyMessage')} />
       }
       renderItem={({ item }) => (
         <Card style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.goodsType} numberOfLines={1}>{item.loadId?.goodsType || 'Load'}</Text>
+            <Text style={styles.goodsType} numberOfLines={1}>{item.loadId?.goodsType || t('bookings:earnings.loadFallback')}</Text>
             <Text style={styles.amount}>{formatCurrency(item.totalAmount)}</Text>
           </View>
           <View style={styles.dateRow}>

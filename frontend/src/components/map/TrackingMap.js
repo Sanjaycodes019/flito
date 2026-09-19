@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MapCanvas from './MapCanvas';
 import { buildMapHtml } from './mapHtml';
 import Icon from '../../theme/icons';
@@ -9,13 +10,18 @@ import { colors, spacing, radius, shadow, type, iconSize } from '../../theme/tok
 // live as `driverLocation` changes, without reloading the page (so the user's
 // pan/zoom isn't reset on every GPS ping).
 const TrackingMap = ({ pickup, dropoff, driverLocation, height = 260 }) => {
+  const { t, i18n } = useTranslation();
   const canvasRef = useRef(null);
   const [ready, setReady] = useState(false);
   const sentDriverLocation = useRef(null);
 
-  // The page is only rebuilt when the static pickup/dropoff points change,
-  // never for driver movement, which goes through postMessage instead.
-  const html = useMemo(() => buildMapHtml({ pickup, dropoff }), [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]);
+  // The page is only rebuilt when the static pickup/dropoff points change (or
+  // the language does, so the popup text follows it), never for driver
+  // movement, which goes through postMessage instead.
+  const html = useMemo(
+    () => buildMapHtml({ pickup, dropoff, labels: { pickup: t('loads:common.pickup'), dropoff: t('loads:common.dropoff') } }),
+    [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng, i18n.language] // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const pushDriverLocation = (loc) => {
     if (!canvasRef.current) return;
@@ -33,7 +39,7 @@ const TrackingMap = ({ pickup, dropoff, driverLocation, height = 260 }) => {
     return (
       <View style={[styles.container, styles.empty, { height }]}>
         <Icon name="location" size={iconSize.lg} color={colors.textMuted} style={styles.emptyIcon} />
-        <Text style={styles.emptyText}>No location data for this load</Text>
+        <Text style={styles.emptyText}>{t('loads:trackingMap.noLocationData')}</Text>
       </View>
     );
   }
@@ -56,10 +62,10 @@ const TrackingMap = ({ pickup, dropoff, driverLocation, height = 260 }) => {
           style={styles.recenterButton}
           onPress={() => canvasRef.current?.postMessage({ type: 'fitAll' })}
           accessibilityRole="button"
-          accessibilityLabel="Fit map to all markers"
+          accessibilityLabel={t('loads:trackingMap.fitMapAccessibilityLabel')}
         >
           <Icon name="gps" size={iconSize.xs} color={colors.secondary} style={styles.recenterIcon} />
-          <Text style={styles.recenterText}>Fit</Text>
+          <Text style={styles.recenterText}>{t('loads:trackingMap.fit')}</Text>
         </Pressable>
       )}
     </View>

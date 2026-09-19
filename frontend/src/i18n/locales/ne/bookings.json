@@ -1,0 +1,91 @@
+{
+  "list": {
+    "couldNotLoadTitle": "यो लोड गर्न सकिएन",
+    "tryAgain": "फेरि प्रयास गर्नुहोस्",
+    "emptyTitle": "अहिलेसम्म कुनै बुकिङ छैन",
+    "emptyMessage": "कोटेशन स्वीकृत भएपछि बुकिङहरू यहाँ देखिन्छन्।",
+    "loadFallback": "भाडा",
+    "accessibilityBooking": "{{goodsType}} बुकिङ"
+  },
+  "detail": {
+    "errorTitle": "त्रुटि",
+    "notFoundTitle": "बुकिङ फेला परेन",
+    "notFoundMessage": "यो बुकिङ हटाइएको हुन सक्छ।",
+    "loadFallback": "भाडा",
+    "pickup": "उठान",
+    "dropoff": "डिलिभरी",
+    "amount": "रकम",
+    "shipper": "शिपर",
+    "owner": "मालिक",
+    "driver": "चालक",
+    "truck": "ट्रक",
+    "pickupStatusLabel": "उठान स्थिति",
+    "dropoffStatusLabel": "डिलिभरी स्थिति",
+    "booked": "बुक गरिएको",
+    "notAssigned": "तोकिएको छैन",
+    "verifiedTruck": "प्रमाणित ट्रक",
+    "assignDriverTitle": "चालक तोक्नुहोस्",
+    "phonePlaceholder": "+9779841234567",
+    "findAndAssign": "खोज्नुहोस् र तोक्नुहोस्",
+    "missingPhoneTitle": "फोन नम्बर छैन",
+    "missingPhoneMessage": "चालकको फोन नम्बर हाल्नुहोस्",
+    "driverNotVerifiedTitle": "चालक प्रमाणित छैन",
+    "driverNotVerifiedMessage": "{{name}} ले अझै पहिचान प्रमाणीकरण पूरा गर्नुभएको छैन, त्यसैले उहाँलाई यो बुकिङमा तोक्न सकिँदैन।",
+    "driverAssignedTitle": "चालक तोकियो",
+    "driverAssignedMessage": "{{name}} लाई यो बुकिङमा तोकिएको छ",
+    "updateJobStatusTitle": "काम स्थिति अपडेट गर्नुहोस्",
+    "arrivedAtPickup": "उठान स्थानमा पुगियो",
+    "pickedUp": "उठाइयो",
+    "arrivedAtDropoff": "डिलिभरी स्थानमा पुगियो",
+    "delivered": "डिलिभर भयो",
+    "cancelBooking": "बुकिङ रद्द गर्नुहोस्",
+    "rate": "{{party}} रेट गर्नुहोस्",
+    "theOwner": "मालिकलाई",
+    "theShipper": "शिपरलाई",
+    "reviewPlaceholder": "वैकल्पिक समीक्षा",
+    "submitRating": "रेटिङ पेश गर्नुहोस्",
+    "thanksTitle": "धन्यवाद!",
+    "ratingSubmittedMessage": "तपाईंको रेटिङ पेश गरिएको छ"
+  },
+  "earnings": {
+    "totalLabel": "कुल आम्दानी",
+    "completedJob_one": "{{count}} पूरा भएको काम",
+    "completedJob_other": "{{count}} पूरा भएका कामहरू",
+    "emptyTitle": "अहिलेसम्म कुनै काम पूरा भएको छैन",
+    "emptyMessage": "तपाईंका पूरा भएका डिलिभरीहरू यहाँ देखिनेछन्।",
+    "errorTitle": "त्रुटि",
+    "loadFallback": "भाडा"
+  },
+  "deliveryProof": {
+    "title": "डेलिभरी प्रमाण",
+    "titleWithCount": "डेलिभरी प्रमाण ({{count}})",
+    "hint": "डिलिभरी स्थानमा सामानको फोटो खिच्नुहोस्। डिलिभरीमा कहिल्यै विवाद भएमा यसले तपाईंलाई सुरक्षा दिन्छ।",
+    "takePhoto": "फोटो खिच्नुहोस्",
+    "uploadFailedTitle": "अपलोड असफल भयो"
+  },
+  "deliverySignature": {
+    "title": "डिलिभरी हस्ताक्षर",
+    "signedMeta": "{{date}} मा हस्ताक्षर गरियो",
+    "hint": "प्राप्तकर्तालाई डिलिभरी प्राप्त भएको पुष्टि गर्न हस्ताक्षर गर्न लगाउनुहोस्।",
+    "recapture": "फेरि हस्ताक्षर खिच्नुहोस्",
+    "capture": "हस्ताक्षर खिच्नुहोस्",
+    "saveFailedTitle": "हस्ताक्षर सेभ गर्न सकिएन"
+  },
+  "locationSharing": {
+    "title": "लाइभ लोकेसन",
+    "sharingHint": "शिपर र मालिकले नक्सामा तपाईंको स्थान देख्न सक्नुहुन्छ।",
+    "notSharingHint": "शिपर र मालिकले यो डिलिभरी ट्र्याक गर्न सकून् भनेर आफ्नो स्थान सेयर गर्नुहोस्।",
+    "lastSent": "{{time}} मा पठाइयो",
+    "stopSharing": "सेयरिङ रोक्नुहोस्",
+    "shareMyLocation": "मेरो लोकेसन सेयर गर्नुहोस्",
+    "couldNotStartTitle": "सेयरिङ सुरु गर्न सकिएन",
+    "permissionDenied": "आफ्नो स्थान सेयर गर्न लोकेसन पहुँचलाई अनुमति दिनुहोस्"
+  },
+  "signaturePad": {
+    "title": "प्राप्तकर्ताको हस्ताक्षर",
+    "hint": "डिलिभरी पुष्टि गर्न प्राप्तकर्तालाई तल हस्ताक्षर गर्न लगाउनुहोस्",
+    "save": "हस्ताक्षर सेभ गर्नुहोस्",
+    "nothingSignedTitle": "केही हस्ताक्षर गरिएको छैन",
+    "nothingSignedMessage": "सेभ गर्नु अघि हस्ताक्षर कोर्नुहोस्"
+  }
+}

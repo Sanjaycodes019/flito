@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import PhotoStrip from '../common/PhotoStrip';
@@ -16,6 +17,7 @@ import { takePhoto, uploadPhotos } from '../../services/uploads';
 // so there is no "choose from gallery" here. An old or unrelated picture from
 // the phone's library would prove nothing if the delivery were disputed.
 const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const photos = booking.deliveryPhotos || [];
 
@@ -32,7 +34,7 @@ const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
         await onChanged();
       }
     } catch (error) {
-      notify('Upload failed', getErrorMessage(error));
+      notify(t('bookings:deliveryProof.uploadFailedTitle'), getErrorMessage(error));
     }
     setBusy(false);
   };
@@ -41,19 +43,21 @@ const DeliveryProofSection = ({ booking, canUpload, onChanged }) => {
     <Card>
       <View style={styles.titleRow}>
         <Icon name="camera" size={iconSize.md} color={colors.primaryText} style={styles.titleIcon} />
-        <Text style={styles.title}>Proof of Delivery{photos.length ? ` (${photos.length})` : ''}</Text>
+        <Text style={styles.title}>
+          {photos.length ? t('bookings:deliveryProof.titleWithCount', { count: photos.length }) : t('bookings:deliveryProof.title')}
+        </Text>
       </View>
 
       {photos.length ? (
         <PhotoStrip photos={photos} />
       ) : (
         <Text style={styles.hint}>
-          Photograph the cargo at drop-off. It protects you if the delivery is ever disputed.
+          {t('bookings:deliveryProof.hint')}
         </Text>
       )}
 
       {canUpload && remaining > 0 && (
-        <Button title="Take Photo" icon="camera" onPress={handleAdd} loading={busy} />
+        <Button title={t('bookings:deliveryProof.takePhoto')} icon="camera" onPress={handleAdd} loading={busy} />
       )}
     </Card>
   );

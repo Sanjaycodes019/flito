@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing, radius, type } from '../../theme/tokens';
 
 // Mirrors the server's actual floor (8+ characters, a letter and a digit,
@@ -18,18 +19,19 @@ export const passwordScore = (password) => {
   return Math.min(score, 4);
 };
 
-const LEVELS = {
+const getLevels = (t) => ({
   0: { label: '', color: colors.border },
-  1: { label: 'Too weak', color: colors.errorText },
-  2: { label: 'Good', color: colors.warningText },
-  3: { label: 'Strong', color: colors.successText },
-  4: { label: 'Very strong', color: colors.successText },
-};
+  1: { label: t('auth:passwordStrength.tooWeak'), color: colors.errorText },
+  2: { label: t('auth:passwordStrength.good'), color: colors.warningText },
+  3: { label: t('auth:passwordStrength.strong'), color: colors.successText },
+  4: { label: t('auth:passwordStrength.veryStrong'), color: colors.successText },
+});
 
 const PasswordStrengthMeter = ({ password }) => {
+  const { t } = useTranslation();
   const score = passwordScore(password);
   if (!password) return null;
-  const level = LEVELS[score];
+  const level = getLevels(t)[score];
 
   return (
     <View style={styles.container}>

@@ -20,8 +20,7 @@ const {
 const { requiresVerification } = require('../services/kycPolicy');
 const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 const { formatCurrency } = require('../utils/format');
-
-const fail = (res, status, message) => res.status(status).json({ success: false, message });
+const { fail } = require('../utils/respond');
 
 const CHANGED_UNDERNEATH = 'This offer just changed. Refresh and try again.';
 
@@ -46,11 +45,11 @@ const recordNewOffer = async (load) => {
 // Sends the error and returns true when the load can't take offers.
 const refuseIfLoadClosed = (res, load) => {
   if (!BIDDABLE_LOAD_STATUSES.includes(load.status)) {
-    fail(res, 400, `Load is ${load.status}, no longer accepting offers`);
+    fail(res, 400, 'QUOTES_LOAD_NOT_ACCEPTING_OFFERS', `Load is ${load.status}, no longer accepting offers`, { status: load.status });
     return true;
   }
   if (isExpired(load)) {
-    fail(res, 400, 'This load has expired and is no longer accepting offers');
+    fail(res, 400, 'QUOTES_LOAD_EXPIRED', 'This load has expired and is no longer accepting offers');
     return true;
   }
   return false;
@@ -62,13 +61,13 @@ exports.createQuote = async (req, res, next) => {
     const { loadId, quotedPrice, truckId, estimatedDuration } = req.body;
 
     const load = await Load.findById(loadId);
-    if (!load) return fail(res, 404, 'Load not found');
+    if (!load) return fail(res, 404, 'QUOTES_LOAD_NOT_FOUND', 'Load not found');
     if (refuseIfLoadClosed(res, load)) return;
 
     const truck = await Truck.findOne({ _id: truckId, ownerId: req.user.userId });
-    if (!truck) return fail(res, 404, 'That truck is not in your fleet');
+    if (!truck) return fail(res, 404, 'QUOTES_TRUCK_NOT_IN_FLEET', 'That truck is not in your fleet');
     const problem = unavailableReason(truck, load);
-    if (problem) return fail(res, 400, problem);
+    if (problem) return fail(res, 400, 'QUOTES_TRUCK_UNAVAILABLE', problem, { detail: problem });
 
     // One live negotiation per owner per load. They negotiate on it rather
     // than stacking new offers.
@@ -77,7 +76,7 @@ exports.createQuote = async (req, res, next) => {
       ownerId: req.user.userId,
       status: { $in: OPEN_QUOTE_STATUSES },
     });
-    if (existing) return fail(res, 409, 'You already have an active offer on this load');
+    if (existing) return fail(res, 409, 'QUOTES_ACTIVE_OFFER_EXISTS', 'You already have an active offer on this load');
 
     const quote = await Quote.create({
       loadId,
@@ -118,28 +117,40 @@ exports.requestTruck = async (req, res, next) => {
     const { truckId, price } = req.body;
 
     const load = await Load.findById(req.params.id);
-    if (!load) return fail(res, 404, 'Load not found');
-    if (String(load.shipperId) !== req.user.userId) return fail(res, 403, 'Not your load');
+    if (!load) return fail(res, 404, 'QUOTES_LOAD_NOT_FOUND', 'Load not found');
+    if (String(load.shipperId) !== req.user.userId) return fail(res, 403, 'QUOTES_NOT_YOUR_LOAD', 'Not your load');
     if (refuseIfLoadClosed(res, load)) return;
 
     const truck = await Truck.findById(truckId).populate('ownerId', 'firstName lastName companyName kycStatus status');
     const owner = truck?.ownerId;
-    if (!truck || !owner) return fail(res, 404, 'Truck not found');
+    if (!truck || !owner) return fail(res, 404, 'QUOTES_TRUCK_NOT_FOUND', 'Truck not found');
     if (owner.status !== 'active' || (requiresVerification('makeOffer', 'owner') && owner.kycStatus !== 'approved')) {
-      return fail(res, 400, "This truck's owner can't take bookings right now");
+      return fail(res, 400, 'QUOTES_OWNER_UNAVAILABLE', "This truck's owner can't take bookings right now");
     }
     const problem = unavailableReason(truck, load);
-    if (problem) return fail(res, 400, problem);
+    if (problem) return fail(res, 400, 'QUOTES_TRUCK_UNAVAILABLE', problem, { detail: problem });
 
     const [existing, waiting] = await Promise.all([
       Quote.exists({ loadId: load._id, ownerId: owner._id, status: { $in: OPEN_QUOTE_STATUSES } }),
       Quote.countDocuments({ loadId: load._id, initiatedBy: 'shipper', status: { $in: OPEN_QUOTE_STATUSES } }),
     ]);
     if (existing) {
-      return fail(res, 409, `You already have an open offer with ${displayName(owner)} on this load. Reply to it instead.`);
+      return fail(
+        res,
+        409,
+        'QUOTES_OPEN_OFFER_WITH_OWNER',
+        `You already have an open offer with ${displayName(owner)} on this load. Reply to it instead.`,
+        { ownerName: displayName(owner) },
+      );
     }
     if (waiting >= MAX_OPEN_REQUESTS_PER_LOAD) {
-      return fail(res, 409, `You can have ${MAX_OPEN_REQUESTS_PER_LOAD} requests waiting at once. Wait for a reply, or withdraw one first.`);
+      return fail(
+        res,
+        409,
+        'QUOTES_TOO_MANY_OPEN_REQUESTS',
+        `You can have ${MAX_OPEN_REQUESTS_PER_LOAD} requests waiting at once. Wait for a reply, or withdraw one first.`,
+        { max: MAX_OPEN_REQUESTS_PER_LOAD },
+      );
     }
 
     const quote = await Quote.create({
@@ -187,7 +198,7 @@ exports.listMyQuotes = async (req, res, next) => {
 const loadNegotiation = async (req, res) => {
   const quote = await Quote.findById(req.params.id).populate('loadId');
   if (!quote) {
-    fail(res, 404, 'Quote not found');
+    fail(res, 404, 'QUOTES_QUOTE_NOT_FOUND', 'Quote not found');
     return null;
   }
 
@@ -195,7 +206,7 @@ const loadNegotiation = async (req, res) => {
   const isShipper = String(load.shipperId) === req.user.userId;
   const isOwner = String(quote.ownerId) === req.user.userId;
   if (!isShipper && !isOwner) {
-    fail(res, 403, 'Not part of this negotiation');
+    fail(res, 403, 'QUOTES_NOT_PART_OF_NEGOTIATION', 'Not part of this negotiation');
     return null;
   }
 
@@ -206,10 +217,16 @@ const loadNegotiation = async (req, res) => {
 // taking offers, and it must be the caller's turn. Nobody responds to their own
 // standing offer. Returns the sent response when a rule fails.
 const refuseIfNotRespondable = (res, { quote, load, side }) => {
-  if (!OPEN_QUOTE_STATUSES.includes(quote.status)) return fail(res, 400, `Quote is already ${quote.status}`);
-  if (!BIDDABLE_LOAD_STATUSES.includes(load.status)) return fail(res, 400, `This load is ${load.status}`);
-  if (isExpired(quote) || isExpired(load)) return fail(res, 400, 'This offer has expired');
-  if (standingOffer(quote).by === side) return fail(res, 400, 'Waiting on the other party to respond to your offer');
+  if (!OPEN_QUOTE_STATUSES.includes(quote.status)) {
+    return fail(res, 400, 'QUOTES_ALREADY_DECIDED', `Quote is already ${quote.status}`, { status: quote.status });
+  }
+  if (!BIDDABLE_LOAD_STATUSES.includes(load.status)) {
+    return fail(res, 400, 'QUOTES_LOAD_STATUS_BLOCKS_RESPONSE', `This load is ${load.status}`, { status: load.status });
+  }
+  if (isExpired(quote) || isExpired(load)) return fail(res, 400, 'QUOTES_OFFER_EXPIRED', 'This offer has expired');
+  if (standingOffer(quote).by === side) {
+    return fail(res, 400, 'QUOTES_WAITING_ON_OTHER_PARTY', 'Waiting on the other party to respond to your offer');
+  }
   return null;
 };
 
@@ -227,7 +244,7 @@ exports.counterQuote = async (req, res, next) => {
 
     const price = req.body.counterOfferPrice;
     const problem = counterProblem(quote, side, price);
-    if (problem) return fail(res, 400, problem);
+    if (problem) return fail(res, 400, 'QUOTES_COUNTER_PROBLEM', problem, { detail: problem });
 
     const now = new Date();
     const updated = await Quote.findOneAndUpdate(
@@ -243,7 +260,7 @@ exports.counterQuote = async (req, res, next) => {
       },
       { new: true },
     );
-    if (!updated) return fail(res, 409, CHANGED_UNDERNEATH);
+    if (!updated) return fail(res, 409, 'QUOTES_CHANGED_UNDERNEATH', CHANGED_UNDERNEATH);
 
     await Load.updateOne({ _id: load._id, status: { $in: ['open', 'quoted'] } }, { status: 'negotiating' });
 
@@ -282,7 +299,7 @@ exports.acceptQuote = async (req, res, next) => {
           { new: true },
         )
         : await Truck.findById(quote.truckId);
-      if (!truck) return fail(res, 409, 'That truck is no longer available on the pickup date');
+      if (!truck) return fail(res, 409, 'QUOTES_TRUCK_NOT_AVAILABLE_ON_DATE', 'That truck is no longer available on the pickup date');
     }
     const releaseTruck = async () => {
       if (truck && load.pickupDay) await Truck.updateOne({ _id: truck._id }, { $pull: { reservedDays: load.pickupDay } });
@@ -297,7 +314,7 @@ exports.acceptQuote = async (req, res, next) => {
     );
     if (!claimed) {
       await releaseTruck();
-      return fail(res, 400, 'This load has already been booked');
+      return fail(res, 400, 'QUOTES_LOAD_ALREADY_BOOKED', 'This load has already been booked');
     }
 
     const accepted = await Quote.findOneAndUpdate(
@@ -309,7 +326,7 @@ exports.acceptQuote = async (req, res, next) => {
       // The quote was countered or rejected mid-request: release everything.
       await Load.updateOne({ _id: load._id, status: 'booked' }, { status: load.status });
       await releaseTruck();
-      return fail(res, 409, CHANGED_UNDERNEATH);
+      return fail(res, 409, 'QUOTES_CHANGED_UNDERNEATH', CHANGED_UNDERNEATH);
     }
 
     // The truck's regular driver comes with it when they can drive a booking.
@@ -380,7 +397,7 @@ exports.rejectQuote = async (req, res, next) => {
     const { quote, load, side } = negotiation;
 
     if (!OPEN_QUOTE_STATUSES.includes(quote.status)) {
-      return fail(res, 400, `Quote is already ${quote.status}`);
+      return fail(res, 400, 'QUOTES_ALREADY_DECIDED', `Quote is already ${quote.status}`, { status: quote.status });
     }
 
     const rejected = await Quote.findOneAndUpdate(
@@ -388,7 +405,7 @@ exports.rejectQuote = async (req, res, next) => {
       { status: 'rejected' },
       { new: true },
     );
-    if (!rejected) return fail(res, 409, CHANGED_UNDERNEATH);
+    if (!rejected) return fail(res, 409, 'QUOTES_CHANGED_UNDERNEATH', CHANGED_UNDERNEATH);
 
     // With no live offers left the load is simply open again.
     const stillLive = await Quote.exists({ loadId: load._id, status: { $in: OPEN_QUOTE_STATUSES } });

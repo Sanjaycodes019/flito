@@ -1,0 +1,91 @@
+{
+  "list": {
+    "couldNotLoadTitle": "Could not load this",
+    "tryAgain": "Try Again",
+    "emptyTitle": "No bookings yet",
+    "emptyMessage": "Bookings appear here once a quote is accepted.",
+    "loadFallback": "Load",
+    "accessibilityBooking": "{{goodsType}} booking"
+  },
+  "detail": {
+    "errorTitle": "Error",
+    "notFoundTitle": "Booking not found",
+    "notFoundMessage": "This booking may have been removed.",
+    "loadFallback": "Load",
+    "pickup": "Pickup",
+    "dropoff": "Dropoff",
+    "amount": "Amount",
+    "shipper": "Shipper",
+    "owner": "Owner",
+    "driver": "Driver",
+    "truck": "Truck",
+    "pickupStatusLabel": "Pickup Status",
+    "dropoffStatusLabel": "Dropoff Status",
+    "booked": "Booked",
+    "notAssigned": "Not assigned",
+    "verifiedTruck": "Verified truck",
+    "assignDriverTitle": "Assign a Driver",
+    "phonePlaceholder": "+9779841234567",
+    "findAndAssign": "Find & Assign",
+    "missingPhoneTitle": "Missing phone",
+    "missingPhoneMessage": "Enter the driver's phone number",
+    "driverNotVerifiedTitle": "Driver not verified",
+    "driverNotVerifiedMessage": "{{name}} hasn't completed identity verification yet, so they can't be assigned to a booking.",
+    "driverAssignedTitle": "Driver assigned",
+    "driverAssignedMessage": "{{name}} has been assigned to this booking",
+    "updateJobStatusTitle": "Update Job Status",
+    "arrivedAtPickup": "Arrived at Pickup",
+    "pickedUp": "Picked Up",
+    "arrivedAtDropoff": "Arrived at Dropoff",
+    "delivered": "Delivered",
+    "cancelBooking": "Cancel Booking",
+    "rate": "Rate {{party}}",
+    "theOwner": "the Owner",
+    "theShipper": "the Shipper",
+    "reviewPlaceholder": "Optional review",
+    "submitRating": "Submit Rating",
+    "thanksTitle": "Thanks!",
+    "ratingSubmittedMessage": "Your rating has been submitted"
+  },
+  "earnings": {
+    "totalLabel": "Total Earnings",
+    "completedJob_one": "{{count}} completed job",
+    "completedJob_other": "{{count}} completed jobs",
+    "emptyTitle": "No completed jobs yet",
+    "emptyMessage": "Your finished deliveries will appear here.",
+    "errorTitle": "Error",
+    "loadFallback": "Load"
+  },
+  "deliveryProof": {
+    "title": "Proof of Delivery",
+    "titleWithCount": "Proof of Delivery ({{count}})",
+    "hint": "Photograph the cargo at drop-off. It protects you if the delivery is ever disputed.",
+    "takePhoto": "Take Photo",
+    "uploadFailedTitle": "Upload failed"
+  },
+  "deliverySignature": {
+    "title": "Delivery Signature",
+    "signedMeta": "Signed {{date}}",
+    "hint": "Have the recipient sign to confirm they received the delivery.",
+    "recapture": "Recapture Signature",
+    "capture": "Capture Signature",
+    "saveFailedTitle": "Could not save signature"
+  },
+  "locationSharing": {
+    "title": "Live Location",
+    "sharingHint": "The shipper and owner can see your position on the map.",
+    "notSharingHint": "Share your position so the shipper and owner can track this delivery.",
+    "lastSent": "Last sent {{time}}",
+    "stopSharing": "Stop Sharing",
+    "shareMyLocation": "Share My Location",
+    "couldNotStartTitle": "Could not start sharing",
+    "permissionDenied": "Allow location access to share your position"
+  },
+  "signaturePad": {
+    "title": "Recipient Signature",
+    "hint": "Have the recipient sign below to confirm delivery",
+    "save": "Save Signature",
+    "nothingSignedTitle": "Nothing signed",
+    "nothingSignedMessage": "Draw a signature before saving"
+  }
+}

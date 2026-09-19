@@ -1,16 +1,18 @@
 import React from 'react';
 import { View, Text, Image, Pressable, Linking, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 
 // A private document behind a short-lived link: images preview inline, PDFs
 // show a badge. Tapping opens the full file.
 const DocumentTile = ({ doc, label, size = 72 }) => {
+  const { t } = useTranslation();
   const isPdf = doc.format === 'pdf';
   const open = () => doc.url && Linking.openURL(doc.url);
 
   return (
-    <Pressable style={styles.tile} onPress={open} disabled={!doc.url} accessibilityRole="link" accessibilityLabel={`Open ${label}`}>
+    <Pressable style={styles.tile} onPress={open} disabled={!doc.url} accessibilityRole="link" accessibilityLabel={t('kyc:documentTile.openLabel', { label })}>
       {isPdf || !doc.url ? (
         <View style={[styles.badge, { width: size, height: size }]}>
           <Icon name="document" size={iconSize.lg} color={colors.textOnDark} />

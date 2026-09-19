@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
@@ -13,6 +14,7 @@ import api from '../services/api';
 import { fetchBookingsStart, fetchBookingsSuccess, fetchBookingsError } from '../redux/slices/bookingSlice';
 
 const BookingsListScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { items: bookings, isLoading, error } = useSelector((state) => state.bookings);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,7 +44,7 @@ const BookingsListScreen = ({ navigation }) => {
   if (error && bookings.length === 0) {
     return (
       <View style={styles.container}>
-        <EmptyState icon="offline" tone="error" title="Could not load this" message={error} actionLabel="Try Again" onAction={load} />
+        <EmptyState icon="offline" tone="error" title={t('bookings:list.couldNotLoadTitle')} message={error} actionLabel={t('bookings:list.tryAgain')} onAction={load} />
       </View>
     );
   }
@@ -59,7 +61,7 @@ const BookingsListScreen = ({ navigation }) => {
       keyExtractor={(item) => item._id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       ListEmptyComponent={
-        <EmptyState icon="truckDelivery" title="No bookings yet" message="Bookings appear here once a quote is accepted." />
+        <EmptyState icon="truckDelivery" title={t('bookings:list.emptyTitle')} message={t('bookings:list.emptyMessage')} />
       }
       renderItem={({ item }) => (
         <View style={columns > 1 ? [styles.cell, { width: `${100 / columns}%` }] : null}>
@@ -67,10 +69,10 @@ const BookingsListScreen = ({ navigation }) => {
             style={[styles.card, columns > 1 && styles.cardInGrid]}
             containerStyle={columns > 1 ? styles.fill : undefined}
             onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}
-            accessibilityLabel={`${item.loadId?.goodsType || 'Load'} booking`}
+            accessibilityLabel={t('bookings:list.accessibilityBooking', { goodsType: item.loadId?.goodsType || t('bookings:list.loadFallback') })}
           >
             <View style={styles.row}>
-              <Text style={styles.goodsType} numberOfLines={1}>{item.loadId?.goodsType || 'Load'}</Text>
+              <Text style={styles.goodsType} numberOfLines={1}>{item.loadId?.goodsType || t('bookings:list.loadFallback')}</Text>
               <StatusBadge status={item.status} />
             </View>
             <View style={styles.routeRow}>

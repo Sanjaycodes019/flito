@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const Load = require('../models/Load');
 const Truck = require('../models/Truck');
 const User = require('../models/User');
+const { fail } = require('../utils/respond');
 
 const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 
@@ -54,9 +55,9 @@ exports.getBooking = async (req, res, next) => {
       .populate('driverId', PARTY_FIELDS)
       .populate('truckId', TRUCK_FIELDS);
 
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');
     if (!isParty(booking, req.user.userId)) {
-      return res.status(403).json({ success: false, message: 'Not part of this booking' });
+      return fail(res, 403, 'BOOKINGS_NOT_PARTY', 'Not part of this booking');
     }
 
     res.json({ success: true, booking: bookingView(booking) });
@@ -72,15 +73,18 @@ exports.assignDriver = async (req, res, next) => {
   try {
     const { driverId } = req.body;
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');
     if (idOf(booking.ownerId) !== req.user.userId) {
-      return res.status(403).json({ success: false, message: 'Only the owner can assign a driver' });
+      return fail(res, 403, 'BOOKINGS_ASSIGN_DRIVER_OWNER_ONLY', 'Only the owner can assign a driver');
     }
     if (!DRIVER_ASSIGNABLE_STATUSES.includes(booking.status)) {
-      return res.status(400).json({
-        success: false,
-        message: `A driver can't be assigned to a booking that is ${booking.status.replace('_', ' ')}`,
-      });
+      return fail(
+        res,
+        400,
+        'BOOKINGS_INVALID_STATUS_FOR_ASSIGNMENT',
+        `A driver can't be assigned to a booking that is ${booking.status.replace('_', ' ')}`,
+        { status: booking.status },
+      );
     }
 
     // Must be a real, active driver account. Any id used to be accepted,
@@ -88,16 +92,24 @@ exports.assignDriver = async (req, res, next) => {
     const driver = driverId
       ? await User.findOne({ _id: driverId, role: 'driver' }).select('firstName kycStatus status')
       : null;
-    if (!driver) return res.status(404).json({ success: false, message: 'Driver not found' });
+    if (!driver) return fail(res, 404, 'BOOKINGS_DRIVER_NOT_FOUND', 'Driver not found');
     if (driver.status !== 'active') {
-      return res.status(400).json({ success: false, message: `${driver.firstName}'s account is ${driver.status}` });
+      return fail(
+        res,
+        400,
+        'BOOKINGS_DRIVER_ACCOUNT_STATUS',
+        `${driver.firstName}'s account is ${driver.status}`,
+        { name: driver.firstName, status: driver.status },
+      );
     }
     if (requiresVerification('beAssignedToBooking', 'driver') && driver.kycStatus !== 'approved') {
-      return res.status(400).json({
-        success: false,
-        code: 'DRIVER_NOT_VERIFIED',
-        message: `${driver.firstName} hasn't completed identity verification, so they can't be assigned to a booking yet`,
-      });
+      return fail(
+        res,
+        400,
+        'DRIVER_NOT_VERIFIED',
+        `${driver.firstName} hasn't completed identity verification, so they can't be assigned to a booking yet`,
+        { name: driver.firstName },
+      );
     }
 
     booking.driverId = driver._id;
@@ -140,39 +152,39 @@ exports.updateStatus = async (req, res, next) => {
   try {
     const { status, pickupStatus, dropoffStatus } = req.body;
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');
 
     const party = partyOf(booking, req.user.userId);
     if (!party) {
-      return res.status(403).json({ success: false, message: 'Not part of this booking' });
+      return fail(res, 403, 'BOOKINGS_NOT_PARTY', 'Not part of this booking');
     }
 
     if ((pickupStatus || dropoffStatus) && party !== 'driver') {
-      return res.status(403).json({ success: false, message: 'Only the assigned driver can report pickup or delivery progress' });
+      return fail(res, 403, 'BOOKINGS_PICKUP_DROPOFF_DRIVER_ONLY', 'Only the assigned driver can report pickup or delivery progress');
     }
 
     if (status) {
       if (status === 'cancelled') {
         if (party === 'driver') {
-          return res.status(403).json({ success: false, message: 'Drivers cannot cancel a booking' });
+          return fail(res, 403, 'BOOKINGS_DRIVER_CANNOT_CANCEL', 'Drivers cannot cancel a booking');
         }
         if (!CANCELLABLE_FROM.includes(booking.status)) {
-          return res.status(400).json({ success: false, message: `Cannot cancel a booking that is ${booking.status}` });
+          return fail(res, 400, 'BOOKINGS_CANNOT_CANCEL_STATUS', `Cannot cancel a booking that is ${booking.status}`, { status: booking.status });
         }
       } else if (['in_transit', 'completed'].includes(status)) {
         if (party !== 'driver') {
-          return res.status(403).json({ success: false, message: 'Only the assigned driver can advance delivery status' });
+          return fail(res, 403, 'BOOKINGS_ADVANCE_STATUS_DRIVER_ONLY', 'Only the assigned driver can advance delivery status');
         }
       } else if (status === 'confirmed') {
         if (party !== 'owner') {
-          return res.status(403).json({ success: false, message: 'Only the owner can confirm a booking' });
+          return fail(res, 403, 'BOOKINGS_CONFIRM_OWNER_ONLY', 'Only the owner can confirm a booking');
         }
       } else {
-        return res.status(400).json({ success: false, message: `Unsupported status transition: ${status}` });
+        return fail(res, 400, 'BOOKINGS_UNSUPPORTED_STATUS_TRANSITION', `Unsupported status transition: ${status}`, { status });
       }
 
       if (['completed', 'cancelled'].includes(booking.status)) {
-        return res.status(400).json({ success: false, message: `Booking is already ${booking.status}` });
+        return fail(res, 400, 'BOOKINGS_ALREADY_STATUS', `Booking is already ${booking.status}`, { status: booking.status });
       }
     }
 
@@ -211,17 +223,20 @@ exports.updateLocation = async (req, res, next) => {
   try {
     const { lat, lng } = req.body;
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');
     if (idOf(booking.driverId) !== req.user.userId) {
-      return res.status(403).json({ success: false, message: 'Only the assigned driver can update location' });
+      return fail(res, 403, 'BOOKINGS_LOCATION_DRIVER_ONLY', 'Only the assigned driver can update location');
     }
     // GPS pings are only meaningful while cargo is moving; a booking that
     // hasn't started or has already ended shouldn't gain a "current" location.
     if (booking.status !== 'in_transit') {
-      return res.status(400).json({
-        success: false,
-        message: `Location can only be shared while a booking is in transit (this one is ${booking.status.replace('_', ' ')})`,
-      });
+      return fail(
+        res,
+        400,
+        'BOOKINGS_LOCATION_NOT_IN_TRANSIT',
+        `Location can only be shared while a booking is in transit (this one is ${booking.status.replace('_', ' ')})`,
+        { status: booking.status },
+      );
     }
 
     const locationUpdatedAt = new Date();
@@ -246,14 +261,14 @@ exports.rateBooking = async (req, res, next) => {
   try {
     const { rating, review } = req.body;
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');
 
     const party = partyOf(booking, req.user.userId);
     if (party !== 'shipper' && party !== 'owner') {
-      return res.status(403).json({ success: false, message: 'Only the shipper or owner can rate this booking' });
+      return fail(res, 403, 'BOOKINGS_RATE_PARTY_ONLY', 'Only the shipper or owner can rate this booking');
     }
     if (booking.status !== 'completed') {
-      return res.status(400).json({ success: false, message: 'Can only rate a completed booking' });
+      return fail(res, 400, 'BOOKINGS_RATE_NOT_COMPLETED', 'Can only rate a completed booking');
     }
 
     const field = party === 'shipper' ? 'ownerRating' : 'shipperRating';
@@ -267,7 +282,7 @@ exports.rateBooking = async (req, res, next) => {
       { new: true },
     );
     if (!updated) {
-      return res.status(400).json({ success: false, message: 'You have already rated this booking' });
+      return fail(res, 400, 'BOOKINGS_ALREADY_RATED', 'You have already rated this booking');
     }
 
     // One pipeline update computes the new running average from the stored

@@ -101,16 +101,27 @@ describe('profile editing', () => {
     expect((await me(alice)).email).toBe(alice.user.email);
   });
 
-  it('changing the email resets verification and issues a fresh code', async () => {
-    const alice = await newUser('shipper');
-    // signUp() does not verify the email, so verify it first to prove the
-    // change actually resets a *true* flag back to false.
-    await as(alice.token).post('/api/auth/verify-email').send({ email: alice.user.email, code: '123456' }).expect(200);
-    expect((await me(alice)).emailVerified).toBe(true);
+  it('changing the email resets verification and emails the new address a fresh code', async () => {
+    // Codes only ever go out by email, so the test reads them from there.
+    const email = require('../src/services/email');
+    const sent = jest.spyOn(email, 'sendVerificationEmail').mockResolvedValue({ delivered: true });
+    try {
+      const alice = await newUser('shipper');
+      const [, , code] = sent.mock.calls.find(([to]) => to === alice.user.email);
 
-    const res = await patchMe(alice, { email: 'changed@example.com' }).expect(200);
-    expect(res.body.user.emailVerified).toBe(false);
-    expect((await me(alice)).emailVerified).toBe(false);
+      // signUp() does not verify the email, so verify it first to prove the
+      // change actually resets a *true* flag back to false.
+      await as(alice.token).post('/api/auth/verify-email').send({ email: alice.user.email, code }).expect(200);
+      expect((await me(alice)).emailVerified).toBe(true);
+
+      // Straight after signup, so the new address isn't held up by the resend wait.
+      const res = await patchMe(alice, { email: 'changed@example.com' }).expect(200);
+      expect(res.body.user.emailVerified).toBe(false);
+      expect((await me(alice)).emailVerified).toBe(false);
+      expect(sent).toHaveBeenLastCalledWith('changed@example.com', expect.anything(), expect.stringMatching(/^\d{6}$/), 'en');
+    } finally {
+      sent.mockRestore();
+    }
   });
 
   it('allows a company name only for truck owners', async () => {

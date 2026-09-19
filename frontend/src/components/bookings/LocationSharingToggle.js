@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Icon from '../../theme/icons';
@@ -19,6 +20,7 @@ const DISTANCE_INTERVAL_M = 25;
 // Sharing is opt-in per booking and stops automatically on unmount (leaving
 // the screen) so a driver never broadcasts without the screen open.
 const LocationSharingToggle = ({ bookingId }) => {
+  const { t } = useTranslation();
   const [sharing, setSharing] = useState(false);
   const [starting, setStarting] = useState(false);
   const [lastSentAt, setLastSentAt] = useState(null);
@@ -37,7 +39,7 @@ const LocationSharingToggle = ({ bookingId }) => {
     setStarting(true);
     try {
       const { granted } = await Location.requestForegroundPermissionsAsync();
-      if (!granted) throw new Error('Allow location access to share your position');
+      if (!granted) throw new Error(t('bookings:locationSharing.permissionDenied'));
 
       subscriptionRef.current = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, timeInterval: TIME_INTERVAL_MS, distanceInterval: DISTANCE_INTERVAL_M },
@@ -54,7 +56,7 @@ const LocationSharingToggle = ({ bookingId }) => {
       );
       setSharing(true);
     } catch (error) {
-      notify('Could not start sharing', getErrorMessage(error));
+      notify(t('bookings:locationSharing.couldNotStartTitle'), getErrorMessage(error));
     }
     setStarting(false);
   };
@@ -63,19 +65,19 @@ const LocationSharingToggle = ({ bookingId }) => {
     <Card>
       <View style={styles.titleRow}>
         <Icon name={sharing ? 'gps' : 'location'} size={iconSize.md} color={sharing ? colors.successText : colors.primaryText} style={styles.titleIcon} />
-        <Text style={styles.title}>Live Location</Text>
+        <Text style={styles.title}>{t('bookings:locationSharing.title')}</Text>
         {sharing && <View style={styles.liveDot} />}
       </View>
       <Text style={styles.hint}>
         {sharing
-          ? 'The shipper and owner can see your position on the map.'
-          : 'Share your position so the shipper and owner can track this delivery.'}
+          ? t('bookings:locationSharing.sharingHint')
+          : t('bookings:locationSharing.notSharingHint')}
       </Text>
       {sharing && lastSentAt && (
-        <Text style={styles.meta}>Last sent {lastSentAt.toLocaleTimeString()}</Text>
+        <Text style={styles.meta}>{t('bookings:locationSharing.lastSent', { time: lastSentAt.toLocaleTimeString() })}</Text>
       )}
       <Button
-        title={sharing ? 'Stop Sharing' : 'Share My Location'}
+        title={sharing ? t('bookings:locationSharing.stopSharing') : t('bookings:locationSharing.shareMyLocation')}
         icon={sharing ? 'close' : 'gps'}
         variant={sharing ? 'tertiary' : 'primary'}
         onPress={sharing ? stop : start}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Button from '../components/common/Button';
 import Input, { InputAction } from '../components/common/Input';
 import AuthLayout from '../components/auth/AuthLayout';
@@ -16,6 +17,7 @@ import { loginSuccess } from '../redux/slices/authSlice';
 // Reached from ForgotPasswordScreen, which already confirmed a code was
 // requested for this email and passes it along as a route param.
 const ResetPasswordScreen = ({ route, navigation }) => {
+  const { t } = useTranslation();
   // The email is deliberately kept out of the page address (see
   // RootNavigator's linking config), so after a browser refresh it is gone.
   const email = route?.params?.email;
@@ -32,9 +34,9 @@ const ResetPasswordScreen = ({ route, navigation }) => {
   // showing inputs that would only fail.
   if (!email) {
     return (
-      <AuthLayout title="Reset Password" subtitle="We need your email again. Request a new code to continue.">
-        <Button title="Request a New Code" icon="email" onPress={() => navigation.replace('ForgotPassword')} />
-        <Button title="Back to Login" variant="ghost" onPress={() => navigation.navigate('Login')} />
+      <AuthLayout title={t('auth:resetPassword.title')} subtitle={t('auth:resetPassword.noEmailSubtitle')}>
+        <Button title={t('auth:resetPassword.requestNewCode')} icon="email" onPress={() => navigation.replace('ForgotPassword')} />
+        <Button title={t('auth:shared.backToLogin')} variant="ghost" onPress={() => navigation.navigate('Login')} />
       </AuthLayout>
     );
   }
@@ -45,11 +47,11 @@ const ResetPasswordScreen = ({ route, navigation }) => {
   const handleResend = async () => {
     setResending(true);
     try {
-      const data = await authService.forgotPassword(email);
-      if (data.resetCode) notify('Dev mode', `Reset code for testing: ${data.resetCode}`);
+      await authService.forgotPassword(email);
       setSentAt(Date.now());
+      notify(t('auth:shared.codeSentTitle'), t('auth:resetPassword.codeSentMessage', { email }));
     } catch (error) {
-      notify('Could not resend', getErrorMessage(error));
+      notify(t('auth:shared.couldNotResendTitle'), getErrorMessage(error));
     }
     setResending(false);
   };
@@ -59,17 +61,17 @@ const ResetPasswordScreen = ({ route, navigation }) => {
     setSubmitting(true);
     try {
       const data = await authService.resetPassword(email, code, password);
-      notify('Password changed', 'You are now logged in with your new password.', () => dispatch(loginSuccess(data)));
+      notify(t('auth:resetPassword.passwordChangedTitle'), t('auth:resetPassword.passwordChangedMessage'), () => dispatch(loginSuccess(data)));
     } catch (error) {
-      notify('Could not reset password', getErrorMessage(error));
+      notify(t('auth:resetPassword.couldNotResetTitle'), getErrorMessage(error));
     }
     setSubmitting(false);
   };
 
   return (
     <AuthLayout
-      title="Reset Password"
-      subtitle={<>Enter the 6-digit code sent to <Text style={styles.emailText}>{email}</Text></>}
+      title={t('auth:resetPassword.title')}
+      subtitle={<>{t('auth:shared.codeSentPrefix')}<Text style={styles.emailText}>{email}</Text>{t('auth:shared.codeSentSuffix')}</>}
     >
       <View style={styles.otpWrap}>
         <OtpInput value={code} onChange={setCode} editable={!submitting} />
@@ -77,10 +79,10 @@ const ResetPasswordScreen = ({ route, navigation }) => {
       <ResendCode sentAt={sentAt} onResend={handleResend} disabled={resending} />
 
       <Input
-        label="New Password"
+        label={t('auth:resetPassword.newPasswordLabel')}
         value={password}
         onChangeText={setPassword}
-        placeholder="At least 8 characters"
+        placeholder={t('auth:shared.passwordPlaceholderMin8')}
         secureTextEntry={!showPassword}
         autoComplete="new-password"
         icon="lock"
@@ -90,26 +92,26 @@ const ResetPasswordScreen = ({ route, navigation }) => {
           <InputAction
             icon={showPassword ? 'eyeOff' : 'eye'}
             onPress={() => setShowPassword((v) => !v)}
-            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            accessibilityLabel={showPassword ? t('auth:shared.hidePassword') : t('auth:shared.showPassword')}
           />
         }
       />
       <PasswordStrengthMeter password={password} />
 
       <Input
-        label="Confirm New Password"
+        label={t('auth:resetPassword.confirmNewPasswordLabel')}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
-        placeholder="Type it again"
+        placeholder={t('auth:resetPassword.confirmNewPasswordPlaceholder')}
         secureTextEntry={!showPassword}
         autoComplete="new-password"
         icon="lock"
         required
-        error={!passwordsMatch ? 'Passwords do not match' : null}
+        error={!passwordsMatch ? t('auth:shared.passwordsMismatch') : null}
       />
 
-      <Button title="Reset Password" icon="checkmark" onPress={handleSubmit} loading={submitting} disabled={!canSubmit} style={styles.submit} />
-      <Button title="Back to Login" variant="ghost" onPress={() => navigation.navigate('Login')} />
+      <Button title={t('auth:resetPassword.submit')} icon="checkmark" onPress={handleSubmit} loading={submitting} disabled={!canSubmit} style={styles.submit} />
+      <Button title={t('auth:shared.backToLogin')} variant="ghost" onPress={() => navigation.navigate('Login')} />
     </AuthLayout>
   );
 };

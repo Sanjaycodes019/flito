@@ -1,0 +1,153 @@
+{
+  "roles": {
+    "shipper": "शिपर",
+    "owner": "ट्रक मालिक",
+    "driver": "चालक",
+    "admin": "एडमिन"
+  },
+  "photoButton": {
+    "addLabel": "प्रोफाइल फोटो थप्नुहोस्",
+    "changeLabel": "प्रोफाइल फोटो परिवर्तन गर्नुहोस्",
+    "addOverlay": "फोटो थप्नुहोस्",
+    "changeOverlay": "परिवर्तन गर्नुहोस्"
+  },
+  "strength": {
+    "title": "प्रोफाइल पूर्णता",
+    "percentValue": "{{percent}}%",
+    "complete": "तपाईंको प्रोफाइल पूरा भयो",
+    "waitingReview": "तपाईंको पहिचान समीक्षाको पर्खाइमा",
+    "steps": {
+      "photo": "प्रोफाइल फोटो थप्नुहोस्",
+      "verifyEmail": "आफ्नो इमेल प्रमाणित गर्नुहोस्",
+      "phone": "आफ्नो फोन नम्बर थप्नुहोस्",
+      "company": "आफ्नो कम्पनीको नाम थप्नुहोस्",
+      "address": "आफ्नो ठेगाना थप्नुहोस्",
+      "identityFix": "आफ्ना पहिचान कागजातहरू मिलाउनुहोस्",
+      "identityVerify": "आफ्नो पहिचान प्रमाणित गर्नुहोस्"
+    },
+    "stepsDone": "{{total}} मध्ये {{done}} चरण सकियो"
+  },
+  "kyc": {
+    "not_submitted": {
+      "value": "प्रमाणित हुन कुनै परिचयपत्र पेश गर्नुहोस्",
+      "pill": "प्रमाणित नभएको"
+    },
+    "pending": {
+      "value": "तपाईंका कागजातहरू समीक्षामा छन्",
+      "pill": "समीक्षामा"
+    },
+    "approved": {
+      "value": "तपाईंका कागजातहरू स्वीकृत भए",
+      "pill": "प्रमाणित"
+    },
+    "rejected": {
+      "value": "तपाईंका कागजातहरूमा परिवर्तन आवश्यक छ",
+      "pill": "कार्य आवश्यक"
+    }
+  },
+  "summary": {
+    "nameFallback": "तपाईंको नाम",
+    "verifiedByFlito": "FLITO द्वारा प्रमाणित",
+    "ratingsNone": "अझै कुनै रेटिङ छैन",
+    "rating_one": "{{count}} रेटिङ",
+    "rating_other": "{{count}} रेटिङहरू",
+    "memberSince": "सदस्य बनेको मिति"
+  },
+  "sections": {
+    "personalInfo": {
+      "title": "व्यक्तिगत जानकारी",
+      "description": "शिपर, मालिक र चालकहरूले तपाईंलाई कसरी देख्छन्",
+      "edit": "सम्पादन गर्नुहोस्"
+    },
+    "verification": {
+      "title": "प्रमाणीकरण",
+      "description": "प्रमाणित खाताहरूलाई भाउ र बुकिङमा भरोसा गरिन्छ"
+    },
+    "signIn": {
+      "title": "साइन-इन र सुरक्षा"
+    }
+  },
+  "rows": {
+    "fullName": "पूरा नाम",
+    "phone": "फोन",
+    "company": "कम्पनी",
+    "address": "ठेगाना",
+    "notAdded": "थपिएको छैन",
+    "email": "इमेल",
+    "identity": "पहिचान",
+    "signInMethod": "साइन-इन विधि",
+    "signInEmailPassword": "इमेल र पासवर्ड",
+    "signInGoogle": "Google",
+    "signInEmailOnly": "इमेल",
+    "signInJoiner": " र ",
+    "logOut": "लग आउट गर्नुहोस्",
+    "logOutLabel": "लग आउट",
+    "notVerified": "प्रमाणित नभएको",
+    "verified": "प्रमाणित"
+  },
+  "logout": {
+    "title": "लग आउट",
+    "message": "के तपाईं साँच्चै लग आउट गर्न चाहनुहुन्छ?",
+    "confirmLabel": "लग आउट गर्नुहोस्"
+  },
+  "photoMenu": {
+    "title": "प्रोफाइल फोटो",
+    "hint": "तपाईंको अनुहारको स्पष्ट फोटोले मानिसहरूलाई तपाईंलाई चिन्न मद्दत गर्छ।",
+    "takePhoto": "फोटो खिच्नुहोस्",
+    "uploadPhoto": "फोटो अपलोड गर्नुहोस्",
+    "removePhoto": "फोटो हटाउनुहोस्",
+    "note": "JPEG, PNG, WebP वा HEIC, ५ MB सम्म"
+  },
+  "alerts": {
+    "cameraOpenFailedTitle": "क्यामेरा खोल्न सकिएन",
+    "photosOpenFailedTitle": "फोटोहरू खोल्न सकिएन",
+    "photoTooLargeTitle": "फोटो धेरै ठूलो छ",
+    "photoTooLargeMessage": "५ MB वा सोभन्दा सानो फोटो छान्नुहोस्",
+    "updatePhotoFailedTitle": "फोटो अपडेट गर्न सकिएन",
+    "removePhotoTitle": "प्रोफाइल फोटो हटाउनुहोस्",
+    "removePhotoMessage": "तपाईंको फोटो तपाईंको भूमिका आइकनले प्रतिस्थापन हुनेछ।",
+    "removePhotoConfirmLabel": "हटाउनुहोस्",
+    "removePhotoFailedTitle": "फोटो हटाउन सकिएन"
+  },
+  "version": "FLITO संस्करण {{version}}",
+  "editProfile": {
+    "firstName": "पहिलो नाम",
+    "lastName": "थर",
+    "nameLockNote": "तपाईंको नाम तपाईंका पहिचान कागजातहरूसँग मिलाइएको छ, त्यसैले समीक्षामा वा स्वीकृत हुँदासम्म यो परिवर्तन गर्न सकिँदैन।",
+    "email": "इमेल",
+    "verified": "प्रमाणित",
+    "notVerified": "प्रमाणित नभएको",
+    "emailPlaceholder": "you@example.com",
+    "emailHintGoogle": "तपाईंको Google खाताबाट व्यवस्थित।",
+    "emailHintPassword": "यो परिवर्तन गर्दा तपाईंको इमेल फेरि प्रमाणित गर्नुपर्नेछ।",
+    "phoneLabel": "फोन नम्बर",
+    "phonePlaceholder": "+9779841234567 (वैकल्पिक)",
+    "companyLabel": "कम्पनीको नाम",
+    "companyPlaceholder": "वैकल्पिक",
+    "addressLabel": "ठेगाना",
+    "addressNotAdded": "थपिएको छैन",
+    "changeAddress": "ठेगाना परिवर्तन गर्नुहोस्",
+    "addAddress": "ठेगाना थप्नुहोस्",
+    "roleAccount": "{{role}} खाता",
+    "saveChanges": "परिवर्तनहरू सेभ गर्नुहोस्",
+    "loadFailedTitle": "त्रुटि",
+    "saveFailedTitle": "सेभ गर्न सकिएन",
+    "savedTitle": "प्रोफाइल अपडेट भयो",
+    "savedMessage": "तपाईंका परिवर्तनहरू सेभ भएका छन्"
+  },
+  "addressScreen": {
+    "useLocationTitle": "आफ्नो हालको स्थान प्रयोग गर्नुहोस्",
+    "useLocationHint": "तपाईंको प्रदेश, जिल्ला र नगरपालिका भर्नेछ। वडा तपाईं आफैं छान्नुहोस्।",
+    "useLocationButton": "हालको स्थान प्रयोग गर्नुहोस्",
+    "detectedHint": "सेभ गर्नुअघि आफ्नो वडा छान्नुहोस् र सबै कुरा जाँच्नुहोस्।",
+    "toleSuggestionHint": "OpenStreetMap (c) OpenStreetMap contributors बाट सुझाव गरिएको। सही नभए सम्पादन गर्नुहोस्।",
+    "saveButton": "ठेगाना सेभ गर्नुहोस्",
+    "saveFailedTitle": "तपाईंको ठेगाना सेभ गर्न सकिएन",
+    "savedTitle": "ठेगाना सेभ भयो",
+    "savedFallbackMessage": "तपाईंको ठेगाना अपडेट भएको छ।"
+  },
+  "hero": {
+    "edit": "प्रोफाइल सम्पादन",
+    "photo": "फोटो"
+  }
+}

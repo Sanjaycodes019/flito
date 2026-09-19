@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import Button from './Button';
 import { colors, spacing, type } from '../../theme/tokens';
@@ -18,6 +19,7 @@ export const _setAlertBridge = (fns) => { bridge = fns; };
 export const _getAlertBridge = () => bridge;
 
 const AlertHost = () => {
+  const { t } = useTranslation();
   const [state, setState] = useState(null);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ const AlertHost = () => {
         <View style={styles.actions}>
           {state.kind === 'confirm' && (
             <Button
-              title="Cancel"
+              title={t('common:actions.cancel')}
               variant="ghost"
               size="sm"
               style={styles.actionButton}
@@ -52,7 +54,7 @@ const AlertHost = () => {
             />
           )}
           <Button
-            title={state.kind === 'confirm' ? (state.confirmLabel || 'Confirm') : 'OK'}
+            title={state.kind === 'confirm' ? (state.confirmLabel || t('common:actions.confirm')) : t('common:actions.ok')}
             variant={state.kind === 'confirm' && state.destructive ? 'destructive' : 'primary'}
             size="sm"
             style={styles.actionButton}

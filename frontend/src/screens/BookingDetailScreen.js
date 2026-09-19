@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -22,19 +23,20 @@ import socketService from '../services/socket';
 import { notify } from '../utils/alert';
 
 const DETAIL_ICON = {
-  Pickup: 'pickup',
-  Dropoff: 'dropoff',
-  Amount: 'price',
-  Shipper: 'shipper',
-  Owner: 'owner',
-  Driver: 'driver',
-  Truck: 'truck',
-  'Pickup Status': 'pickup',
-  'Dropoff Status': 'dropoff',
-  Booked: 'calendar',
+  pickup: 'pickup',
+  dropoff: 'dropoff',
+  amount: 'price',
+  shipper: 'shipper',
+  owner: 'owner',
+  driver: 'driver',
+  truck: 'truck',
+  pickupStatus: 'pickup',
+  dropoffStatus: 'dropoff',
+  booked: 'calendar',
 };
 
 const BookingDetailScreen = ({ route }) => {
+  const { t } = useTranslation();
   const { bookingId } = route.params;
   const { user } = useSelector((state) => state.auth);
   const [booking, setBooking] = useState(null);
@@ -57,9 +59,9 @@ const BookingDetailScreen = ({ route }) => {
       const { data } = await api.get(`/bookings/${bookingId}`);
       setBooking(data.booking);
     } catch (error) {
-      notify('Error', getErrorMessage(error));
+      notify(t('bookings:detail.errorTitle'), getErrorMessage(error));
     }
-  }, [bookingId]);
+  }, [bookingId, t]);
 
   useEffect(() => {
     (async () => {
@@ -94,27 +96,27 @@ const BookingDetailScreen = ({ route }) => {
       await fn();
       await fetchBooking();
     } catch (error) {
-      notify('Error', getErrorMessage(error));
+      notify(t('bookings:detail.errorTitle'), getErrorMessage(error));
     }
     setBusy(false);
   };
 
   const handleAssignDriver = () => runAction(async () => {
     if (!driverPhone) {
-      notify('Missing phone', "Enter the driver's phone number");
+      notify(t('bookings:detail.missingPhoneTitle'), t('bookings:detail.missingPhoneMessage'));
       return;
     }
     const { data: lookup } = await api.get('/users/lookup', { params: { phone: driverPhone } });
     // The server enforces this too; checking first gives a clearer message.
     if (lookup.driver.kycStatus !== 'approved') {
       notify(
-        'Driver not verified',
-        `${lookup.driver.firstName} hasn't completed identity verification yet, so they can't be assigned to a booking.`
+        t('bookings:detail.driverNotVerifiedTitle'),
+        t('bookings:detail.driverNotVerifiedMessage', { name: lookup.driver.firstName })
       );
       return;
     }
     await api.patch(`/bookings/${bookingId}/assign-driver`, { driverId: lookup.driver._id });
-    notify('Driver assigned', `${lookup.driver.firstName} has been assigned to this booking`);
+    notify(t('bookings:detail.driverAssignedTitle'), t('bookings:detail.driverAssignedMessage', { name: lookup.driver.firstName }));
   });
 
   const handlePickupStatus = (pickupStatus) => runAction(() =>
@@ -129,11 +131,11 @@ const BookingDetailScreen = ({ route }) => {
 
   const handleRate = () => runAction(async () => {
     await api.post(`/bookings/${bookingId}/rate`, { rating: Number(rating), review });
-    notify('Thanks!', 'Your rating has been submitted');
+    notify(t('bookings:detail.thanksTitle'), t('bookings:detail.ratingSubmittedMessage'));
   });
 
   if (loading) return <Spinner />;
-  if (!booking) return <EmptyState icon="empty" title="Booking not found" message="This booking may have been removed." />;
+  if (!booking) return <EmptyState icon="empty" title={t('bookings:detail.notFoundTitle')} message={t('bookings:detail.notFoundMessage')} />;
 
   const alreadyRated = isShipper ? !!booking.ownerRating?.rating : isOwner ? !!booking.shipperRating?.rating : true;
 
@@ -153,38 +155,42 @@ const BookingDetailScreen = ({ route }) => {
         <View style={twoColumns ? styles.mainColumn : null}>
           <Card>
             <View style={styles.row}>
-              <Text style={styles.title}>{booking.loadId?.goodsType || 'Load'}</Text>
+              <Text style={styles.title}>{booking.loadId?.goodsType || t('bookings:detail.loadFallback')}</Text>
               <StatusBadge status={booking.status} />
             </View>
-            <Detail label="Pickup" value={booking.loadId?.pickupLocation?.address} />
-            <Detail label="Dropoff" value={booking.loadId?.dropoffLocation?.address} />
-            <Detail label="Amount" value={formatCurrency(booking.totalAmount)} />
+            <Detail labelKey="pickup" label={t('bookings:detail.pickup')} value={booking.loadId?.pickupLocation?.address} />
+            <Detail labelKey="dropoff" label={t('bookings:detail.dropoff')} value={booking.loadId?.dropoffLocation?.address} />
+            <Detail labelKey="amount" label={t('bookings:detail.amount')} value={formatCurrency(booking.totalAmount)} />
             <Detail
-              label="Shipper"
+              labelKey="shipper"
+              label={t('bookings:detail.shipper')}
               value={`${booking.shipperId?.firstName || ''} ${booking.shipperId?.lastName || ''}`}
               verified={booking.shipperId?.verified}
             />
             <Detail
-              label="Owner"
+              labelKey="owner"
+              label={t('bookings:detail.owner')}
               value={booking.ownerId?.companyName || `${booking.ownerId?.firstName || ''} ${booking.ownerId?.lastName || ''}`}
               verified={booking.ownerId?.verified}
             />
             {booking.truckId ? (
               <Detail
-                label="Truck"
+                labelKey="truck"
+                label={t('bookings:detail.truck')}
                 value={[truckTypeLabel(booking.truckId.truckType), booking.truckId.registrationNumber].filter(Boolean).join(' · ')}
                 verified={booking.truckId.verified}
-                verifiedLabel="Verified truck"
+                verifiedLabel={t('bookings:detail.verifiedTruck')}
               />
             ) : null}
             <Detail
-              label="Driver"
-              value={booking.driverId ? `${booking.driverId.firstName} ${booking.driverId.lastName}` : 'Not assigned'}
+              labelKey="driver"
+              label={t('bookings:detail.driver')}
+              value={booking.driverId ? `${booking.driverId.firstName} ${booking.driverId.lastName}` : t('bookings:detail.notAssigned')}
               verified={booking.driverId?.verified}
             />
-            <Detail label="Pickup Status" value={formatStatus(booking.pickupStatus)} />
-            <Detail label="Dropoff Status" value={formatStatus(booking.dropoffStatus)} />
-            <Detail label="Booked" value={formatDate(booking.createdAt)} />
+            <Detail labelKey="pickupStatus" label={t('bookings:detail.pickupStatusLabel')} value={formatStatus(booking.pickupStatus, t)} />
+            <Detail labelKey="dropoffStatus" label={t('bookings:detail.dropoffStatusLabel')} value={formatStatus(booking.dropoffStatus, t)} />
+            <Detail labelKey="booked" label={t('bookings:detail.booked')} value={formatDate(booking.createdAt)} />
 
             <TrackingMap
               pickup={booking.loadId?.pickupLocation?.coordinates?.lat != null ? booking.loadId.pickupLocation.coordinates : null}
@@ -201,31 +207,31 @@ const BookingDetailScreen = ({ route }) => {
 
           {isOwner && !booking.driverId && booking.status !== 'cancelled' && (
             <Card>
-              <SectionTitle icon="driver" title="Assign a Driver" />
+              <SectionTitle icon="driver" title={t('bookings:detail.assignDriverTitle')} />
               <Input
                 value={driverPhone}
                 onChangeText={setDriverPhone}
-                placeholder="+9779841234567"
+                placeholder={t('bookings:detail.phonePlaceholder')}
                 keyboardType="phone-pad"
                 icon="phone"
               />
-              <Button title="Find & Assign" icon="search" onPress={handleAssignDriver} loading={busy} />
+              <Button title={t('bookings:detail.findAndAssign')} icon="search" onPress={handleAssignDriver} loading={busy} />
             </Card>
           )}
 
           {isDriver && booking.status !== 'completed' && booking.status !== 'cancelled' && (
             <Card>
-              <SectionTitle icon="truckDelivery" title="Update Job Status" />
+              <SectionTitle icon="truckDelivery" title={t('bookings:detail.updateJobStatusTitle')} />
               {booking.pickupStatus !== 'picked_up' && (
                 <View style={styles.actionsRow}>
-                  <Button title="Arrived at Pickup" icon="pickup" variant="tertiary" onPress={() => handlePickupStatus('arrived')} loading={busy} style={styles.actionButton} />
-                  <Button title="Picked Up" icon="checkmark" onPress={() => handlePickupStatus('picked_up')} loading={busy} style={styles.actionButton} />
+                  <Button title={t('bookings:detail.arrivedAtPickup')} icon="pickup" variant="tertiary" onPress={() => handlePickupStatus('arrived')} loading={busy} style={styles.actionButton} />
+                  <Button title={t('bookings:detail.pickedUp')} icon="checkmark" onPress={() => handlePickupStatus('picked_up')} loading={busy} style={styles.actionButton} />
                 </View>
               )}
               {booking.pickupStatus === 'picked_up' && booking.dropoffStatus !== 'delivered' && (
                 <View style={styles.actionsRow}>
-                  <Button title="Arrived at Dropoff" icon="dropoff" variant="tertiary" onPress={() => handleDropoffStatus('arrived')} loading={busy} style={styles.actionButton} />
-                  <Button title="Delivered" icon="checkmark" onPress={() => handleDropoffStatus('delivered')} loading={busy} style={styles.actionButton} />
+                  <Button title={t('bookings:detail.arrivedAtDropoff')} icon="dropoff" variant="tertiary" onPress={() => handleDropoffStatus('arrived')} loading={busy} style={styles.actionButton} />
+                  <Button title={t('bookings:detail.delivered')} icon="checkmark" onPress={() => handleDropoffStatus('delivered')} loading={busy} style={styles.actionButton} />
                 </View>
               )}
             </Card>
@@ -235,12 +241,15 @@ const BookingDetailScreen = ({ route }) => {
           <DeliverySignatureSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
 
           {isShipper && ['pending', 'confirmed'].includes(booking.status) && (
-            <Button title="Cancel Booking" icon="close" variant="destructive" onPress={handleCancel} loading={busy} style={styles.cancelButton} />
+            <Button title={t('bookings:detail.cancelBooking')} icon="close" variant="destructive" onPress={handleCancel} loading={busy} style={styles.cancelButton} />
           )}
 
           {booking.status === 'completed' && !alreadyRated && (
             <Card>
-              <SectionTitle icon="star" title={`Rate ${isShipper ? 'the Owner' : 'the Shipper'}`} />
+              <SectionTitle
+                icon="star"
+                title={t('bookings:detail.rate', { party: isShipper ? t('bookings:detail.theOwner') : t('bookings:detail.theShipper') })}
+              />
               <View style={styles.chipRow}>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <Button
@@ -252,8 +261,8 @@ const BookingDetailScreen = ({ route }) => {
                   />
                 ))}
               </View>
-              <Input value={review} onChangeText={setReview} placeholder="Optional review" icon="document" />
-              <Button title="Submit Rating" icon="send" onPress={handleRate} loading={busy} />
+              <Input value={review} onChangeText={setReview} placeholder={t('bookings:detail.reviewPlaceholder')} icon="document" />
+              <Button title={t('bookings:detail.submitRating')} icon="send" onPress={handleRate} loading={busy} />
             </Card>
           )}
         </View>
@@ -269,10 +278,10 @@ const SectionTitle = ({ icon, title }) => (
   </View>
 );
 
-const Detail = ({ label, value, verified = false, verifiedLabel = 'Verified' }) => (
+const Detail = ({ labelKey, label, value, verified = false, verifiedLabel }) => (
   <View style={styles.detailRow}>
     <View style={styles.detailLabelRow}>
-      {!!DETAIL_ICON[label] && <Icon name={DETAIL_ICON[label]} size={iconSize.xs} color={colors.textMuted} style={styles.detailIcon} />}
+      {!!DETAIL_ICON[labelKey] && <Icon name={DETAIL_ICON[labelKey]} size={iconSize.xs} color={colors.textMuted} style={styles.detailIcon} />}
       <Text style={styles.detailLabel}>{label}</Text>
     </View>
     <View style={styles.detailValueRow}>

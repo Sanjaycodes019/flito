@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#12161A"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
       "package": "com.flito.app",
       "adaptiveIcon": {
@@ -32,7 +34,8 @@
           "icon": "./assets/icon.png",
           "color": "#FF9F00"
         }
-      ]
+      ],
+      "expo-localization"
     ]
   }
 }

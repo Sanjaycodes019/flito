@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { StatusBar } from 'expo-status-bar';
 import { store } from './redux/store';
@@ -8,6 +8,8 @@ import { registerForPushNotifications, subscribeToNotificationTaps } from './ser
 import RootNavigator from './navigation/RootNavigator';
 import AlertHost from './components/common/AlertHost';
 import CameraCaptureHost from './components/common/CameraCaptureHost';
+import { initI18n } from './i18n';
+import Spinner from './components/common/Spinner';
 
 // On cold start, check for a previously stored JWT and restore the session
 // by fetching the current user, before rendering the real navigator.
@@ -44,6 +46,16 @@ const Bootstrap = ({ children }) => {
 };
 
 export default function App() {
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    initI18n().then(() => setI18nReady(true));
+  }, []);
+
+  if (!i18nReady) {
+    return <Spinner />;
+  }
+
   return (
     <Provider store={store}>
       <Bootstrap>

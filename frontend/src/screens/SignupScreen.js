@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
 import Input, { InputAction } from '../components/common/Input';
@@ -17,10 +18,10 @@ import { ROLES } from '../utils/constants';
 import { isValidEmail, isValidPhone, getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
 
-const ROLE_OPTIONS = [
-  { value: ROLES.SHIPPER, label: 'Shipper', desc: 'I need to move goods', icon: 'load' },
-  { value: ROLES.OWNER, label: 'Truck Owner', desc: 'I have trucks to offer', icon: 'fleet' },
-  { value: ROLES.DRIVER, label: 'Driver', desc: 'I drive for an owner', icon: 'driver' },
+const getRoleOptions = (t) => [
+  { value: ROLES.SHIPPER, label: t('auth:signup.roleShipperLabel'), desc: t('auth:signup.roleShipperDesc'), icon: 'load' },
+  { value: ROLES.OWNER, label: t('auth:signup.roleOwnerLabel'), desc: t('auth:signup.roleOwnerDesc'), icon: 'fleet' },
+  { value: ROLES.DRIVER, label: t('auth:signup.roleDriverLabel'), desc: t('auth:signup.roleDriverDesc'), icon: 'driver' },
 ];
 
 // Below this window width three role cards side by side get too cramped to
@@ -49,29 +50,32 @@ const RoleOption = ({ option, selected, onSelect, stacked }) => (
 );
 
 // Required before any account is created, by email or by Google.
-const TermsCheckbox = ({ checked, onToggle }) => (
-  <Pressable
-    onPress={onToggle}
-    accessibilityRole="checkbox"
-    accessibilityState={{ checked }}
-    // react-native-web does not turn accessibilityState.checked into
-    // aria-checked, so browsers' screen readers need it set directly.
-    aria-checked={checked}
-    accessibilityLabel="I agree to FLITO's Terms of Service and Privacy Policy"
-    hitSlop={4}
-    style={styles.termsRow}
-  >
-    <Icon
-      name={checked ? 'checkboxOn' : 'checkboxOff'}
-      size={iconSize.md}
-      color={checked ? colors.primaryText : colors.textMuted}
-    />
-    <Text style={styles.termsText}>
-      I agree to FLITO&apos;s <Text style={styles.termsStrong}>Terms of Service</Text> and{' '}
-      <Text style={styles.termsStrong}>Privacy Policy</Text>
-    </Text>
-  </Pressable>
-);
+const TermsCheckbox = ({ checked, onToggle }) => {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      onPress={onToggle}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      // react-native-web does not turn accessibilityState.checked into
+      // aria-checked, so browsers' screen readers need it set directly.
+      aria-checked={checked}
+      accessibilityLabel={t('auth:signup.termsAccessibilityLabel')}
+      hitSlop={4}
+      style={styles.termsRow}
+    >
+      <Icon
+        name={checked ? 'checkboxOn' : 'checkboxOff'}
+        size={iconSize.md}
+        color={checked ? colors.primaryText : colors.textMuted}
+      />
+      <Text style={styles.termsText}>
+        {t('auth:signup.termsPrefix')}<Text style={styles.termsStrong}>{t('auth:signup.termsOfService')}</Text>{t('auth:signup.termsAnd')}
+        <Text style={styles.termsStrong}>{t('auth:signup.privacyPolicy')}</Text>{t('auth:signup.termsSuffix')}
+      </Text>
+    </Pressable>
+  );
+};
 
 // Two ways in:
 // - A normal visit: email/password sign up, or "Sign up with Google".
@@ -79,8 +83,10 @@ const TermsCheckbox = ({ checked, onToggle }) => (
 //   exists yet. The Google token is already verified, so the screen only
 //   asks for a role and finishes the sign up with it (no second popup).
 const SignupScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const { width, isPhone } = useBreakpoint();
   const stackRoles = width < STACK_ROLES_BELOW;
+  const ROLE_OPTIONS = getRoleOptions(t);
 
   const [pendingGoogle, setPendingGoogle] = useState(() => (
     route?.params?.googleIdToken
@@ -103,9 +109,9 @@ const SignupScreen = ({ navigation, route }) => {
   const [agreed, setAgreed] = useState(false);
   const dispatch = useDispatch();
 
-  const nameError = nameTouched && !firstName.trim() ? 'First name is required' : null;
-  const emailError = emailTouched && !isValidEmail(email) ? 'Enter a valid email address' : null;
-  const phoneError = phoneTouched && phone.trim() && !isValidPhone(phone) ? 'Enter a valid number as +977XXXXXXXXXX' : null;
+  const nameError = nameTouched && !firstName.trim() ? t('auth:signup.nameRequiredError') : null;
+  const emailError = emailTouched && !isValidEmail(email) ? t('auth:shared.invalidEmail') : null;
+  const phoneError = phoneTouched && phone.trim() && !isValidPhone(phone) ? t('auth:signup.phoneInvalidError') : null;
   const passwordsMatch = !confirmPassword || password === confirmPassword;
 
   const canSubmit = firstName.trim()
@@ -118,12 +124,12 @@ const SignupScreen = ({ navigation, route }) => {
   // A disabled Sign Up button on its own does not say why, so the form
   // spells out what is still missing once the user has started filling it in.
   const missing = [];
-  if (!firstName.trim()) missing.push('your first name');
-  if (!isValidEmail(email)) missing.push('a valid email');
-  if (passwordScore(password) < 2) missing.push('a password of 8+ characters with a letter and a number');
-  else if (password !== confirmPassword) missing.push('the same password in both password fields');
-  if (phone.trim() && !isValidPhone(phone)) missing.push('a valid phone number, or leave it empty');
-  if (!agreed) missing.push('agreement to the Terms');
+  if (!firstName.trim()) missing.push(t('auth:signup.missingFirstName'));
+  if (!isValidEmail(email)) missing.push(t('auth:signup.missingEmail'));
+  if (passwordScore(password) < 2) missing.push(t('auth:signup.missingPasswordRequirements'));
+  else if (password !== confirmPassword) missing.push(t('auth:signup.missingPasswordMatch'));
+  if (phone.trim() && !isValidPhone(phone)) missing.push(t('auth:signup.missingPhone'));
+  if (!agreed) missing.push(t('auth:signup.missingTerms'));
   const started = Boolean(firstName || lastName || email || phone || password || confirmPassword || agreed);
 
   const handleSignup = async () => {
@@ -144,9 +150,13 @@ const SignupScreen = ({ navigation, route }) => {
         phone: phone.trim() || undefined,
       });
       dispatch(loginSuccess(data));
+      // The account exists either way; the code can be sent again from Home.
+      if (data.verificationEmailSent === false) {
+        notify(t('auth:signup.accountCreatedTitle'), t('auth:signup.accountCreatedEmailFailedMessage'));
+      }
     } catch (error) {
       dispatch(loginError(getErrorMessage(error)));
-      notify('Could not sign up', getErrorMessage(error));
+      notify(t('auth:signup.couldNotSignUpTitle'), getErrorMessage(error));
     }
     setLoading(false);
   };
@@ -159,13 +169,13 @@ const SignupScreen = ({ navigation, route }) => {
     try {
       const data = await authService.googleAuth(idToken, role);
       if (data.isNewAccount === false) {
-        notify('Welcome back', 'You already have a FLITO account with this Google account, so we logged you in.', () => dispatch(loginSuccess(data)));
+        notify(t('auth:signup.welcomeBackTitle'), t('auth:signup.welcomeBackMessage'), () => dispatch(loginSuccess(data)));
       } else {
         dispatch(loginSuccess(data));
       }
     } catch (err) {
       setPendingGoogle(null);
-      notify('Google sign up failed', `${getErrorMessage(err)} Tap "Sign up with Google" to try again.`);
+      notify(t('auth:signup.googleSignUpFailedTitle'), t('auth:signup.googleSignUpFailedRetryMessage', { error: getErrorMessage(err) }));
       setGoogleLoading(false);
     }
   };
@@ -174,9 +184,9 @@ const SignupScreen = ({ navigation, route }) => {
     if (!idToken) {
       setGoogleLoading(false);
       if (error === 'not_configured') {
-        notify('Not available yet', 'Google sign-in has not been configured for this app yet. Use email and password instead.');
+        notify(t('auth:google.notConfiguredTitle'), t('auth:google.notConfiguredMessage'));
       } else if (error) {
-        notify('Google sign up failed', error);
+        notify(t('auth:signup.googleSignUpFailedTitle'), error);
       }
       return;
     }
@@ -189,7 +199,7 @@ const SignupScreen = ({ navigation, route }) => {
   // here instead of by disabling it.
   const startGoogleSignup = () => {
     if (!agreed) {
-      notify('Agree to the Terms first', "Tick the box to agree to FLITO's Terms of Service and Privacy Policy, then continue with Google.");
+      notify(t('auth:signup.agreeToTermsFirstTitle'), t('auth:signup.agreeToTermsFirstMessage'));
       return;
     }
     setGoogleLoading(isGoogleConfigured());
@@ -200,7 +210,7 @@ const SignupScreen = ({ navigation, route }) => {
 
   const rolePicker = (
     <>
-      <Text style={styles.sectionLabel}>I am a...</Text>
+      <Text style={styles.sectionLabel}>{t('auth:signup.roleSectionLabel')}</Text>
       <View style={[styles.roleRow, stackRoles && styles.roleColumn]} accessibilityRole="radiogroup">
         {ROLE_OPTIONS.map((opt) => (
           <RoleOption
@@ -217,8 +227,8 @@ const SignupScreen = ({ navigation, route }) => {
 
   return (
     <AuthLayout
-      title="Sign Up"
-      subtitle={pendingGoogle ? 'One more step to finish your account' : 'Create your FLITO account'}
+      title={t('auth:shared.signUp')}
+      subtitle={pendingGoogle ? t('auth:signup.subtitlePending') : t('auth:signup.subtitleNew')}
       maxWidth={pendingGoogle ? 480 : 560}
     >
       {pendingGoogle ? (
@@ -226,11 +236,11 @@ const SignupScreen = ({ navigation, route }) => {
           <View style={styles.googleBanner}>
             <GoogleIcon size={22} />
             <View style={styles.googleBannerText}>
-              <Text style={styles.googleBannerTitle}>No FLITO account yet</Text>
+              <Text style={styles.googleBannerTitle}>{t('auth:signup.googleBannerTitle')}</Text>
               <Text style={styles.googleBannerBody}>
-                Signing up with Google as{' '}
-                <Text style={styles.googleBannerEmail}>{pendingGoogle.profile.email || 'your Google account'}</Text>
-                {googleName ? ` (${googleName})` : ''}. Choose what kind of account this is.
+                {t('auth:signup.googleBannerPrefix')}
+                <Text style={styles.googleBannerEmail}>{pendingGoogle.profile.email || t('auth:signup.googleAccountFallback')}</Text>
+                {googleName ? ` (${googleName})` : ''}{t('auth:signup.googleBannerSuffix')}
               </Text>
             </View>
           </View>
@@ -240,13 +250,13 @@ const SignupScreen = ({ navigation, route }) => {
           <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
 
           <Button
-            title="Finish Sign Up"
+            title={t('auth:signup.finishSignUp')}
             icon="checkmark"
             onPress={() => completeGoogleSignup(pendingGoogle.idToken)}
             loading={googleLoading}
             disabled={!agreed}
           />
-          <Button title="Use Email Instead" variant="ghost" onPress={() => setPendingGoogle(null)} />
+          <Button title={t('auth:signup.useEmailInstead')} variant="ghost" onPress={() => setPendingGoogle(null)} />
         </>
       ) : (
         <>
@@ -255,11 +265,11 @@ const SignupScreen = ({ navigation, route }) => {
           {/* First and last name share a row from tablet width up. */}
           <View style={isPhone ? null : styles.fieldRow}>
             <Input
-              label="First Name"
+              label={t('auth:signup.firstNameLabel')}
               value={firstName}
               onChangeText={setFirstName}
               onBlur={() => setNameTouched(true)}
-              placeholder="Ram"
+              placeholder={t('auth:signup.firstNamePlaceholder')}
               autoComplete="given-name"
               icon="person"
               error={nameError}
@@ -267,10 +277,10 @@ const SignupScreen = ({ navigation, route }) => {
               containerStyle={isPhone ? undefined : styles.fieldHalf}
             />
             <Input
-              label="Last Name"
+              label={t('auth:signup.lastNameLabel')}
               value={lastName}
               onChangeText={setLastName}
-              placeholder="Shrestha"
+              placeholder={t('auth:signup.lastNamePlaceholder')}
               autoComplete="family-name"
               icon="person"
               containerStyle={isPhone ? undefined : styles.fieldHalf}
@@ -278,11 +288,11 @@ const SignupScreen = ({ navigation, route }) => {
           </View>
 
           <Input
-            label="Email"
+            label={t('auth:shared.emailLabel')}
             value={email}
             onChangeText={setEmail}
             onBlur={() => setEmailTouched(true)}
-            placeholder="you@example.com"
+            placeholder={t('auth:shared.emailPlaceholder')}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -292,11 +302,11 @@ const SignupScreen = ({ navigation, route }) => {
             required
           />
           <Input
-            label="Phone Number"
+            label={t('auth:signup.phoneLabel')}
             value={phone}
             onChangeText={setPhone}
             onBlur={() => setPhoneTouched(true)}
-            placeholder="+9779841234567 (optional)"
+            placeholder={t('auth:signup.phonePlaceholder')}
             keyboardType="phone-pad"
             autoComplete="tel"
             icon="phone"
@@ -304,10 +314,10 @@ const SignupScreen = ({ navigation, route }) => {
           />
 
           <Input
-            label="Password"
+            label={t('auth:shared.passwordLabel')}
             value={password}
             onChangeText={setPassword}
-            placeholder="At least 8 characters"
+            placeholder={t('auth:shared.passwordPlaceholderMin8')}
             secureTextEntry={!showPassword}
             autoComplete="new-password"
             icon="lock"
@@ -316,41 +326,41 @@ const SignupScreen = ({ navigation, route }) => {
               <InputAction
                 icon={showPassword ? 'eyeOff' : 'eye'}
                 onPress={() => setShowPassword((v) => !v)}
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                accessibilityLabel={showPassword ? t('auth:shared.hidePassword') : t('auth:shared.showPassword')}
               />
             }
           />
           <PasswordStrengthMeter password={password} />
 
           <Input
-            label="Confirm Password"
+            label={t('auth:signup.confirmPasswordLabel')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            placeholder="Type your password again"
+            placeholder={t('auth:signup.confirmPasswordPlaceholder')}
             secureTextEntry={!showPassword}
             autoComplete="new-password"
             icon="lock"
             required
-            error={!passwordsMatch ? 'Passwords do not match' : null}
+            error={!passwordsMatch ? t('auth:shared.passwordsMismatch') : null}
           />
 
           <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
 
-          <Button title="Sign Up" icon="checkmark" onPress={handleSignup} loading={loading} disabled={!canSubmit} />
+          <Button title={t('auth:shared.signUp')} icon="checkmark" onPress={handleSignup} loading={loading} disabled={!canSubmit} />
           {started && missing.length > 0 && (
-            <Text style={styles.missingHint}>Still needed: {missing.join(', ')}.</Text>
+            <Text style={styles.missingHint}>{t('auth:signup.missingHint', { items: missing.join(', ') })}</Text>
           )}
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>{t('auth:shared.or')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Never disabled: an unconfigured client still answers the tap with
               a clear "not available yet" message instead of a dead click. */}
           <GoogleButton
-            title="Sign up with Google"
+            title={t('auth:signup.googleButtonTitle')}
             onPress={startGoogleSignup}
             loading={googleLoading}
           />
@@ -358,8 +368,8 @@ const SignupScreen = ({ navigation, route }) => {
       )}
 
       <View style={styles.switchRow}>
-        <Text style={styles.switchPrompt}>Already have an account?</Text>
-        <Button title="Log In" variant="tertiary" onPress={() => navigation.navigate('Login')} />
+        <Text style={styles.switchPrompt}>{t('auth:signup.hasAccountPrompt')}</Text>
+        <Button title={t('auth:shared.logIn')} variant="tertiary" onPress={() => navigation.navigate('Login')} />
       </View>
     </AuthLayout>
   );

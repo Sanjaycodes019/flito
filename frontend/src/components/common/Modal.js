@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal as RNModal, View, Text, Pressable, StyleSheet, Platform, ScrollView, useWindowDimensions } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing, radius, shadow, type, iconSize } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
@@ -29,6 +30,7 @@ const Modal = ({
   focusCloseOnOpen = true,
   testID,
 }) => {
+  const { t } = useTranslation();
   const closeButtonRef = useRef(null);
   const focusedOnOpen = useRef(false);
   const [closeFocused, setCloseFocused] = useState(false);
@@ -99,7 +101,7 @@ const Modal = ({
                 onFocus={handleCloseFocus}
                 onBlur={() => setCloseFocused(false)}
                 accessibilityRole="button"
-                accessibilityLabel="Close"
+                accessibilityLabel={t('common:actions.close')}
                 hitSlop={8}
                 style={({ pressed }) => [
                   styles.closeButton,

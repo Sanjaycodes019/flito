@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Image, ScrollView, Pressable, Text, Modal, StyleSheet, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 
@@ -12,6 +13,7 @@ const thumbnail = (uri, px) =>
 
 // Accepts stored photos ({ url }) and freshly picked ones ({ uri }).
 const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
+  const { t } = useTranslation();
   const [preview, setPreview] = useState(null);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
           const uri = photo.url || photo.uri;
           return (
             <View key={photo._id || uri || index} style={{ width: size, height: size }}>
-              <Pressable onPress={() => setPreview(uri)} accessibilityRole="button" accessibilityLabel="View photo">
+              <Pressable onPress={() => setPreview(uri)} accessibilityRole="button" accessibilityLabel={t('common:photo.viewPhoto')}>
                 <Image
                   source={{ uri: thumbnail(uri, size * 2) }}
                   style={[styles.thumb, { width: size, height: size }]}
@@ -41,7 +43,7 @@ const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
                   style={styles.remove}
                   onPress={() => onRemove(photo, index)}
                   accessibilityRole="button"
-                  accessibilityLabel="Remove photo"
+                  accessibilityLabel={t('common:photo.removePhoto')}
                   hitSlop={8}
                 >
                   <Icon name="close" size={14} color={colors.white} />
@@ -59,12 +61,12 @@ const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
             style={styles.closeButton}
             onPress={() => setPreview(null)}
             accessibilityRole="button"
-            accessibilityLabel="Close preview"
+            accessibilityLabel={t('common:photo.closePreview')}
             hitSlop={8}
           >
             <Icon name="close" size={iconSize.lg} color={colors.white} />
           </Pressable>
-          <Text style={styles.closeHint}>Tap anywhere to close</Text>
+          <Text style={styles.closeHint}>{t('common:photo.tapAnywhereToClose')}</Text>
         </Pressable>
       </Modal>
     </>

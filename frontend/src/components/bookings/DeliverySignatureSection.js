@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import SignaturePad from '../signature/SignaturePad';
@@ -12,6 +13,7 @@ import { assetFromDataUrl, uploadFiles } from '../../services/uploads';
 // Shown alongside DeliveryProofSection for the same eligibility window; only
 // the assigned driver captures it, and capturing again replaces the prior one.
 const DeliverySignatureSection = ({ booking, canUpload, onChanged }) => {
+  const { t } = useTranslation();
   const [padVisible, setPadVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const signature = booking.deliverySignature;
@@ -26,7 +28,7 @@ const DeliverySignatureSection = ({ booking, canUpload, onChanged }) => {
       setPadVisible(false);
       await onChanged();
     } catch (error) {
-      notify('Could not save signature', getErrorMessage(error));
+      notify(t('bookings:deliverySignature.saveFailedTitle'), getErrorMessage(error));
     }
     setSaving(false);
   };
@@ -35,21 +37,21 @@ const DeliverySignatureSection = ({ booking, canUpload, onChanged }) => {
     <Card>
       <View style={styles.titleRow}>
         <Icon name="signature" size={iconSize.md} color={colors.primaryText} style={styles.titleIcon} />
-        <Text style={styles.title}>Delivery Signature</Text>
+        <Text style={styles.title}>{t('bookings:deliverySignature.title')}</Text>
       </View>
 
       {signature?.url ? (
         <View style={styles.preview}>
           <Image source={{ uri: signature.url }} style={styles.signatureImage} resizeMode="contain" />
-          {signature.capturedAt && <Text style={styles.meta}>Signed {formatDate(signature.capturedAt)}</Text>}
+          {signature.capturedAt && <Text style={styles.meta}>{t('bookings:deliverySignature.signedMeta', { date: formatDate(signature.capturedAt) })}</Text>}
         </View>
       ) : (
-        <Text style={styles.hint}>Have the recipient sign to confirm they received the delivery.</Text>
+        <Text style={styles.hint}>{t('bookings:deliverySignature.hint')}</Text>
       )}
 
       {canUpload && (
         <Button
-          title={signature?.url ? 'Recapture Signature' : 'Capture Signature'}
+          title={signature?.url ? t('bookings:deliverySignature.recapture') : t('bookings:deliverySignature.capture')}
           icon="signature"
           variant={signature?.url ? 'tertiary' : 'primary'}
           onPress={() => setPadVisible(true)}

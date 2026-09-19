@@ -18,6 +18,16 @@ export const authService = {
     return storeToken(response.data);
   },
 
+  adminLogin: async (email, password, accessKey) => {
+    const response = await api.post('/auth/admin/login', { email, password, accessKey });
+    return storeToken(response.data);
+  },
+
+  adminSignup: async ({ email, password, firstName, lastName, accessKey }) => {
+    const response = await api.post('/auth/admin/signup', { email, password, firstName, lastName, accessKey });
+    return storeToken(response.data);
+  },
+
   // `role` is only used the first time this Google identity is seen; an
   // existing account logs in and ignores it. If the backend reports
   // ROLE_REQUIRED, the caller (the signup screen) already collected a role

@@ -1,0 +1,33 @@
+{
+  "auth": {
+    "forgotPassword": "पासवर्ड बिर्सनुभयो",
+    "resetPassword": "पासवर्ड रिसेट गर्नुहोस्"
+  },
+  "tabs": {
+    "home": "होम",
+    "profile": "प्रोफाइल"
+  },
+  "homeStack": {
+    "dashboard": "ड्यासबोर्ड",
+    "home": "FLITO",
+    "createLoad": "भाडा पोस्ट गर्नुहोस्",
+    "truckMatches": "ट्रक छान्नुहोस्",
+    "loadsList": "भाडाहरू",
+    "loadDetail": "भाडा विवरण",
+    "bookings": "बुकिङहरू",
+    "jobs": "मेरा कामहरू",
+    "bookingDetail": "बुकिङ विवरण",
+    "myQuotes": "अफरहरू",
+    "fleet": "मेरो फ्लीट",
+    "earnings": "आम्दानी",
+    "adminDashboard": "एड्मिन ड्यासबोर्ड"
+  },
+  "profileStack": {
+    "profile": "प्रोफाइल",
+    "editProfile": "प्रोफाइल सम्पादन गर्नुहोस्",
+    "kyc": "पहिचान प्रमाणीकरण",
+    "verifyEmail": "इमेल प्रमाणित गर्नुहोस्",
+    "address": "ठेगाना"
+  },
+  "menu": "मेनु"
+}

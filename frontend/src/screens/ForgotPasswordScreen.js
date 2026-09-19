@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import AuthLayout from '../components/auth/AuthLayout';
@@ -7,11 +8,12 @@ import { isValidEmail, getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
 
 const ForgotPasswordScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const emailError = touched && !isValidEmail(email) ? 'Enter a valid email address' : null;
+  const emailError = touched && !isValidEmail(email) ? t('auth:shared.invalidEmail') : null;
 
   const handleSubmit = async () => {
     if (!isValidEmail(email)) {
@@ -20,26 +22,25 @@ const ForgotPasswordScreen = ({ navigation }) => {
     }
     setLoading(true);
     try {
-      const data = await authService.forgotPassword(email.trim().toLowerCase());
-      if (data.resetCode) notify('Dev mode', `Reset code for testing: ${data.resetCode}`);
+      await authService.forgotPassword(email.trim().toLowerCase());
       navigation.replace('ResetPassword', { email: email.trim().toLowerCase() });
     } catch (error) {
-      notify('Something went wrong', getErrorMessage(error));
+      notify(t('auth:forgotPassword.genericErrorTitle'), getErrorMessage(error));
     }
     setLoading(false);
   };
 
   return (
     <AuthLayout
-      title="Forgot Password"
-      subtitle="Enter the email on your account and we'll send a code to reset your password."
+      title={t('auth:forgotPassword.title')}
+      subtitle={t('auth:forgotPassword.subtitle')}
     >
       <Input
-        label="Email"
+        label={t('auth:shared.emailLabel')}
         value={email}
         onChangeText={setEmail}
         onBlur={() => setTouched(true)}
-        placeholder="you@example.com"
+        placeholder={t('auth:shared.emailPlaceholder')}
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
@@ -49,8 +50,8 @@ const ForgotPasswordScreen = ({ navigation }) => {
         required
         onSubmitEditing={handleSubmit}
       />
-      <Button title="Send Reset Code" icon="send" onPress={handleSubmit} loading={loading} disabled={!isValidEmail(email)} />
-      <Button title="Back to Login" variant="ghost" onPress={() => navigation.navigate('Login')} />
+      <Button title={t('auth:forgotPassword.submit')} icon="send" onPress={handleSubmit} loading={loading} disabled={!isValidEmail(email)} />
+      <Button title={t('auth:shared.backToLogin')} variant="ghost" onPress={() => navigation.navigate('Login')} />
     </AuthLayout>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Input from '../common/Input';
@@ -10,6 +11,7 @@ const MIN_PRICE = 100;
 
 // A shipper names their own price for a matched truck.
 const OfferPriceModal = ({ visible, match, sending, onClose, onSend }) => {
+  const { t } = useTranslation();
   const [price, setPrice] = useState('');
   const [error, setError] = useState(null);
 
@@ -24,7 +26,7 @@ const OfferPriceModal = ({ visible, match, sending, onClose, onSend }) => {
 
   const submit = () => {
     if (!/^\d+$/.test(price.trim()) || Number(price) < MIN_PRICE) {
-      setError(`Enter a whole number of rupees, at least ${formatCurrency(MIN_PRICE)}`);
+      setError(t('loads:offerModal.invalidPrice', { min: formatCurrency(MIN_PRICE) }));
       return;
     }
     onSend(Number(price));
@@ -34,30 +36,32 @@ const OfferPriceModal = ({ visible, match, sending, onClose, onSend }) => {
     <Modal
       visible={visible}
       onClose={onClose}
-      title="Make an Offer"
+      title={t('loads:offerModal.title')}
       focusCloseOnOpen={false}
       footer={(
         <>
-          <Button title="Cancel" variant="ghost" onPress={onClose} />
-          <Button title="Send Offer" icon="send" onPress={submit} loading={sending} />
+          <Button title={t('common:actions.cancel')} variant="ghost" onPress={onClose} />
+          <Button title={t('loads:offerModal.sendOffer')} icon="send" onPress={submit} loading={sending} />
         </>
       )}
     >
-      <Text style={styles.truck}>{`${truckTypeLabel(match.truck.truckType)} from ${match.owner.name}`}</Text>
+      <Text style={styles.truck}>
+        {t('loads:offerModal.truckFromOwner', { truckType: truckTypeLabel(match.truck.truckType, t), owner: match.owner.name })}
+      </Text>
       <Text style={styles.context}>
         {match.askingPrice != null
-          ? `The owner's rates come to ${formatCurrency(match.askingPrice)} for this trip.`
-          : "This owner hasn't listed a rate, so name the price you want to pay."}
+          ? t('loads:offerModal.ownerRatesContext', { price: formatCurrency(match.askingPrice) })
+          : t('loads:offerModal.noRateContext')}
       </Text>
       <Input
-        label="Your Price (Rs.)"
+        label={t('loads:offerModal.priceLabel')}
         value={price}
         onChangeText={(value) => { setPrice(value); setError(null); }}
         keyboardType="numeric"
-        placeholder={match.askingPrice != null ? String(match.askingPrice) : 'e.g. 15000'}
+        placeholder={match.askingPrice != null ? String(match.askingPrice) : t('loads:offerModal.pricePlaceholder')}
         icon="price"
         error={error}
-        helperText="The owner can accept, counter or decline. If they accept, your load is booked at this price."
+        helperText={t('loads:offerModal.priceHelperText')}
         autoFocus
       />
     </Modal>

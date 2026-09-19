@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Grid from '../../components/common/Grid';
@@ -18,12 +19,7 @@ import { formatCurrency, formatKg, getErrorMessage } from '../../utils/helpers';
 import { dayLabel } from '../../utils/nepalDate';
 import { notify } from '../../utils/alert';
 
-const SORTS = [
-  { value: 'best', label: 'Best Match' },
-  { value: 'price', label: 'Lowest Price' },
-  { value: 'distance', label: 'Nearest' },
-  { value: 'rating', label: 'Top Rated' },
-];
+const SORT_VALUES = ['best', 'price', 'distance', 'rating'];
 
 const lastIfMissing = (value) => (value == null ? Infinity : value);
 
@@ -36,11 +32,11 @@ const sortMatches = (matches, sort) => {
   return sorted;
 };
 
-const NOT_TAKING_OFFERS = {
-  booked: 'It has been booked. Open the load to see the booking.',
-  expired: 'It expired before a truck was booked. You can relist it from the load page.',
-  cancelled: 'It was cancelled.',
-};
+const notTakingOffersMessage = (status, t) => ({
+  booked: t('loads:truckMatches.notTakingOffers.booked'),
+  expired: t('loads:truckMatches.notTakingOffers.expired'),
+  cancelled: t('loads:truckMatches.notTakingOffers.cancelled'),
+}[status] || t('loads:truckMatches.notTakingOffers.default'));
 
 const Meta = ({ icon, text }) => (
   <View style={styles.meta}>
@@ -52,6 +48,7 @@ const Meta = ({ icon, text }) => (
 // Step two of booking a truck: the trucks that can carry the load, ranked, and
 // a way to ask any of them at their asking price or at the shipper's own.
 const TruckMatchesScreen = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { loadId } = route.params;
   const layout = useScreenLayout('narrow', 'wide');
   const [data, setData] = useState(null);
@@ -79,7 +76,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
     const onChanged = () => fetchMatches();
     const onAccepted = ({ quote, booking }) => {
       if (String(quote?.loadId?._id || quote?.loadId) !== String(loadId)) return;
-      notify('Truck booked', 'The owner accepted your offer.', () => navigation.replace('BookingDetail', { bookingId: booking._id }));
+      notify(t('loads:truckMatches.truckBookedTitle'), t('loads:truckMatches.truckBookedMessage'), () => navigation.replace('BookingDetail', { bookingId: booking._id }));
     };
     socketService.on('new-quote', onChanged);
     socketService.on('quote-updated', onChanged);
@@ -102,10 +99,10 @@ const TruckMatchesScreen = ({ route, navigation }) => {
     try {
       await api.post(`/loads/${loadId}/requests`, { truckId: match.truck._id, price });
       setOfferFor(null);
-      notify('Request sent', `${match.owner.name} can now accept, counter or decline your offer of ${formatCurrency(price)}.`);
+      notify(t('loads:truckMatches.requestSentTitle'), t('loads:truckMatches.requestSentMessage', { owner: match.owner.name, price: formatCurrency(price) }));
       await fetchMatches();
     } catch (error) {
-      notify('Could not send the request', getErrorMessage(error));
+      notify(t('loads:truckMatches.couldNotSendRequestTitle'), getErrorMessage(error));
     }
     setSendingTruckId(null);
   };
@@ -113,7 +110,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
   if (!data) {
     return loadError ? (
       <View style={styles.container}>
-        <EmptyState icon="offline" tone="error" title="Could not load trucks" message={loadError} actionLabel="Try Again" onAction={fetchMatches} />
+        <EmptyState icon="offline" tone="error" title={t('loads:truckMatches.couldNotLoadTrucksTitle')} message={loadError} actionLabel={t('loads:common.tryAgain')} onAction={fetchMatches} />
       </View>
     ) : <Spinner />;
   }
@@ -146,51 +143,51 @@ const TruckMatchesScreen = ({ route, navigation }) => {
         </View>
 
         <View style={styles.metaRow}>
-          {load.pickupDay ? <Meta icon="calendar" text={`Pickup ${dayLabel(load.pickupDay)}`} /> : null}
-          {load.distanceKm ? <Meta icon="route" text={`About ${load.distanceKm} km by road`} /> : null}
-          {takingOffers ? <Meta icon="send" text={`${openRequests} of ${maxOpenRequests} requests waiting`} /> : null}
+          {load.pickupDay ? <Meta icon="calendar" text={t('loads:truckMatches.pickupOn', { day: dayLabel(load.pickupDay) })} /> : null}
+          {load.distanceKm ? <Meta icon="route" text={t('loads:truckMatches.aboutKmByRoad', { km: load.distanceKm })} /> : null}
+          {takingOffers ? <Meta icon="send" text={t('loads:truckMatches.requestsWaiting', { open: openRequests, max: maxOpenRequests })} /> : null}
         </View>
 
         <View style={[styles.summaryFooter, !layout.isPhone && styles.summaryFooterWide]}>
           <Text style={styles.summaryHint}>
             {takingOffers
-              ? `Ask up to ${maxOpenRequests} trucks at once. The first owner to accept books the load, and your other requests close.`
-              : 'This load is no longer taking offers.'}
+              ? t('loads:truckMatches.askUpToTrucksHint', { max: maxOpenRequests })
+              : t('loads:truckMatches.noLongerTakingOffers')}
           </Text>
-          <Button title="View Load and Offers" icon="document" variant="tertiary" size="sm" onPress={openLoad} />
+          <Button title={t('loads:truckMatches.viewLoadAndOffersButton')} icon="document" variant="tertiary" size="sm" onPress={openLoad} />
         </View>
       </Card>
 
       {!takingOffers ? (
         <EmptyState
           icon="load"
-          title="This load isn't taking offers"
-          message={NOT_TAKING_OFFERS[load.status] || 'Open the load to see where it stands.'}
-          actionLabel="View Load"
+          title={t('loads:truckMatches.notTakingOffersTitle')}
+          message={notTakingOffersMessage(load.status, t)}
+          actionLabel={t('loads:truckMatches.viewLoadButton')}
           onAction={openLoad}
         />
       ) : matches.length === 0 ? (
         <EmptyState
           icon="truck"
-          title="No trucks available yet"
-          message={`No verified truck that carries ${formatKg(load.weight)} is free for ${dayLabel(load.pickupDay) || 'this date'}. Your load is live, so owners can still send you quotes.`}
-          actionLabel="View Load"
+          title={t('loads:truckMatches.noTrucksAvailableTitle')}
+          message={t('loads:truckMatches.noTrucksAvailableMessage', { weight: formatKg(load.weight), day: dayLabel(load.pickupDay) || t('loads:truckMatches.thisDate') })}
+          actionLabel={t('loads:truckMatches.viewLoadButton')}
           onAction={openLoad}
         />
       ) : (
         <>
           <View style={[styles.listHeader, !layout.isPhone && styles.listHeaderWide]}>
             <Text style={styles.listTitle}>
-              {`${matches.length} ${matches.length === 1 ? 'truck can' : 'trucks can'} carry this load`}
+              {t('loads:truckMatches.listTitle', { count: matches.length })}
             </Text>
             <View style={styles.sortRow} accessibilityRole="radiogroup">
-              {SORTS.map((option) => (
+              {SORT_VALUES.map((value) => (
                 <Button
-                  key={option.value}
-                  title={option.label}
+                  key={value}
+                  title={t(`loads:truckMatches.sorts.${value}`)}
                   size="sm"
-                  variant={sort === option.value ? 'primary' : 'tertiary'}
-                  onPress={() => setSort(option.value)}
+                  variant={sort === value ? 'primary' : 'tertiary'}
+                  onPress={() => setSort(value)}
                 />
               ))}
             </View>

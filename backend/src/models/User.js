@@ -38,14 +38,17 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // A 6-digit code, the same shape as the old phone OTP, emailed via
-    // Brevo. Not hashed: like the phone OTP it lives behind an expiry and
-    // the auth rate limiter, and hashing a 6-digit space adds no real
-    // protection over that.
+    // One-time 6-digit codes emailed via Brevo (see services/verification):
+    // a SHA-256 hash of the code, when it expires, when it was sent (for the
+    // resend cooldown), and how many wrong tries it has had.
     emailVerificationCode: { type: String, select: false },
     emailVerificationExpires: { type: Date, select: false },
+    emailVerificationSentAt: { type: Date, select: false },
+    emailVerificationAttempts: { type: Number, select: false },
     passwordResetCode: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
+    passwordResetSentAt: { type: Date, select: false },
+    passwordResetAttempts: { type: Number, select: false },
     role: {
       type: String,
       enum: ['shipper', 'owner', 'driver', 'admin'],

@@ -82,14 +82,14 @@ cd backend
 npm test
 ```
 
-152 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering email/password signup and login, email verification, password reset, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, and push notifications (Expo's API is mocked, no real push is ever sent by the suite).
+261 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering email/password signup and login, email verification, password reset, the language of emailed codes, booking permissions, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, the admin lists (users, loads, bookings, review queues: paging, newest-first order, access) and account suspension, and push notifications (Expo's API is mocked, no real push is ever sent by the suite).
 
 ```bash
 cd frontend
 npm test
 ```
 
-43 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: the login, signup, forgot/reset password and email verification screens (`AuthScreens`), counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, Google sign-in, the WebView-based map/signature canvases) are mocked. See `jest.setup.js`.
+115 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: the login, signup, forgot/reset password and email verification screens (`AuthScreens`), counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, Google sign-in, the WebView-based map/signature canvases) are mocked. See `jest.setup.js`.
 
 ### Demo data
 
@@ -107,8 +107,9 @@ Every demo account logs in with password `Demo1234`: `admin@flito.demo`, `shippe
 Auth is **email + password** (or **Continue with Google**), issuing a JWT. Phone number is optional: collected at signup or later in Edit Profile, and used only for things like an owner assigning a driver, never to log in.
 
 - **Passwords** need 8+ characters with at least one letter and one digit. The signup screen shows a live strength meter against that same rule.
-- **Email verification** and **password reset** both use a 6-digit code sent by email (Brevo) and typed into the app. A code expires after 15 minutes. A new account can use the app right away; Home shows a "Verify your email" prompt until it's confirmed. Changing your email in Edit Profile resets verification.
-- In development (`NODE_ENV !== production`) every code is **`123456`**. It is also returned in the API response and shown in the app as a "Dev mode" notice, so no email account is needed to test. With no `BREVO_API_KEY` set, the email is logged to the server console instead of sent.
+- **Email verification** and **password reset** both use a random 6-digit code sent by email (Brevo) and typed into the app. A new account can use the app right away; Home shows a "Verify your email" prompt until it's confirmed. Changing your email in Edit Profile resets verification and emails the new address.
+- Codes are only ever sent by email, never returned by the API, and only a hash is stored. A code expires after 15 minutes, works once, and stops working after 5 wrong tries. A new code can be requested every 45 seconds (the app shows the countdown). Resetting your password with an emailed code also confirms that email.
+- With `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` set (backend `.env`), emails are really sent, in development too, so sign up with an inbox you can open. Without them, the email, code included, is printed to the backend console instead. The test suite never loads `.env`, so it never sends email.
 - **Google sign-in** needs a Google OAuth client ID (see [Google sign-in setup](#google-sign-in-setup)). Until one is set, tapping the Google button explains it isn't available yet rather than failing. Once set, both pages handle either case:
   - **Log In page, "Continue with Google":** an existing account logs straight in. If that Google account has no FLITO account yet, the app moves to the Sign Up page with the Google sign-in already done, and only asks for a role before creating the account.
   - **Sign Up page, "Sign up with Google":** creates the account with the role picked on the page. If that Google account already has a FLITO account, it logs in and says "Welcome back" instead of failing.
@@ -164,7 +165,7 @@ The backend validates its config at boot and exits with a clear message if somet
 | **shipper** | Post loads, choose from matching trucks, send and negotiate offers, track bookings, rate the owner |
 | **owner** | List trucks with a base and rates, answer booking requests, quote on loads with a truck, assign drivers, track jobs won |
 | **driver** | View assigned jobs, update pickup/delivery status, push GPS pings, view earnings |
-| **admin** | Platform stats, KYC approve/reject, suspend users |
+| **admin** | Browse every user, load and booking (paged, newest first), review the KYC and truck-verification queues (approve/reject), suspend, ban or reactivate users |
 
 **Happy path:** shipper posts a load (goods, weight, pickup and dropoff, pickup date) → picks a truck from the ranked matches and sends a price → owner accepts, counters or declines → on acceptance a **booking is created** with that truck, and its regular driver if verified → driver marks picked up → delivered → booking completes → both parties rate each other. Owners can also quote on open loads with one of their trucks.
 
@@ -253,11 +254,20 @@ Routes marked `public` need no token; every other route requires `Authorization:
 | DELETE | `/api/trucks/:id/documents/:docId` | owner | Remove a paper before submitting |
 | POST | `/api/trucks/:id/verification` | owner | Send the truck and its papers for admin review |
 | GET | `/api/admin/stats` | admin | Platform metrics |
-| GET | `/api/admin/kyc/pending` | admin | Submissions awaiting review, with 10-minute document links |
+| GET | `/api/admin/users` | admin | Every user, newest signup first, with role, account status and KYC status (paged) |
+| GET | `/api/admin/loads` | admin | Every load whatever its status, newest first, with its shipper (paged) |
+| GET | `/api/admin/bookings` | admin | Every booking, newest first, with its load, shipper, owner, driver and truck (paged) |
+| GET | `/api/admin/kyc/pending` | admin | Submissions awaiting review, newest first, with 10-minute document links (paged) |
 | PATCH | `/api/admin/kyc/:userId` | admin | Approve, or reject with a required reason |
-| GET | `/api/admin/trucks/pending` | admin | Trucks awaiting verification, with their owner and 10-minute paper links |
+| GET | `/api/admin/trucks/pending` | admin | Trucks awaiting verification, newest first, with their owner and 10-minute paper links (paged) |
 | PATCH | `/api/admin/trucks/:truckId` | admin | Approve a truck, or reject it with a required reason |
-| PATCH | `/api/admin/users/:userId/status` | admin | Suspend/ban/reactivate |
+| PATCH | `/api/admin/users/:userId/status` | admin | Suspend/ban/reactivate (`status`: `active`, `suspended`, `banned`). Takes effect on the user's very next request; an admin can't change their own |
+
+**Paging.** Every admin list takes `?page=1&limit=20` (limit at most 50) and answers with its items plus `pagination: { page, limit, total, totalPages }`. A page past the end is empty, not an error.
+
+**Suspended and banned accounts.** The server reads an account's status on every authenticated request, so a suspension or ban locks the user out immediately, even with a token that hasn't expired: they get `403` with code `AUTH_ACCOUNT_STATUS` (and the app signs them out). A token for a deleted account is a `401`.
+
+**Language.** The app sends its language as a standard `Accept-Language` header (`ne` or `en`) on every request. It picks the language of the verification and reset-code emails; everything else the API returns is English plus a stable `code` (see [Bilingual support](#bilingual-support)).
 
 ### Real-time (Socket.io)
 
@@ -285,6 +295,18 @@ The pickup/dropoff map (on a load) and the live tracking map (on a booking) use 
 - **Tracking a booking:** `TrackingMap` shows static pickup/dropoff pins plus a driver marker that moves live as `location-update` socket events arrive, without reloading the map or resetting the viewer's pan/zoom.
 - **Sharing location:** while a booking is `in_transit`, the assigned driver sees a "Share My Location" toggle (`LocationSharingToggle`). It samples position every ~15s/25m (`expo-location`) and PATCHes `/api/bookings/:id/location`, which persists it and pushes `location-update` to the shipper and owner. Sharing stops automatically when the driver leaves the screen. It is never a background/always-on broadcast.
 - The server only accepts a location ping while the booking is `in_transit`, and validates `lat`/`lng` are real coordinates (not just any number).
+
+---
+
+## Bilingual support
+
+The app is fully usable in **English** and **नेपाली**. A language toggle sits on every auth screen and in Profile settings; the choice is remembered on-device (no account field) via `frontend/src/i18n` (`i18next`/`react-i18next`), and guesses Nepali on first launch if the device itself is set to it.
+
+- **Every screen, component and navigation label** is translated, organized into namespaced resource files at `frontend/src/i18n/locales/{en,ne}/<area>.json` (common, navigation, auth, home, loads, bookings, trucks, kyc, profile, admin).
+- **Backend messages** (errors and the one success confirmation) carry a stable `code` alongside the unchanged English `message` (see `backend/src/utils/respond.js`), so the frontend can render its own Nepali translation (`frontend/src/i18n/serverMessages.js`) without the server ever needing to know the caller's language, and without touching what the backend tests assert on.
+- **Emailed codes** (verification and password reset) go out in the user's language: the app sends `Accept-Language`, and `backend/src/services/email.js` holds the English and Nepali copy. A language it doesn't have falls back to English.
+- **Not translated:** free text people type (goods, toles, names), and a few deeply composed validation messages (a truck's field-by-field checks, address errors), which show the English detail inside a Nepali sentence.
+- **Nepal's official place names** (7 provinces, 77 districts, 753 local levels) render in Devanagari too — `nameNe`/`categoryNe` fields added to `locations.json` by `backend/scripts/addNepaliLocationNames.js` from the same `local-states-nepal` dataset already used for ward counts (see `backend/src/data/nepal/SOURCES.md`). Free-text fields (a load's goods, an address's tole, a truck's registration number) are never translated, only official UI text and place names.
 
 ---
 

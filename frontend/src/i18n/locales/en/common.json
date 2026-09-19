@@ -1,0 +1,187 @@
+{
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "nepali": "नेपाली"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "ok": "OK",
+    "select": "Select",
+    "clear": "Clear",
+    "close": "Close"
+  },
+  "status": {
+    "open": "open",
+    "quoted": "quoted",
+    "negotiating": "negotiating",
+    "countered": "countered",
+    "booked": "booked",
+    "pending": "pending",
+    "confirmed": "confirmed",
+    "in_transit": "in transit",
+    "completed": "completed",
+    "cancelled": "cancelled",
+    "rejected": "rejected",
+    "accepted": "accepted",
+    "expired": "expired",
+    "not_submitted": "not submitted",
+    "approved": "approved",
+    "active": "active",
+    "suspended": "suspended",
+    "banned": "banned",
+    "maintenance": "maintenance",
+    "inactive": "inactive",
+    "arrived": "arrived",
+    "picked_up": "picked up",
+    "delivered": "delivered"
+  },
+  "selectField": {
+    "select": "Select",
+    "searchPlaceholder": "Search {{label}}",
+    "noMatches": "No matches. Try a different spelling."
+  },
+  "dateField": {
+    "day": "Day",
+    "month": "Month",
+    "year": "Year",
+    "clear": "Clear",
+    "clearLabel": "Clear {{label}}",
+    "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  },
+  "photo": {
+    "takePhoto": "Take Photo",
+    "choosePhoto": "Choose Photo",
+    "viewPhoto": "View photo",
+    "removePhoto": "Remove photo",
+    "closePreview": "Close preview",
+    "tapAnywhereToClose": "Tap anywhere to close"
+  },
+  "camera": {
+    "notAllowed": "Camera access is blocked for this site. Allow it from the camera icon in your browser's address bar, then try again.",
+    "notFound": "No camera was found on this device. Close this and upload a photo instead.",
+    "notReadable": "Another app is using the camera. Close it, then try again.",
+    "genericError": "The camera could not be started. Try again, or upload a photo instead.",
+    "captureError": "The photo could not be captured. Try again.",
+    "cancel": "Cancel",
+    "tryAgain": "Try Again",
+    "retake": "Retake",
+    "usePhoto": "Use Photo",
+    "cameraUnavailable": "Camera Unavailable",
+    "reviewPhoto": "Review Photo",
+    "takeAPhoto": "Take a Photo",
+    "capturePhoto": "Capture photo",
+    "switchCamera": "Switch camera",
+    "capturedPhoto": "Captured photo",
+    "cameraPreview": "Camera preview",
+    "startingCamera": "Starting camera",
+    "hintReview": "Make sure the photo is clear and well lit.",
+    "hintSquare": "Center your face in the circle.",
+    "hintWide": "Fit the whole item or document in the frame."
+  },
+  "verifiedBadge": {
+    "label": "Verified"
+  },
+  "address": {
+    "province": "Province",
+    "district": "District",
+    "municipality": "Municipality",
+    "wardNumber": "Ward Number",
+    "toleVillageArea": "Tole, Village or Area",
+    "ward": "Ward {{number}}",
+    "selectProvince": "Select province",
+    "selectDistrict": "Select district",
+    "selectMunicipality": "Select municipality",
+    "chooseDistrictFirst": "Choose a district first",
+    "selectWard": "Select ward",
+    "chooseMunicipalityFirst": "Choose a municipality first",
+    "tolePlaceholderExample": "e.g. Basantapur",
+    "localLevelDescription": "{{category}}, {{count}} wards",
+    "filledFromLocation": "Filled in from your location",
+    "accurateTo": "Accurate to about {{meters}} m.",
+    "roughAccuracyNote": " That's rough, so check each field carefully.",
+    "insideProtectedArea": "You seem to be inside {{protectedArea}}, which isn't part of a municipality. Choose the municipality below.",
+    "missing": {
+      "province": "Choose your province",
+      "province_the": "Choose the province",
+      "district": "Choose your district",
+      "district_the": "Choose the district",
+      "municipality": "Choose your municipality",
+      "municipality_the": "Choose the municipality",
+      "ward": "Choose your ward",
+      "ward_the": "Choose the ward",
+      "tole": "Enter your tole, village or area",
+      "tole_the": "Enter the tole, village or area"
+    }
+  },
+  "home": {
+    "roleSubtitle": {
+      "shipper": "Post loads, choose the right truck and track every delivery.",
+      "owner": "Get booking requests, quote on loads and keep your fleet moving.",
+      "driver": "Your assigned jobs and earnings in one place.",
+      "admin": "Review verifications and keep the platform running."
+    },
+    "greeting": "Hello, {{firstName}}",
+    "verifiedByFlito": "Verified by FLITO",
+    "overview": "Overview",
+    "quickActions": "Quick actions",
+    "totalLoads": "Total loads",
+    "awaitingQuotes": "Awaiting quotes",
+    "activeBookings": "Active bookings",
+    "completed": "Completed",
+    "loading": "Loading...",
+    "ownerVerificationMessage": "Owners need a verified identity to submit quotes and win bookings. You can still browse loads.",
+    "driverVerificationMessage": "Drivers need a verified identity before an owner can assign them to a job.",
+    "postLoad": {
+      "title": "Post a Load",
+      "description": "Tell us what and where, then choose from trucks that can carry it",
+      "action": "Post Load"
+    },
+    "yourLoads": {
+      "title": "Your Loads ({{count}})",
+      "awaitingQuotes": "{{count}} awaiting quotes",
+      "action": "View My Loads"
+    },
+    "activeBookingsCard": {
+      "title": "Active Bookings ({{count}})",
+      "description": "Track pickup, delivery, and driver location",
+      "action": "View Bookings"
+    },
+    "browseLoads": {
+      "title": "Available Loads ({{count}})",
+      "description": "Find loads and quote with a truck that can carry them",
+      "action": "Browse Loads"
+    },
+    "offers": {
+      "title": "Offers",
+      "waitingForReply": "{{count}} waiting for your reply",
+      "description": "Your quotes and booking requests from shippers",
+      "action": "View Offers"
+    },
+    "myBookings": {
+      "title": "My Bookings ({{count}} active)",
+      "description": "Assign drivers and track jobs you've won",
+      "action": "View Bookings"
+    },
+    "myFleet": {
+      "title": "My Fleet",
+      "description": "Your trucks, their base, rates and drivers",
+      "action": "Manage Fleet"
+    },
+    "activeJobs": {
+      "title": "Active Jobs ({{count}})",
+      "description": "Jobs assigned to you",
+      "action": "View Jobs"
+    },
+    "earnings": {
+      "title": "Earnings",
+      "action": "Earnings History"
+    },
+    "adminDashboard": {
+      "title": "Admin Dashboard",
+      "description": "KYC approvals, disputes, platform metrics",
+      "action": "Open Dashboard"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import Button from './Button';
 import Icon from '../../theme/icons';
@@ -17,14 +18,14 @@ import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
 let bridge = null;
 export const _getCameraBridge = () => bridge;
 
-const CAMERA_ERRORS = {
-  NotAllowedError: 'Camera access is blocked for this site. Allow it from the camera icon in your browser\'s address bar, then try again.',
-  NotFoundError: 'No camera was found on this device. Close this and upload a photo instead.',
-  NotReadableError: 'Another app is using the camera. Close it, then try again.',
+const CAMERA_ERROR_KEYS = {
+  NotAllowedError: 'notAllowed',
+  NotFoundError: 'notFound',
+  NotReadableError: 'notReadable',
 };
-const GENERIC_ERROR = 'The camera could not be started. Try again, or upload a photo instead.';
 
 const CameraCaptureHost = () => {
+  const { t } = useTranslation();
   // { square, facing, resolve } while the window is open.
   const [request, setRequest] = useState(null);
   const [attempt, setAttempt] = useState(0);
@@ -89,7 +90,10 @@ const CameraCaptureHost = () => {
         const devices = await navigator.mediaDevices.enumerateDevices?.() || [];
         if (!cancelled) setCanSwitch(devices.filter((d) => d.kind === 'videoinput').length > 1);
       } catch (err) {
-        if (!cancelled) setError(CAMERA_ERRORS[err?.name] || GENERIC_ERROR);
+        if (!cancelled) {
+          const key = CAMERA_ERROR_KEYS[err?.name];
+          setError(key ? t(`common:camera.${key}`) : t('common:camera.genericError'));
+        }
       }
     })();
 
@@ -136,7 +140,7 @@ const CameraCaptureHost = () => {
     canvas.getContext('2d').drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
     canvas.toBlob((blob) => {
       if (!blob) {
-        setError('The photo could not be captured. Try again.');
+        setError(t('common:camera.captureError'));
         return;
       }
       const fileName = `photo-${Date.now()}.jpg`;
@@ -175,28 +179,28 @@ const CameraCaptureHost = () => {
   if (error) {
     footer = (
       <View style={styles.footerEnd}>
-        <Button title="Cancel" variant="ghost" size="sm" onPress={cancel} style={styles.footerButton} />
-        <Button title="Try Again" icon="refresh" size="sm" onPress={tryAgain} style={styles.footerButton} />
+        <Button title={t('common:camera.cancel')} variant="ghost" size="sm" onPress={cancel} style={styles.footerButton} />
+        <Button title={t('common:camera.tryAgain')} icon="refresh" size="sm" onPress={tryAgain} style={styles.footerButton} />
       </View>
     );
   } else if (shot) {
     footer = (
       <View style={styles.footerEnd}>
-        <Button title="Retake" icon="refresh" variant="tertiary" size="sm" onPress={retake} style={styles.footerButton} />
-        <Button title="Use Photo" icon="checkmark" size="sm" onPress={() => finish(shot)} style={styles.footerButton} />
+        <Button title={t('common:camera.retake')} icon="refresh" variant="tertiary" size="sm" onPress={retake} style={styles.footerButton} />
+        <Button title={t('common:camera.usePhoto')} icon="checkmark" size="sm" onPress={() => finish(shot)} style={styles.footerButton} />
       </View>
     );
   } else {
     footer = (
       <View style={styles.controls}>
         <View style={styles.controlSide}>
-          <Button title="Cancel" variant="ghost" size="sm" onPress={cancel} />
+          <Button title={t('common:camera.cancel')} variant="ghost" size="sm" onPress={cancel} />
         </View>
         <Pressable
           onPress={capture}
           disabled={!ready}
           accessibilityRole="button"
-          accessibilityLabel="Capture photo"
+          accessibilityLabel={t('common:camera.capturePhoto')}
           style={[styles.shutter, !ready && styles.shutterDisabled]}
         >
           {({ pressed }) => <View style={[styles.shutterInner, pressed && styles.shutterInnerPressed]} />}
@@ -206,7 +210,7 @@ const CameraCaptureHost = () => {
             <Pressable
               onPress={switchCamera}
               accessibilityRole="button"
-              accessibilityLabel="Switch camera"
+              accessibilityLabel={t('common:camera.switchCamera')}
               style={({ pressed }) => [styles.roundButton, pressed && styles.roundButtonPressed]}
             >
               <Icon name="cameraFlip" size={iconSize.md} color={colors.textPrimary} />
@@ -220,7 +224,7 @@ const CameraCaptureHost = () => {
   return (
     <Modal
       visible
-      title={error ? 'Camera Unavailable' : shot ? 'Review Photo' : 'Take a Photo'}
+      title={error ? t('common:camera.cameraUnavailable') : shot ? t('common:camera.reviewPhoto') : t('common:camera.takeAPhoto')}
       onClose={cancel}
       closeOnBackdrop={false}
       footer={footer}
@@ -240,7 +244,7 @@ const CameraCaptureHost = () => {
                 source={{ uri: shot.uri }}
                 style={styles.fill}
                 resizeMode={request.square ? 'cover' : 'contain'}
-                accessibilityLabel="Captured photo"
+                accessibilityLabel={t('common:camera.capturedPhoto')}
               />
             ) : (
               React.createElement('video', {
@@ -249,7 +253,7 @@ const CameraCaptureHost = () => {
                 playsInline: true,
                 muted: true,
                 onLoadedMetadata: () => setReady(true),
-                'aria-label': 'Camera preview',
+                'aria-label': t('common:camera.cameraPreview'),
                 style: {
                   width: '100%',
                   height: '100%',
@@ -268,17 +272,17 @@ const CameraCaptureHost = () => {
             {!shot && !ready && (
               <View style={styles.starting} pointerEvents="none">
                 <ActivityIndicator color={colors.textOnDark} />
-                <Text style={styles.startingText}>Starting camera</Text>
+                <Text style={styles.startingText}>{t('common:camera.startingCamera')}</Text>
               </View>
             )}
           </View>
 
           <Text style={styles.hint}>
             {shot
-              ? 'Make sure the photo is clear and well lit.'
+              ? t('common:camera.hintReview')
               : request.square
-                ? 'Center your face in the circle.'
-                : 'Fit the whole item or document in the frame.'}
+                ? t('common:camera.hintSquare')
+                : t('common:camera.hintWide')}
           </Text>
         </>
       )}

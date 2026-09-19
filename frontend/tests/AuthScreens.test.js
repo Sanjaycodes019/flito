@@ -297,4 +297,43 @@ describe('VerifyEmailScreen', () => {
 
     await waitFor(() => expect(authService.verifyEmail).toHaveBeenCalledWith('ram@example.com', '123456'));
   });
+
+  const renderVerify = () => renderWithProviders(
+    <VerifyEmailScreen navigation={fakeNavigation()} />,
+    { user: fakeUser('shipper', { email: 'ram@example.com', emailVerified: false }) }
+  );
+
+  it('lets a new code be requested straight away, then counts down', async () => {
+    authService.resendVerification.mockResolvedValue({ success: true });
+    const { findByLabelText, findByText } = renderVerify();
+
+    fireEvent.press(await findByLabelText('Resend code'));
+
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Code sent', expect.stringContaining('ram@example.com')));
+    expect(await findByText(/Resend code in 0:4\d/)).toBeTruthy();
+  });
+
+  it('picks up the wait from the server when a code was sent moments ago, without an error', async () => {
+    authService.resendVerification.mockRejectedValue({
+      response: { status: 429, data: { message: 'Please wait 30 seconds before asking for another code', retryAfterSeconds: 30 } },
+    });
+    const { findByLabelText, findByText } = renderVerify();
+
+    fireEvent.press(await findByLabelText('Resend code'));
+
+    // About 30 seconds left, not the full 45, allowing for a slow test run.
+    expect(await findByText(/Resend code in 0:(30|[12]\d)/)).toBeTruthy();
+    expect(notify).not.toHaveBeenCalledWith('Could not resend', expect.anything());
+  });
+
+  it('says so when the email could not be sent', async () => {
+    authService.resendVerification.mockRejectedValue({
+      response: { status: 502, data: { message: 'We could not send the email right now. Please try again in a moment.' } },
+    });
+    const { findByLabelText } = renderVerify();
+
+    fireEvent.press(await findByLabelText('Resend code'));
+
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Could not resend', expect.stringMatching(/could not send/)));
+  });
 });

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Truck = require('../models/Truck');
 const User = require('../models/User');
 const storage = require('../services/storage');
+const { fail } = require('../utils/respond');
 const { REQUIRED_TRUCK_DOCUMENTS, TRUCK_DOCUMENT_TYPES } = require('../config/truckTypes');
 const {
   EDITABLE_TRUCK_VERIFICATION,
@@ -27,7 +28,7 @@ exports.createTruck = async (req, res, next) => {
     res.status(201).json({ success: true, truck: ownerTruckView(truck) });
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(409).json({ success: false, message: 'You already have a truck with that registration number' });
+      return fail(res, 409, 'TRUCKS_DUPLICATE_REGISTRATION', 'You already have a truck with that registration number');
     }
     next(error);
   }
@@ -47,9 +48,9 @@ exports.listMyTrucks = async (req, res, next) => {
 
 const findOwnTruck = async (truckId, userId) => {
   const truck = await Truck.findById(truckId);
-  if (!truck) return { error: { status: 404, message: 'Truck not found' } };
+  if (!truck) return { error: { status: 404, code: 'TRUCKS_NOT_FOUND', message: 'Truck not found' } };
   if (String(truck.ownerId) !== userId) {
-    return { error: { status: 403, message: 'Not your truck' } };
+    return { error: { status: 403, code: 'TRUCKS_FORBIDDEN', message: 'Not your truck' } };
   }
   return { truck };
 };
@@ -62,7 +63,7 @@ const sameValue = (a, b) => (a == null && b == null) || String(a) === String(b);
 exports.updateTruck = async (req, res, next) => {
   try {
     const { truck, error } = await findOwnTruck(req.params.id, req.user.userId);
-    if (error) return res.status(error.status).json({ success: false, message: error.message });
+    if (error) return fail(res, error.status, error.code, error.message);
 
     const changesVerified = VERIFIED_TRUCK_FIELDS.some((field) => field in req.body && !sameValue(req.body[field], truck[field]));
 
@@ -87,7 +88,7 @@ exports.updateTruck = async (req, res, next) => {
 exports.assignDriver = async (req, res, next) => {
   try {
     const { truck, error } = await findOwnTruck(req.params.id, req.user.userId);
-    if (error) return res.status(error.status).json({ success: false, message: error.message });
+    if (error) return fail(res, error.status, error.code, error.message);
 
     const { driverPhone } = req.body;
     if (!driverPhone) {
@@ -98,7 +99,7 @@ exports.assignDriver = async (req, res, next) => {
 
     const driver = await User.findOne({ phone: driverPhone, role: 'driver' });
     if (!driver) {
-      return res.status(404).json({ success: false, message: 'No driver found with that phone number' });
+      return fail(res, 404, 'TRUCKS_DRIVER_NOT_FOUND', 'No driver found with that phone number');
     }
 
     truck.assignedDriverId = driver._id;
@@ -114,7 +115,7 @@ exports.assignDriver = async (req, res, next) => {
 exports.deleteTruck = async (req, res, next) => {
   try {
     const { truck, error } = await findOwnTruck(req.params.id, req.user.userId);
-    if (error) return res.status(error.status).json({ success: false, message: error.message });
+    if (error) return fail(res, error.status, error.code, error.message);
 
     await truck.deleteOne();
     await storage.deleteAssets((truck.verificationDocuments || []).map((doc) => doc.publicId), { type: 'authenticated' });
@@ -131,18 +132,21 @@ exports.deleteTruck = async (req, res, next) => {
 exports.loadEditableTruck = async (req, res, next) => {
   try {
     if (!storage.isConfigured()) {
-      return res.status(503).json({ success: false, message: 'File uploads are not configured on this server' });
+      return fail(res, 503, 'TRUCKS_UPLOADS_NOT_CONFIGURED', 'File uploads are not configured on this server');
     }
 
     const { truck, error } = await findOwnTruck(req.params.id, req.user.userId);
-    if (error) return res.status(error.status).json({ success: false, message: error.message });
+    if (error) return fail(res, error.status, error.code, error.message);
 
     const status = verificationStatusOf(truck);
     if (!EDITABLE_TRUCK_VERIFICATION.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Papers can't be changed while this truck's verification is ${statusPhrase(status)}`,
-      });
+      return fail(
+        res,
+        400,
+        'TRUCKS_VERIFICATION_LOCKED',
+        `Papers can't be changed while this truck's verification is ${statusPhrase(status)}`,
+        { status },
+      );
     }
 
     req.truck = truck;
@@ -158,10 +162,16 @@ exports.uploadTruckDocument = async (req, res, next) => {
     const { type } = req.body;
 
     if (!TRUCK_DOCUMENT_TYPES.includes(type)) {
-      return res.status(400).json({ success: false, message: `type must be one of: ${TRUCK_DOCUMENT_TYPES.join(', ')}` });
+      return fail(
+        res,
+        400,
+        'TRUCKS_INVALID_DOCUMENT_TYPE',
+        `type must be one of: ${TRUCK_DOCUMENT_TYPES.join(', ')}`,
+        { types: TRUCK_DOCUMENT_TYPES },
+      );
     }
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Attach a photo or PDF of the paper' });
+      return fail(res, 400, 'TRUCKS_DOCUMENT_FILE_REQUIRED', 'Attach a photo or PDF of the paper');
     }
 
     const stored = await storage.uploadPrivateDocument(req.file, { folder: `flito/trucks/${truck._id}` });
@@ -207,7 +217,7 @@ exports.uploadTruckDocument = async (req, res, next) => {
 
     if (!updated) {
       await storage.deleteAssets([stored.publicId], { type: 'authenticated' });
-      return res.status(400).json({ success: false, message: CHANGED_WHILE_SAVING });
+      return fail(res, 400, 'TRUCKS_PAPERS_LOCKED', CHANGED_WHILE_SAVING);
     }
 
     if (previous) await storage.deleteAssets([previous.publicId], { type: 'authenticated' });
@@ -223,14 +233,14 @@ exports.deleteTruckDocument = async (req, res, next) => {
   try {
     const { truck } = req;
     const doc = truck.verificationDocuments.id(req.params.docId);
-    if (!doc) return res.status(404).json({ success: false, message: 'Paper not found' });
+    if (!doc) return fail(res, 404, 'TRUCKS_DOCUMENT_NOT_FOUND', 'Paper not found');
 
     const updated = await Truck.findOneAndUpdate(
       { _id: truck._id, ...EDITABLE_VERIFICATION_FILTER },
       { $pull: { verificationDocuments: { _id: doc._id } } },
       { new: true },
     );
-    if (!updated) return res.status(400).json({ success: false, message: CHANGED_WHILE_SAVING });
+    if (!updated) return fail(res, 400, 'TRUCKS_PAPERS_LOCKED', CHANGED_WHILE_SAVING);
 
     await storage.deleteAssets([doc.publicId], { type: 'authenticated' });
     const populated = await updated.populate('assignedDriverId', DRIVER_FIELDS);
@@ -244,17 +254,26 @@ exports.deleteTruckDocument = async (req, res, next) => {
 exports.submitTruckVerification = async (req, res, next) => {
   try {
     const { truck, error } = await findOwnTruck(req.params.id, req.user.userId);
-    if (error) return res.status(error.status).json({ success: false, message: error.message });
+    if (error) return fail(res, error.status, error.code, error.message);
 
     const status = verificationStatusOf(truck);
     if (!EDITABLE_TRUCK_VERIFICATION.includes(status)) {
-      return res.status(400).json({ success: false, message: `This truck's verification is already ${statusPhrase(status)}` });
+      return fail(
+        res,
+        400,
+        'TRUCKS_VERIFICATION_ALREADY_SUBMITTED',
+        `This truck's verification is already ${statusPhrase(status)}`,
+        { status },
+      );
     }
 
     const missing = missingTruckDocuments(truck);
     if (missing.length) {
+      // `missingDocuments` is kept as a top-level field (not nested in `extra`)
+      // because existing callers already read it from there.
       return res.status(400).json({
         success: false,
+        code: 'TRUCKS_MISSING_DOCUMENTS',
         message: `Upload these papers first: ${missing.join(', ')}`,
         missingDocuments: missing,
       });
@@ -271,7 +290,7 @@ exports.submitTruckVerification = async (req, res, next) => {
       { new: true },
     );
     if (!updated) {
-      return res.status(409).json({ success: false, message: "This truck's papers changed while submitting. Refresh and try again." });
+      return fail(res, 409, 'TRUCKS_PAPERS_CHANGED', "This truck's papers changed while submitting. Refresh and try again.");
     }
 
     const populated = await updated.populate('assignedDriverId', DRIVER_FIELDS);

@@ -21,11 +21,15 @@ const escapeJs = (value) => JSON.stringify(value ?? null);
 //   interactive: tapping the map drops/moves a single marker and reports it
 //   pickup / dropoff: {lat,lng} static markers shown on load
 //   initialPicked: {lat,lng} starting marker for interactive mode
+//   labels: { pickup, dropoff } text for the two static markers' popups, in
+//     the app's current language (defaults to English so existing callers
+//     that don't pass it keep working)
 export const buildMapHtml = ({
   interactive = false,
   pickup = null,
   dropoff = null,
   initialPicked = null,
+  labels = {},
 } = {}) => `<!DOCTYPE html>
 <html>
 <head>
@@ -57,6 +61,8 @@ export const buildMapHtml = ({
       var DROPOFF = ${escapeJs(dropoff)};
       var INITIAL_PICKED = ${escapeJs(initialPicked)};
       var DEFAULT_CENTER = ${escapeJs(KATHMANDU)};
+      var PICKUP_LABEL = ${escapeJs(labels.pickup || 'Pickup')};
+      var DROPOFF_LABEL = ${escapeJs(labels.dropoff || 'Dropoff')};
 
       function sendToHost(data) {
         var msg = JSON.stringify(data);
@@ -102,11 +108,11 @@ export const buildMapHtml = ({
       var pickedMarker = null;
 
       if (PICKUP) {
-        pickupMarker = L.marker([PICKUP.lat, PICKUP.lng], { icon: pinIcon('#00D2A2', 'P') }).addTo(map).bindPopup('Pickup');
+        pickupMarker = L.marker([PICKUP.lat, PICKUP.lng], { icon: pinIcon('#00D2A2', 'P') }).addTo(map).bindPopup(PICKUP_LABEL);
         bounds.push([PICKUP.lat, PICKUP.lng]);
       }
       if (DROPOFF) {
-        dropoffMarker = L.marker([DROPOFF.lat, DROPOFF.lng], { icon: pinIcon('#E74C3C', 'D') }).addTo(map).bindPopup('Dropoff');
+        dropoffMarker = L.marker([DROPOFF.lat, DROPOFF.lng], { icon: pinIcon('#E74C3C', 'D') }).addTo(map).bindPopup(DROPOFF_LABEL);
         bounds.push([DROPOFF.lat, DROPOFF.lng]);
       }
       if (bounds.length > 1) {

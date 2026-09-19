@@ -1,0 +1,112 @@
+{
+  "documents": {
+    "citizenship_front": "Citizenship card (front)",
+    "citizenship_back": "Citizenship card (back)",
+    "nid_front": "National ID card (front)",
+    "nid_back": "National ID card (back)",
+    "driving_license": "Driving license",
+    "passport": "Passport (photo page)",
+    "pan": "PAN certificate",
+    "company_registration": "Company registration"
+  },
+  "idTypes": {
+    "citizenship": "Citizenship",
+    "nid": "National ID (NID)",
+    "driving_license": "Driving License",
+    "passport": "Passport"
+  },
+  "status": {
+    "not_submitted": {
+      "title": "Verify your identity",
+      "body": "Upload your documents below, then submit them for review."
+    },
+    "pending": {
+      "title": "Under review",
+      "body": "Your documents are being checked. You can't change them until the review is finished."
+    },
+    "approved": {
+      "title": "Verified",
+      "body": "Your identity has been verified."
+    },
+    "rejected": {
+      "title": "Changes needed",
+      "body": "Your documents were not approved. Fix the issue below and submit again."
+    }
+  },
+  "banner": {
+    "reason": "Reason: {{reason}}",
+    "submitted": "Submitted {{date}}"
+  },
+  "addressCard": {
+    "title": "Add your address",
+    "hint": "Reviewers check it along with your documents, so it's needed before you submit.",
+    "action": "Add Address"
+  },
+  "identity": {
+    "requiredTitle": "Identity Document",
+    "otherTitle": "Other Identity Documents",
+    "hintSubmitted": "The identity documents you submitted.",
+    "hintRequired": "Upload at least one. Cards need both sides. Once one is complete, the others are optional.",
+    "hintOptional": "Optional. Your driving license is your identity document, but you can add these too.",
+    "frontAndBack": "Front and back",
+    "onePhoto": "One photo"
+  },
+  "requiredSection": {
+    "title": "Required Documents",
+    "hint": "Needed for your account type."
+  },
+  "optionalSection": {
+    "title": "Optional Documents",
+    "hint": "Not needed to get verified, but they help."
+  },
+  "pill": {
+    "uploaded": "Uploaded",
+    "complete": "Complete",
+    "progress": "{{done}} of {{total}} uploaded",
+    "optional": "Optional",
+    "required": "Required"
+  },
+  "documentRow": {
+    "view": "View {{doc}}",
+    "takePhoto": "Take Photo",
+    "retakePhoto": "Retake Photo",
+    "uploadFile": "Upload File",
+    "replaceFile": "Replace File",
+    "remove": "Remove"
+  },
+  "documentTile": {
+    "openLabel": "Open {{label}}"
+  },
+  "toDo": {
+    "address": "add your address",
+    "identityDocument": "an identity document",
+    "upload": "upload {{items}}",
+    "joinWord": " and ",
+    "submitHint": "{{toDo}} to submit."
+  },
+  "submit": {
+    "submit": "Submit for Review",
+    "resubmit": "Resubmit for Review"
+  },
+  "alerts": {
+    "error": "Error",
+    "cameraOpenFailedTitle": "Could not open the camera",
+    "filesOpenFailedTitle": "Could not open files",
+    "fileTooLargeTitle": "File too large",
+    "fileTooLargeMessage": "Documents must be 10 MB or smaller",
+    "uploadFailedTitle": "Upload failed",
+    "removeDocumentTitle": "Remove document",
+    "removeDocumentMessage": "Remove your {{doc}}?",
+    "removeConfirmLabel": "Remove",
+    "submitFailedTitle": "Could not submit",
+    "submittedTitle": "Submitted for review",
+    "submittedMessage": "You'll be able to see the result here once your documents are checked."
+  },
+  "verificationPrompt": {
+    "title": "Identity verification required",
+    "notePending": "Your documents are under review.",
+    "noteRejected": "Your documents need changes before they can be approved.",
+    "viewVerification": "View Verification",
+    "verifyIdentity": "Verify Identity"
+  }
+}

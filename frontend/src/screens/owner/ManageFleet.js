@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -29,7 +30,7 @@ import {
   TRUCK_MAKES,
 } from '../../utils/constants';
 import {
-  bodyTypeLabel, formatCurrency, formatKg, getErrorMessage, pluralize, truckTypeLabel,
+  bodyTypeLabel, formatCurrency, formatKg, getErrorMessage, truckFeatureLabel, truckTypeLabel,
 } from '../../utils/helpers';
 import { nepalDay } from '../../utils/nepalDate';
 import { notify, confirmAction } from '../../utils/alert';
@@ -59,23 +60,33 @@ const areaName = (tree, area) => {
   return localLevel.name === district.name ? localLevel.name : `${localLevel.name}, ${district.name}`;
 };
 
-const pricingText = (truck) => (truck.ratePerKm
-  ? `${formatCurrency(truck.ratePerKm)} per km${truck.minimumCharge ? `, at least ${formatCurrency(truck.minimumCharge)}` : ''}`
+// "within its province" / "within its district", to note beside the base.
+const serviceAreaNote = (value, t) => ({
+  province: t('trucks:fleet.card.serviceAreaNoteProvince'),
+  district: t('trucks:fleet.card.serviceAreaNoteDistrict'),
+}[value]);
+
+const pricingText = (truck, t) => (truck.ratePerKm
+  ? t('trucks:fleet.card.pricingRate', { rate: formatCurrency(truck.ratePerKm) })
+    + (truck.minimumCharge ? t('trucks:fleet.card.pricingWithMinimum', { minimum: formatCurrency(truck.minimumCharge) }) : '')
   : null);
 
 const dayKeyOf = (date) => (date ? String(date).slice(0, 10) : null);
 const textOf = (value) => (value == null ? '' : String(value));
 
 // Whether a paper with this end date is current, running out, or lapsed.
-const paperStatus = (date) => {
+const paperStatus = (date, t) => {
   if (!date) return null;
   const days = Math.floor((Date.parse(`${dayKeyOf(date)}T00:00:00Z`) - Date.parse(`${nepalDay()}T00:00:00Z`)) / DAY_MS);
-  if (days < 0) return { tone: 'error', text: 'expired' };
-  if (days <= PAPER_WARNING_DAYS) return { tone: 'warning', text: days === 0 ? 'ends today' : `ends in ${days} ${days === 1 ? 'day' : 'days'}` };
-  return { tone: 'success', text: 'current' };
+  if (days < 0) return { tone: 'error', text: t('trucks:fleet.card.paperExpired') };
+  if (days <= PAPER_WARNING_DAYS) {
+    return { tone: 'warning', text: days === 0 ? t('trucks:fleet.card.paperEndsToday') : t('trucks:fleet.card.paperEndsIn', { count: days }) };
+  }
+  return { tone: 'success', text: t('trucks:fleet.card.paperCurrent') };
 };
 
 const ManageFleet = () => {
+  const { t } = useTranslation();
   const [trucks, setTrucks] = useState([]);
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -91,9 +102,9 @@ const ManageFleet = () => {
       const { data } = await api.get('/trucks');
       setTrucks(data.trucks);
     } catch (error) {
-      notify('Error', getErrorMessage(error));
+      notify(t('trucks:fleet.errorTitle'), getErrorMessage(error));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     (async () => {
@@ -125,16 +136,16 @@ const ManageFleet = () => {
       await fn();
       await load();
     } catch (error) {
-      notify('Error', getErrorMessage(error));
+      notify(t('trucks:fleet.errorTitle'), getErrorMessage(error));
     }
     setBusyId(null);
   };
 
   const handleDelete = (truck) => {
     confirmAction({
-      title: 'Remove truck',
-      message: `Remove ${truck.registrationNumber} from your fleet?`,
-      confirmLabel: 'Remove',
+      title: t('trucks:fleet.removeTruckTitle'),
+      message: t('trucks:fleet.removeTruckMessage', { registrationNumber: truck.registrationNumber }),
+      confirmLabel: t('trucks:fleet.removeButton'),
       destructive: true,
       onConfirm: () => runAction(truck._id, () => api.delete(`/trucks/${truck._id}`)),
     });
@@ -157,20 +168,18 @@ const ManageFleet = () => {
     >
       <View style={styles.headerRow}>
         <View style={styles.headerText}>
-          <Text style={styles.heading}>{pluralize(trucks.length, 'truck')}</Text>
-          <Text style={styles.headerHint}>
-            Shippers see trucks that can carry their load. A base, a rate per km and current insurance help yours rank well.
-          </Text>
+          <Text style={styles.heading}>{t('trucks:fleet.truckCount', { count: trucks.length })}</Text>
+          <Text style={styles.headerHint}>{t('trucks:fleet.headerHint')}</Text>
         </View>
         {!adding && (
-          <Button title="Add Truck" icon="add" size="sm" onPress={() => { setAdding(true); setEditingId(null); }} style={styles.addButton} />
+          <Button title={t('trucks:fleet.addTruckButton')} icon="add" size="sm" onPress={() => { setAdding(true); setEditingId(null); }} style={styles.addButton} />
         )}
       </View>
 
       {adding && <TruckForm tree={tree} wide={wide} onSaved={handleSaved} onCancel={() => setAdding(false)} />}
 
       {trucks.length === 0 && !adding && (
-        <EmptyState icon="fleet" title="No trucks yet" message="Add a truck so shippers can find it and book it." />
+        <EmptyState icon="fleet" title={t('trucks:fleet.emptyTitle')} message={t('trucks:fleet.emptyMessage')} />
       )}
 
       {trucks.map((truck) => (editingId === truck._id ? (
@@ -250,6 +259,7 @@ const FormBlock = ({ title, hint, first, children }) => (
 // Adds a truck, or edits one when `truck` is given (the registration can't
 // change). Filled in the way a truck is described on its bluebook in Nepal.
 const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
+  const { t } = useTranslation();
   const editing = Boolean(truck);
   const startType = truck?.truckType || '6-wheeler';
   const year = currentYear();
@@ -287,11 +297,40 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
   const [saving, setSaving] = useState(false);
 
   const legacyType = LEGACY_TRUCK_TYPES.find((option) => option.value === truckType);
-  const typeOptions = legacyType ? [...FLEET_TRUCK_TYPES, legacyType] : FLEET_TRUCK_TYPES;
+  const rawTypeOptions = legacyType ? [...FLEET_TRUCK_TYPES, legacyType] : FLEET_TRUCK_TYPES;
+  const typeOptions = rawTypeOptions.map((option) => ({
+    ...option,
+    label: t(`trucks:types.${option.value}.label`, option.label),
+    description: t(`trucks:types.${option.value}.description`, option.description),
+    examples: t(`trucks:types.${option.value}.examples`, option.examples),
+  }));
+  const bodyTypeOptions = BODY_TYPES.map((option) => ({
+    ...option,
+    label: t(`trucks:bodyTypes.${option.value}.label`, option.label),
+    description: t(`trucks:bodyTypes.${option.value}.description`, option.description),
+  }));
+  const fuelTypeOptions = FUEL_TYPES.map((option) => ({
+    ...option,
+    label: t(`trucks:fuelTypes.${option.value}.label`, option.label),
+  }));
+  const serviceAreaOptions = SERVICE_AREAS.map((option) => ({
+    ...option,
+    label: t(`trucks:serviceAreas.${option.value}.label`, option.label),
+    description: t(`trucks:serviceAreas.${option.value}.description`, option.description),
+  }));
+  const insuranceTypeOptions = INSURANCE_TYPES.map((option) => ({
+    ...option,
+    label: t(`trucks:insuranceTypes.${option.value}.label`, option.label),
+    description: t(`trucks:insuranceTypes.${option.value}.description`, option.description),
+  }));
   const makeOptions = TRUCK_MAKES.map((name) => ({ value: name, label: name }));
   const manufactureYears = Array.from({ length: year + 1 - 1990 + 1 }, (_, i) => year + 1 - i)
     .map((value) => ({ value, label: String(value) }));
   const expiryYears = Array.from({ length: 7 }, (_, i) => year - 1 + i);
+
+  // The current type's examples (translated), for a model placeholder like "e.g. Bolero".
+  const typeExamples = typeFor(truckType)?.examples ? t(`trucks:types.${truckType}.examples`, typeFor(truckType).examples) : null;
+  const modelExample = typeExamples ? (typeExamples.split(', ')[0].split(' ').slice(1).join(' ') || '1613') : '1613';
 
   // A capacity still at the old class's usual figure follows the new class.
   const chooseType = (value) => {
@@ -303,22 +342,22 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
   const baseStarted = Boolean(base.provinceId || base.districtId || base.localLevelId);
   const baseComplete = Boolean(base.provinceId && base.districtId && base.localLevelId);
   const bedProblem = (text) => text.trim() && (!FEET.test(text.trim()) || Number(text) < 1 || Number(text) > MAX_CARGO_BED_FT)
-    && `Feet, like 19 or 7.5`;
-  const numberProblem = (text) => text.trim() && !DOCUMENT_NUMBER.test(text.trim()) && 'Letters and digits, as on the bluebook';
+    && t('trucks:fleet.errors.feetFormat');
+  const numberProblem = (text) => text.trim() && !DOCUMENT_NUMBER.test(text.trim()) && t('trucks:fleet.errors.documentNumberFormat');
 
   const errors = {
-    registrationNumber: !editing && !registrationNumber.trim() && 'Enter the registration number',
+    registrationNumber: !editing && !registrationNumber.trim() && t('trucks:fleet.errors.registrationNumberRequired'),
     capacity: (!/^\d+$/.test(capacity.trim()) || Number(capacity) < 100 || Number(capacity) > MAX_CAPACITY_KG)
-      && `Enter the most it carries, from 100 to ${MAX_CAPACITY_KG.toLocaleString('en-NP')} kg`,
+      && t('trucks:fleet.errors.capacityRange', { max: MAX_CAPACITY_KG.toLocaleString('en-NP') }),
     lengthFt: bedProblem(bed.lengthFt),
     widthFt: bedProblem(bed.widthFt),
     heightFt: bedProblem(bed.heightFt),
-    base: (baseStarted && !baseComplete && 'Choose the municipality too, or clear the base')
-      || (serviceArea !== 'nepal' && !baseComplete && 'Set a base to limit where the truck works'),
+    base: (baseStarted && !baseComplete && t('trucks:fleet.errors.baseIncomplete'))
+      || (serviceArea !== 'nepal' && !baseComplete && t('trucks:fleet.errors.baseRequiredForServiceArea')),
     ratePerKm: ratePerKm.trim()
       && (!/^\d+(\.\d{1,2})?$/.test(ratePerKm.trim()) || Number(ratePerKm) <= 0 || Number(ratePerKm) > 1000)
-      && 'Enter rupees per km, up to 1,000',
-    minimumCharge: minimumCharge.trim() && !/^\d+$/.test(minimumCharge.trim()) && 'Enter whole rupees',
+      && t('trucks:fleet.errors.ratePerKmFormat'),
+    minimumCharge: minimumCharge.trim() && !/^\d+$/.test(minimumCharge.trim()) && t('trucks:fleet.errors.minimumChargeFormat'),
     chassisNumber: numberProblem(chassisNumber),
     engineNumber: numberProblem(engineNumber),
   };
@@ -366,7 +405,7 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
       if (editing) await api.patch(`/trucks/${truck._id}`, body);
       else await api.post('/trucks', { registrationNumber: registrationNumber.trim(), ...body });
     } catch (error) {
-      notify('Could not save the truck', getErrorMessage(error));
+      notify(t('trucks:fleet.saveTruckErrorTitle'), getErrorMessage(error));
       setSaving(false);
       return;
     }
@@ -380,169 +419,169 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
 
   return (
     <Card style={wide && styles.formWide}>
-      <Text style={styles.formTitle}>{editing ? `Edit ${truck.registrationNumber}` : 'Add a Truck'}</Text>
-      <Text style={styles.formIntro}>Fill this in as it appears on the truck and its bluebook. Fields marked * are required.</Text>
+      <Text style={styles.formTitle}>
+        {editing ? t('trucks:fleet.editTruckTitle', { registrationNumber: truck.registrationNumber }) : t('trucks:fleet.addTruckTitle')}
+      </Text>
+      <Text style={styles.formIntro}>{t('trucks:fleet.formIntro')}</Text>
       {editing && ['approved', 'pending'].includes(truck.verification?.status) && (
         <View style={styles.warning}>
           <Icon name="warning" size={iconSize.sm} color={colors.warningText} />
-          <Text style={styles.warningText}>
-            Changing the type, body, capacity, make, model, year, chassis or engine number takes away the verified badge until an admin checks the truck again.
-          </Text>
+          <Text style={styles.warningText}>{t('trucks:fleet.verificationChangeWarning')}</Text>
         </View>
       )}
 
-      <FormBlock title="Vehicle" first>
+      <FormBlock title={t('trucks:fleet.vehicleSection')} first>
         {!editing && (
           <Input
-            label="Registration Number"
+            label={t('trucks:fleet.registrationNumberLabel')}
             value={registrationNumber}
             onChangeText={setRegistrationNumber}
-            placeholder="e.g. BA 2 KHA 1234"
+            placeholder={t('trucks:fleet.registrationNumberPlaceholder')}
             autoCapitalize="characters"
             icon="truck"
             required
             maxLength={30}
             error={shown('registrationNumber')}
-            helperText="As on the number plate and bluebook, in the zonal or provincial format."
+            helperText={t('trucks:fleet.registrationNumberHelper')}
           />
         )}
 
         <Text style={styles.fieldLabel}>
-          Truck Type
+          {t('trucks:fleet.truckTypeFieldLabel')}
           <Text style={styles.required}> *</Text>
         </Text>
         <OptionGrid options={typeOptions} value={truckType} onChange={chooseType} columns={wide ? 4 : 2} />
 
         <View style={pair}>
           <Input
-            label="Capacity (kg)"
+            label={t('trucks:fleet.capacityLabel')}
             value={capacity}
             onChangeText={setCapacity}
             keyboardType="numeric"
-            placeholder="e.g. 10000"
+            placeholder={t('trucks:fleet.capacityPlaceholder')}
             icon="weight"
             required
             error={shown('capacity')}
-            helperText="The most it carries. Heavier loads aren't matched to it."
+            helperText={t('trucks:fleet.capacityHelper')}
             containerStyle={half}
           />
           <SelectField
-            label="Make"
+            label={t('trucks:fleet.makeLabel')}
             value={make}
             options={makeOptions}
             onChange={setMake}
-            placeholder="Select make"
+            placeholder={t('trucks:fleet.makePlaceholder')}
             containerStyle={half}
           />
         </View>
 
         <View style={pair}>
           <Input
-            label="Model"
+            label={t('trucks:fleet.modelLabel')}
             value={model}
             onChangeText={setModel}
-            placeholder={typeFor(truckType)?.examples ? `e.g. ${typeFor(truckType).examples.split(', ')[0].split(' ').slice(1).join(' ') || '1613'}` : 'e.g. 1613'}
+            placeholder={t('trucks:fleet.modelPlaceholder', { example: modelExample })}
             icon="truck"
             maxLength={40}
             containerStyle={half}
           />
           <SelectField
-            label="Year of Manufacture"
+            label={t('trucks:fleet.yearLabel')}
             value={manufactured}
             options={manufactureYears}
             onChange={setManufactured}
-            placeholder="Select year"
+            placeholder={t('trucks:fleet.yearPlaceholder')}
             containerStyle={half}
           />
         </View>
 
-        <Text style={styles.fieldLabel}>Fuel</Text>
-        <OptionGrid options={FUEL_TYPES} value={fuelType} onChange={setFuelType} columns={3} />
+        <Text style={styles.fieldLabel}>{t('trucks:fleet.fuelFieldLabel')}</Text>
+        <OptionGrid options={fuelTypeOptions} value={fuelType} onChange={setFuelType} columns={3} />
       </FormBlock>
 
-      <FormBlock title="Body and Cargo Space" hint="Shippers look for the body that suits their goods, so pick the closest match.">
+      <FormBlock title={t('trucks:fleet.bodySection')} hint={t('trucks:fleet.bodySectionHint')}>
         <Text style={styles.fieldLabel}>
-          Body Type
+          {t('trucks:fleet.bodyTypeFieldLabel')}
           <Text style={styles.required}> *</Text>
         </Text>
-        <OptionGrid options={BODY_TYPES} value={bodyType} onChange={setBodyType} columns={wide ? 3 : 2} />
+        <OptionGrid options={bodyTypeOptions} value={bodyType} onChange={setBodyType} columns={wide ? 3 : 2} />
 
-        <Text style={styles.fieldLabel}>Cargo bed inside size, in feet (optional)</Text>
+        <Text style={styles.fieldLabel}>{t('trucks:fleet.cargoBedFieldLabel')}</Text>
         <View style={styles.row}>
           <Input
-            label="Length (ft)"
+            label={t('trucks:fleet.lengthLabel')}
             value={bed.lengthFt}
             onChangeText={(lengthFt) => setBed((current) => ({ ...current, lengthFt }))}
             keyboardType="numeric"
-            placeholder="e.g. 19"
+            placeholder={t('trucks:fleet.lengthPlaceholder')}
             error={shown('lengthFt')}
             containerStyle={styles.third}
           />
           <Input
-            label="Width (ft)"
+            label={t('trucks:fleet.widthLabel')}
             value={bed.widthFt}
             onChangeText={(widthFt) => setBed((current) => ({ ...current, widthFt }))}
             keyboardType="numeric"
-            placeholder="e.g. 7.5"
+            placeholder={t('trucks:fleet.widthPlaceholder')}
             error={shown('widthFt')}
             containerStyle={styles.third}
           />
           <Input
-            label="Height (ft)"
+            label={t('trucks:fleet.heightLabel')}
             value={bed.heightFt}
             onChangeText={(heightFt) => setBed((current) => ({ ...current, heightFt }))}
             keyboardType="numeric"
-            placeholder="e.g. 6"
+            placeholder={t('trucks:fleet.heightPlaceholder')}
             error={shown('heightFt')}
             containerStyle={styles.third}
           />
         </View>
       </FormBlock>
 
-      <FormBlock title="Base and Service Area" hint="Where the truck is usually parked. It ranks higher for loads picked up nearby.">
+      <FormBlock title={t('trucks:fleet.baseSection')} hint={t('trucks:fleet.baseSectionHint')}>
         {tree ? (
           <NepalAddressFields
             tree={tree}
             value={base}
             onChange={setBase}
             columns={wide}
-            labelPrefix="Base"
+            labelPrefix={t('trucks:fleet.baseLabel')}
             includeWardAndTole={false}
             required={false}
           />
         ) : (
-          <Text style={styles.hint}>The list of places could not be loaded. You can add the base later.</Text>
+          <Text style={styles.hint}>{t('trucks:fleet.noLocationList')}</Text>
         )}
         {shown('base') ? <Text style={styles.errorText}>{shown('base')}</Text> : null}
         {baseStarted && (
-          <Button title="Clear Base" icon="close" variant="ghost" size="sm" onPress={() => setBase(emptyPlace)} style={styles.clearBase} />
+          <Button title={t('trucks:fleet.clearBaseButton')} icon="close" variant="ghost" size="sm" onPress={() => setBase(emptyPlace)} style={styles.clearBase} />
         )}
 
-        <Text style={styles.fieldLabel}>Takes loads</Text>
-        <OptionGrid options={SERVICE_AREAS} value={serviceArea} onChange={setServiceArea} columns={wide ? 3 : 1} />
+        <Text style={styles.fieldLabel}>{t('trucks:fleet.serviceAreaFieldLabel')}</Text>
+        <OptionGrid options={serviceAreaOptions} value={serviceArea} onChange={setServiceArea} columns={wide ? 3 : 1} />
       </FormBlock>
 
       <FormBlock
-        title="Pricing"
-        hint="With a rate, shippers see an asking price for every trip: the rate times the distance, never below your minimum. Without one, they make you offers."
+        title={t('trucks:fleet.pricingSection')}
+        hint={t('trucks:fleet.pricingSectionHint')}
       >
         <View style={pair}>
           <Input
-            label="Rate per km (Rs.)"
+            label={t('trucks:fleet.ratePerKmLabel')}
             value={ratePerKm}
             onChangeText={setRatePerKm}
             keyboardType="numeric"
-            placeholder="e.g. 80"
+            placeholder={t('trucks:fleet.ratePerKmPlaceholder')}
             icon="price"
             error={shown('ratePerKm')}
             containerStyle={half}
           />
           <Input
-            label="Minimum Charge (Rs.)"
+            label={t('trucks:fleet.minimumChargeLabel')}
             value={minimumCharge}
             onChangeText={setMinimumCharge}
             keyboardType="numeric"
-            placeholder="e.g. 5000"
+            placeholder={t('trucks:fleet.minimumChargePlaceholder')}
             icon="price"
             error={shown('minimumCharge')}
             containerStyle={half}
@@ -550,13 +589,13 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
         </View>
       </FormBlock>
 
-      <FormBlock title="Features" hint="Shippers see these on the truck.">
+      <FormBlock title={t('trucks:fleet.featuresSection')} hint={t('trucks:fleet.featuresSectionHint')}>
         <View style={styles.featureGrid}>
           {TRUCK_FEATURES.map((feature) => (
             <View key={feature.key} style={[styles.featureCell, { width: wide ? '50%' : '100%' }]}>
               <CheckRow
-                label={feature.label}
-                description={feature.description}
+                label={t(`trucks:features.${feature.key}.label`, feature.label)}
+                description={t(`trucks:features.${feature.key}.description`, feature.description)}
                 checked={features[feature.key]}
                 onToggle={() => setFeatures((current) => ({ ...current, [feature.key]: !current[feature.key] }))}
               />
@@ -567,30 +606,30 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
 
       <View style={styles.block}>
         <Disclosure
-          title="Papers"
-          hint="Bluebook, insurance and pollution test. Private: shippers only see whether the insurance is current."
+          title={t('trucks:fleet.papersSection')}
+          hint={t('trucks:fleet.papersSectionHint')}
           icon="document"
-          badge={<StatusPill label={papersAdded ? `${papersAdded} added` : 'Optional'} tone={papersAdded ? 'success' : 'muted'} />}
+          badge={<StatusPill label={papersAdded ? t('trucks:fleet.papersAddedCount', { count: papersAdded }) : t('trucks:fleet.papersOptional')} tone={papersAdded ? 'success' : 'muted'} />}
           open={papersOpen || (triedToSave && papersHaveErrors)}
           onToggle={setPapersOpen}
         >
           <View style={pair}>
             <Input
-              label="Chassis Number"
+              label={t('trucks:fleet.chassisNumberLabel')}
               value={chassisNumber}
               onChangeText={setChassisNumber}
               autoCapitalize="characters"
-              placeholder="As on the bluebook"
+              placeholder={t('trucks:fleet.documentNumberPlaceholder')}
               maxLength={30}
               error={shown('chassisNumber')}
               containerStyle={half}
             />
             <Input
-              label="Engine Number"
+              label={t('trucks:fleet.engineNumberLabel')}
               value={engineNumber}
               onChangeText={setEngineNumber}
               autoCapitalize="characters"
-              placeholder="As on the bluebook"
+              placeholder={t('trucks:fleet.documentNumberPlaceholder')}
               maxLength={30}
               error={shown('engineNumber')}
               containerStyle={half}
@@ -598,43 +637,43 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
           </View>
 
           <DateField
-            label="Bluebook tax paid until"
+            label={t('trucks:fleet.bluebookUntilLabel')}
             value={bluebookUntil}
             onChange={setBluebookUntil}
             years={expiryYears}
-            helperText="The yearly vehicle tax renewal, in A.D. (English calendar)."
+            helperText={t('trucks:fleet.bluebookUntilHelper')}
           />
 
-          <Text style={styles.fieldLabel}>Insurance</Text>
-          <OptionGrid options={INSURANCE_TYPES} value={insuranceType} onChange={setInsuranceType} columns={2} allowClear />
+          <Text style={styles.fieldLabel}>{t('trucks:fleet.insuranceFieldLabel')}</Text>
+          <OptionGrid options={insuranceTypeOptions} value={insuranceType} onChange={setInsuranceType} columns={2} allowClear />
           <View style={pair}>
             <Input
-              label="Insurance Company"
+              label={t('trucks:fleet.insuranceCompanyLabel')}
               value={insuranceCompany}
               onChangeText={setInsuranceCompany}
-              placeholder="e.g. Shikhar Insurance"
+              placeholder={t('trucks:fleet.insuranceCompanyPlaceholder')}
               maxLength={60}
               containerStyle={half}
             />
             <Input
-              label="Policy Number"
+              label={t('trucks:fleet.policyNumberLabel')}
               value={policyNumber}
               onChangeText={setPolicyNumber}
-              placeholder="As on the policy"
+              placeholder={t('trucks:fleet.policyNumberPlaceholder')}
               maxLength={40}
               containerStyle={half}
             />
           </View>
           <DateField
-            label="Insurance valid until"
+            label={t('trucks:fleet.insuranceUntilLabel')}
             value={insuranceUntil}
             onChange={setInsuranceUntil}
             years={expiryYears}
-            helperText="In A.D. Current insurance shows shippers an Insured badge and helps the truck rank."
+            helperText={t('trucks:fleet.insuranceUntilHelper')}
           />
 
           <DateField
-            label="Pollution test (green sticker) valid until"
+            label={t('trucks:fleet.emissionUntilLabel')}
             value={emissionUntil}
             onChange={setEmissionUntil}
             years={expiryYears}
@@ -643,9 +682,9 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
       </View>
 
       <View style={styles.formActions}>
-        <Button title="Cancel" variant="ghost" onPress={onCancel} style={styles.formAction} />
+        <Button title={t('trucks:fleet.cancelButton')} variant="ghost" onPress={onCancel} style={styles.formAction} />
         <Button
-          title={editing ? 'Save Changes' : 'Add Truck'}
+          title={editing ? t('trucks:fleet.saveChangesButton') : t('trucks:fleet.addTruckButton')}
           icon={editing ? 'checkmark' : 'add'}
           onPress={handleSave}
           loading={saving}
@@ -666,28 +705,27 @@ const DetailRow = ({ icon, label, value, muted }) => (
   </View>
 );
 
-const SERVICE_AREA_NOTE = {
-  province: 'within its province',
-  district: 'within its district',
-};
-
-const VERIFICATION_COPY = {
-  not_submitted: {
-    pill: { label: 'Not verified', tone: 'muted' },
-    hint: 'Upload the bluebook and a photo of the truck, then send them to FLITO for the verified badge.',
-  },
-  pending: {
-    pill: { label: 'Under review', tone: 'warning' },
-    hint: 'An admin is checking this truck. Its papers are locked until then.',
-  },
-  approved: {
-    pill: { label: 'Verified', tone: 'success' },
-    hint: 'Shippers see the verified badge on this truck.',
-  },
-  rejected: {
-    pill: { label: 'Needs changes', tone: 'error' },
-    hint: 'Fix the papers below and send them again.',
-  },
+// Getting a truck verified by an admin: its papers, and sending them for review.
+const verificationCopy = (status, t) => {
+  const table = {
+    not_submitted: {
+      pill: { label: t('trucks:fleet.verification.notSubmittedLabel'), tone: 'muted' },
+      hint: t('trucks:fleet.verification.notSubmittedHint'),
+    },
+    pending: {
+      pill: { label: t('trucks:fleet.verification.pendingLabel'), tone: 'warning' },
+      hint: t('trucks:fleet.verification.pendingHint'),
+    },
+    approved: {
+      pill: { label: t('trucks:fleet.verification.approvedLabel'), tone: 'success' },
+      hint: t('trucks:fleet.verification.approvedHint'),
+    },
+    rejected: {
+      pill: { label: t('trucks:fleet.verification.rejectedLabel'), tone: 'error' },
+      hint: t('trucks:fleet.verification.rejectedHint'),
+    },
+  };
+  return table[status] || table.not_submitted;
 };
 
 const NO_VERIFICATION = {
@@ -699,10 +737,13 @@ const NO_VERIFICATION = {
   documents: [],
 };
 
+const documentLabel = (docType, t) => t(`trucks:documents.${docType}`, TRUCK_DOCUMENT_LABELS[docType] || docType);
+
 // Getting a truck verified by an admin: its papers, and sending them for review.
 const TruckVerification = ({ truck, onChanged }) => {
+  const { t } = useTranslation();
   const verification = truck.verification || NO_VERIFICATION;
-  const copy = VERIFICATION_COPY[verification.status] || VERIFICATION_COPY.not_submitted;
+  const copy = verificationCopy(verification.status, t);
   const [open, setOpen] = useState(false);
   // What's working: { type, source } for a paper, or { source: 'submit' }.
   const [busy, setBusy] = useState(null);
@@ -712,13 +753,13 @@ const TruckVerification = ({ truck, onChanged }) => {
     try {
       asset = source === 'camera' ? (await takePhoto())[0] : await pickDocument();
     } catch (error) {
-      notify(source === 'camera' ? 'Could not open the camera' : 'Could not open files', getErrorMessage(error));
+      notify(source === 'camera' ? t('trucks:fleet.verification.couldNotOpenCameraTitle') : t('trucks:fleet.verification.couldNotOpenFilesTitle'), getErrorMessage(error));
       return;
     }
     if (!asset) return;
     const size = asset.size || asset.fileSize;
     if (size && size > MAX_DOCUMENT_BYTES) {
-      notify('File too large', 'Papers must be 10 MB or smaller');
+      notify(t('trucks:fleet.verification.fileTooLargeTitle'), t('trucks:fleet.verification.fileTooLargeMessage'));
       return;
     }
 
@@ -727,15 +768,15 @@ const TruckVerification = ({ truck, onChanged }) => {
       await uploadFiles(`/trucks/${truck._id}/documents`, [asset], { field: 'document', fields: { type: docType } });
       await onChanged();
     } catch (error) {
-      notify('Upload failed', getErrorMessage(error));
+      notify(t('trucks:fleet.verification.uploadFailedTitle'), getErrorMessage(error));
     }
     setBusy(null);
   };
 
   const remove = (doc) => confirmAction({
-    title: 'Remove paper',
-    message: `Remove the ${TRUCK_DOCUMENT_LABELS[doc.type].toLowerCase()}?`,
-    confirmLabel: 'Remove',
+    title: t('trucks:fleet.verification.removePaperTitle'),
+    message: t('trucks:fleet.verification.removePaperMessage', { document: documentLabel(doc.type, t).toLowerCase() }),
+    confirmLabel: t('trucks:fleet.removeButton'),
     destructive: true,
     onConfirm: async () => {
       setBusy({ type: doc.type, source: 'remove' });
@@ -743,7 +784,7 @@ const TruckVerification = ({ truck, onChanged }) => {
         await api.delete(`/trucks/${truck._id}/documents/${doc._id}`);
         await onChanged();
       } catch (error) {
-        notify('Error', getErrorMessage(error));
+        notify(t('trucks:fleet.errorTitle'), getErrorMessage(error));
       }
       setBusy(null);
     },
@@ -754,9 +795,9 @@ const TruckVerification = ({ truck, onChanged }) => {
     try {
       await api.post(`/trucks/${truck._id}/verification`);
       await onChanged();
-      notify('Sent for verification', 'An admin will check this truck and its papers.');
+      notify(t('trucks:fleet.verification.sentTitle'), t('trucks:fleet.verification.sentMessage'));
     } catch (error) {
-      notify('Could not send', getErrorMessage(error));
+      notify(t('trucks:fleet.verification.couldNotSendTitle'), getErrorMessage(error));
     }
     setBusy(null);
   };
@@ -767,13 +808,13 @@ const TruckVerification = ({ truck, onChanged }) => {
   return (
     <Disclosure
       style={styles.verification}
-      title="Verification"
+      title={t('trucks:fleet.verification.title')}
       hint={copy.hint}
       icon="verified"
       badge={<StatusPill label={copy.pill.label} tone={copy.pill.tone} />}
       open={open}
       onToggle={setOpen}
-      accessibilityLabel={`${truck.registrationNumber} verification`}
+      accessibilityLabel={t('trucks:fleet.verification.accessibilityLabel', { registrationNumber: truck.registrationNumber })}
     >
       {verification.status === 'rejected' && verification.rejectionReason ? (
         <View style={styles.rejection}>
@@ -786,29 +827,30 @@ const TruckVerification = ({ truck, onChanged }) => {
         const doc = verification.documents.find((paper) => paper.type === docType);
         const required = verification.requiredDocuments.includes(docType);
         const working = busy?.type === docType ? busy.source : null;
+        const label = documentLabel(docType, t);
         return (
           <View key={docType} style={styles.paper}>
             <View style={styles.paperHeader}>
               <Text style={styles.paperTitle}>
-                {TRUCK_DOCUMENT_LABELS[docType]}
+                {label}
                 {required && <Text style={styles.required}> *</Text>}
               </Text>
-              {!required && <StatusPill label="Optional" />}
+              {!required && <StatusPill label={t('trucks:fleet.papersOptional')} />}
             </View>
-            {doc ? <DocumentTile doc={doc} label={`View ${TRUCK_DOCUMENT_LABELS[docType].toLowerCase()}`} size={56} /> : null}
+            {doc ? <DocumentTile doc={doc} label={t('trucks:fleet.verification.viewDocument', { document: label.toLowerCase() })} size={56} /> : null}
             {verification.canEdit && (
               <View style={styles.paperActions}>
                 <PhotoSourceButtons
                   onTakePhoto={() => upload(docType, 'camera')}
                   onChoose={() => upload(docType, 'library')}
-                  takeLabel={doc ? 'Retake' : 'Take Photo'}
-                  chooseLabel={doc ? 'Replace' : 'Upload File'}
+                  takeLabel={doc ? t('trucks:fleet.verification.retakeButton') : t('trucks:fleet.verification.takePhotoButton')}
+                  chooseLabel={doc ? t('trucks:fleet.verification.replaceButton') : t('trucks:fleet.verification.uploadFileButton')}
                   chooseIcon="upload"
                   busy={working === 'camera' || working === 'library' ? working : null}
                   disabled={Boolean(busy) && !working}
                 />
                 {doc && (
-                  <Button title="Remove" icon="trash" variant="ghost" size="sm" onPress={() => remove(doc)} loading={working === 'remove'} />
+                  <Button title={t('trucks:fleet.removeButton')} icon="trash" variant="ghost" size="sm" onPress={() => remove(doc)} loading={working === 'remove'} />
                 )}
               </View>
             )}
@@ -820,11 +862,11 @@ const TruckVerification = ({ truck, onChanged }) => {
         <>
           {missing.length > 0 && (
             <Text style={styles.hint}>
-              {`Still needed: ${missing.map((type) => TRUCK_DOCUMENT_LABELS[type].toLowerCase()).join(', ')}.`}
+              {t('trucks:fleet.verification.stillNeeded', { documents: missing.map((docType) => documentLabel(docType, t).toLowerCase()).join(', ') })}
             </Text>
           )}
           <Button
-            title="Send for Verification"
+            title={t('trucks:fleet.verification.sendButton')}
             icon="send"
             onPress={submit}
             loading={busy?.source === 'submit'}
@@ -837,25 +879,26 @@ const TruckVerification = ({ truck, onChanged }) => {
 };
 
 const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSetStatus, onDelete }) => {
+  const { t } = useTranslation();
   const [assigning, setAssigning] = useState(false);
   const [driverPhone, setDriverPhone] = useState('+977');
 
   const driver = truck.assignedDriverId;
   const base = areaName(tree, truck.baseLocation);
-  const pricing = pricingText(truck);
-  const featureNames = TRUCK_FEATURES.filter((feature) => truck.features?.[feature.key]).map((feature) => feature.short);
+  const pricing = pricingText(truck, t);
+  const featureNames = TRUCK_FEATURES.filter((feature) => truck.features?.[feature.key]).map((feature) => truckFeatureLabel(feature.key, t, 'short'));
   const papers = [
-    ['Bluebook tax', paperStatus(truck.bluebookRenewedUntil)],
-    ['Insurance', paperStatus(truck.insurance?.validUntil)],
-    ['Green sticker', paperStatus(truck.emissionTestValidUntil)],
+    [t('trucks:fleet.card.bluebookTaxLabel'), paperStatus(truck.bluebookRenewedUntil, t)],
+    [t('trucks:fleet.card.insuranceLabel'), paperStatus(truck.insurance?.validUntil, t)],
+    [t('trucks:fleet.card.greenStickerLabel'), paperStatus(truck.emissionTestValidUntil, t)],
   ].filter(([, status]) => status);
 
   const tip = !base && !pricing
-    ? 'Add a base and a rate so this truck ranks well for nearby loads and shows shippers a price.'
+    ? t('trucks:fleet.card.tipBothMissing')
     : !base
-      ? 'Add a base so this truck ranks well for loads nearby.'
+      ? t('trucks:fleet.card.tipBaseMissing')
       : !pricing
-        ? 'Add a rate per km so shippers see an asking price.'
+        ? t('trucks:fleet.card.tipRateMissing')
         : null;
 
   return (
@@ -863,14 +906,14 @@ const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSet
       <View style={styles.row}>
         <View style={styles.regRow}>
           <Text style={styles.reg}>{truck.registrationNumber}</Text>
-          {truck.verified && <VerifiedBadge size={20} label="Verified truck" />}
+          {truck.verified && <VerifiedBadge size={20} label={t('trucks:fleet.verification.verifiedTruckLabel')} />}
         </View>
         <StatusBadge status={truck.status} />
       </View>
       <Text style={styles.meta}>
         {[
-          truckTypeLabel(truck.truckType),
-          bodyTypeLabel(truck.bodyType),
+          truckTypeLabel(truck.truckType, t),
+          bodyTypeLabel(truck.bodyType, t),
           truck.capacity ? formatKg(truck.capacity) : null,
           truck.makeModel,
           truck.year ? String(truck.year) : null,
@@ -879,25 +922,29 @@ const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSet
 
       <DetailRow
         icon="pickup"
-        label="Base"
-        value={base ? `${base}${SERVICE_AREA_NOTE[truck.serviceArea] ? `, ${SERVICE_AREA_NOTE[truck.serviceArea]}` : ''}` : 'Not set'}
+        label={t('trucks:fleet.baseLabel')}
+        value={base ? `${base}${serviceAreaNote(truck.serviceArea, t) ? `, ${serviceAreaNote(truck.serviceArea, t)}` : ''}` : t('trucks:fleet.card.notSet')}
         muted={!base}
       />
-      <DetailRow icon="price" label="Pricing" value={pricing || 'No rate: shippers make offers'} muted={!pricing} />
-      <DetailRow icon="checkmark" label="Features" value={featureNames.length ? featureNames.join(', ') : 'None listed'} muted={!featureNames.length} />
+      <DetailRow icon="price" label={t('trucks:fleet.card.pricingLabel')} value={pricing || t('trucks:fleet.card.noRateFallback')} muted={!pricing} />
+      <DetailRow icon="checkmark" label={t('trucks:fleet.card.featuresLabel')} value={featureNames.length ? featureNames.join(', ') : t('trucks:fleet.card.noFeaturesListed')} muted={!featureNames.length} />
       <DetailRow
         icon="driver"
-        label="Driver"
+        label={t('trucks:fleet.card.driverLabel')}
         // Unverified drivers can be on a truck but can't be put on a booking yet.
-        value={driver ? `${driver.firstName} ${driver.lastName}${driver.kycStatus === 'approved' ? '' : ' (not verified)'}` : 'Unassigned'}
+        value={driver
+          ? `${driver.firstName} ${driver.lastName}${driver.kycStatus === 'approved' ? '' : t('trucks:fleet.card.driverNotVerifiedSuffix')}`
+          : t('trucks:fleet.card.driverUnassigned')}
         muted={!driver}
       />
 
       <View style={styles.papers}>
         {papers.length ? (
-          papers.map(([name, status]) => <StatusPill key={name} label={`${name}: ${status.text}`} tone={status.tone} />)
+          papers.map(([name, status]) => (
+            <StatusPill key={name} label={t('trucks:fleet.card.paperLine', { name, status: status.text })} tone={status.tone} />
+          ))
         ) : (
-          <StatusPill label="Papers not added" />
+          <StatusPill label={t('trucks:fleet.card.papersNotAdded')} />
         )}
       </View>
 
@@ -913,7 +960,7 @@ const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSet
       {assigning ? (
         <View style={styles.assign}>
           <Input
-            label="Driver Phone"
+            label={t('trucks:fleet.card.driverPhoneLabel')}
             value={driverPhone}
             onChangeText={setDriverPhone}
             keyboardType="phone-pad"
@@ -922,23 +969,23 @@ const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSet
           />
           <View style={styles.actionsRow}>
             <Button
-              title="Assign"
+              title={t('trucks:fleet.card.assignButton')}
               icon="checkmark"
               onPress={() => { setAssigning(false); onAssignDriver(driverPhone); }}
               loading={busy}
               style={styles.actionButton}
             />
             {driver && (
-              <Button title="Unassign" icon="close" variant="destructive" onPress={() => { setAssigning(false); onAssignDriver(''); }} loading={busy} style={styles.actionButton} />
+              <Button title={t('trucks:fleet.card.unassignButton')} icon="close" variant="destructive" onPress={() => { setAssigning(false); onAssignDriver(''); }} loading={busy} style={styles.actionButton} />
             )}
-            <Button title="Cancel" variant="ghost" onPress={() => setAssigning(false)} style={styles.actionButton} />
+            <Button title={t('trucks:fleet.cancelButton')} variant="ghost" onPress={() => setAssigning(false)} style={styles.actionButton} />
           </View>
         </View>
       ) : (
         <View style={styles.actionsRow}>
-          <Button title="Edit Details" icon="edit" variant="secondary" onPress={onEdit} style={styles.actionButton} />
+          <Button title={t('trucks:fleet.card.editDetailsButton')} icon="edit" variant="secondary" onPress={onEdit} style={styles.actionButton} />
           <Button
-            title={driver ? 'Change Driver' : 'Assign Driver'}
+            title={driver ? t('trucks:fleet.card.changeDriverButton') : t('trucks:fleet.card.assignDriverButton')}
             icon="driver"
             variant="tertiary"
             onPress={() => setAssigning(true)}
@@ -949,14 +996,14 @@ const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSet
 
       <View style={styles.actionsRow}>
         <Button
-          title={truck.status === 'active' ? 'Mark In Maintenance' : 'Mark Active'}
+          title={truck.status === 'active' ? t('trucks:fleet.card.markInMaintenanceButton') : t('trucks:fleet.card.markActiveButton')}
           icon="settings"
           variant="tertiary"
           onPress={() => onSetStatus(truck.status === 'active' ? 'maintenance' : 'active')}
           loading={busy}
           style={styles.actionButton}
         />
-        <Button title="Remove" icon="trash" variant="destructive" onPress={onDelete} style={styles.actionButton} />
+        <Button title={t('trucks:fleet.removeButton')} icon="trash" variant="destructive" onPress={onDelete} style={styles.actionButton} />
       </View>
     </Card>
   );

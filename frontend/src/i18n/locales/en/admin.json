@@ -1,0 +1,189 @@
+{
+  "stats": {
+    "users": "Users",
+    "loads": "Loads",
+    "bookings": "Bookings",
+    "pendingKyc": "Pending KYC",
+    "pendingTrucks": "Pending Trucks",
+    "trucks": "Trucks"
+  },
+  "review": {
+    "reasonPlaceholder": "Reason (required to reject, the {{audience}} will see it)",
+    "audience": {
+      "user": "user",
+      "owner": "owner"
+    },
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "kycQueue": {
+    "title": "KYC Queue ({{count}})",
+    "emptyTitle": "All caught up",
+    "emptyMessage": "No submissions waiting for review.",
+    "identity": "Identity: {{list}}"
+  },
+  "truckQueue": {
+    "title": "Truck Verification Queue ({{count}})",
+    "emptyTitle": "No trucks waiting",
+    "emptyMessage": "Trucks sent for verification show up here.",
+    "bluebookTax": "Bluebook tax until {{date}}",
+    "insuranceUntil": "Insurance until {{date}}",
+    "insuranceCompanySuffix": " ({{company}})",
+    "greenSticker": "Green sticker until {{date}}",
+    "owner": "Owner: {{details}}",
+    "verifiedSuffix": " (identity verified)",
+    "notVerifiedSuffix": " (identity not verified)",
+    "chassisEngine": "Chassis {{chassis}} · Engine {{engine}}"
+  },
+  "common": {
+    "submitted": "Submitted {{date}}",
+    "error": "Error",
+    "refresh": "Refresh"
+  },
+  "roles": {
+    "shipper": "Shipper",
+    "owner": "Truck Owner",
+    "driver": "Driver",
+    "admin": "Admin"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{totalPages}}",
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "perPage": "Per page",
+    "goTo": "Go to page {{page}}"
+  },
+  "usersList": {
+    "title": "Users ({{count}})",
+    "emptyTitle": "No users yet",
+    "emptyMessage": "New signups will show up here.",
+    "unnamed": "Unnamed",
+    "joined": "Joined {{date}}",
+    "rating_one": "{{count}} rating",
+    "rating_other": "{{count}} ratings"
+  },
+  "userActions": {
+    "suspend": {
+      "button": "Suspend",
+      "title": "Suspend this user?",
+      "message": "{{name}} will be blocked straight away and can't use FLITO until you reactivate them.",
+      "confirm": "Suspend"
+    },
+    "ban": {
+      "button": "Ban",
+      "title": "Ban this user?",
+      "message": "{{name}} will be blocked straight away. You can reactivate them later.",
+      "confirm": "Ban"
+    },
+    "reactivate": {
+      "button": "Reactivate",
+      "title": "Reactivate this user?",
+      "message": "{{name}} will be able to use FLITO again.",
+      "confirm": "Reactivate"
+    }
+  },
+  "loadsList": {
+    "title": "Loads ({{count}})",
+    "emptyTitle": "No loads yet",
+    "emptyMessage": "Loads posted by shippers will show up here.",
+    "shipperFallback": "Unknown shipper",
+    "quotes_one": "{{count}} quote",
+    "quotes_other": "{{count}} quotes",
+    "posted": "Posted {{date}}"
+  },
+  "bookingsList": {
+    "title": "Bookings ({{count}})",
+    "emptyTitle": "No bookings yet",
+    "emptyMessage": "Bookings created from accepted quotes will show up here.",
+    "goodsFallback": "Booking",
+    "created": "Created {{date}}"
+  },
+  "nav": {
+    "users": "Users",
+    "loads": "Loads",
+    "bookings": "Bookings",
+    "kyc": "KYC",
+    "trucks": "Trucks"
+  },
+  "console": {
+    "title": "Admin console",
+    "subtitle": "Manage the FLITO platform",
+    "management": "Management"
+  },
+  "filters": {
+    "all": "All",
+    "role": "Role",
+    "status": "Status",
+    "identity": "Identity",
+    "verification": "Verification",
+    "clear": "Clear filters",
+    "title": "Filters"
+  },
+  "pages": {
+    "count_one": "{{count}} result",
+    "count_other": "{{count}} results",
+    "noMatchesTitle": "Nothing matches",
+    "noMatchesMessage": "Try a different search or clear the filters.",
+    "users": {
+      "title": "Users",
+      "subtitle": "Everyone on FLITO. Suspend or reactivate accounts.",
+      "search": "Search by name, email, phone or company",
+      "emptyTitle": "No users yet",
+      "emptyMessage": "New signups will show up here."
+    },
+    "loads": {
+      "title": "Loads",
+      "subtitle": "Every load posted by shippers, in any status.",
+      "search": "Search by goods type",
+      "emptyTitle": "No loads yet",
+      "emptyMessage": "Loads posted by shippers will show up here."
+    },
+    "bookings": {
+      "title": "Bookings",
+      "subtitle": "Every booking created from an accepted quote.",
+      "search": "",
+      "emptyTitle": "No bookings yet",
+      "emptyMessage": "Bookings created from accepted quotes will show up here."
+    },
+    "kyc": {
+      "title": "Identity verification",
+      "subtitle": "Review the documents people submitted.",
+      "search": "Search by name, email, phone or company",
+      "emptyTitle": "All caught up",
+      "emptyMessage": "No submissions in this list."
+    },
+    "trucks": {
+      "title": "Trucks",
+      "subtitle": "Every truck on the platform and its verification.",
+      "search": "Search by registration or make/model",
+      "emptyTitle": "No trucks yet",
+      "emptyMessage": "Trucks owners add will show up here."
+    }
+  },
+  "dashboard": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "subtitle": "Here is where FLITO stands today.",
+    "needsAttention": "Needs your attention",
+    "allClearTitle": "All clear",
+    "allClear": "Nothing is waiting for review.",
+    "review": "Review",
+    "kycWaiting_one": "{{count}} identity verification is waiting",
+    "kycWaiting_other": "{{count}} identity verifications are waiting",
+    "trucksWaiting_one": "{{count}} truck is waiting for verification",
+    "trucksWaiting_other": "{{count}} trucks are waiting for verification",
+    "platform": "Platform",
+    "openLoads": "{{count}} still open",
+    "activeBookings": "{{count}} in progress",
+    "whereThingsStand": "Where things stand",
+    "usersByRole": "Users by role",
+    "loadsByStatus": "Loads by status",
+    "bookingsByStatus": "Bookings by status",
+    "trucksByVerification": "Trucks by verification",
+    "noData": "Nothing to show yet.",
+    "newestUsers": "Newest users",
+    "viewAll": "View all"
+  }
+}

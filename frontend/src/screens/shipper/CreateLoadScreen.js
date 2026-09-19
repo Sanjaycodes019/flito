@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import Input from '../../components/common/Input';
@@ -24,16 +25,14 @@ import { pickImages, takePhoto, uploadPhotos } from '../../services/uploads';
 import { notify } from '../../utils/alert';
 import { addLoad } from '../../redux/slices/loadsSlice';
 
-const PHONE_HINT = 'Use a +977 number, e.g. +9779841234567';
-
 // Web only: the summary stays in view beside the form while it scrolls.
 const stickyOnWeb = Platform.OS === 'web' ? { position: 'sticky', top: spacing.xxl } : null;
 
-const weightProblem = (text) => {
+const weightProblem = (text, t) => {
   const value = text.trim();
-  if (!value) return 'Enter the weight in kg';
-  if (!/^\d+(\.\d+)?$/.test(value) || Number(value) <= 0) return 'Enter the weight as a number of kg';
-  if (Number(value) > MAX_LOAD_WEIGHT_KG) return `Loads can weigh up to ${formatKg(MAX_LOAD_WEIGHT_KG)}`;
+  if (!value) return t('loads:createLoad.errors.enterWeightKg');
+  if (!/^\d+(\.\d+)?$/.test(value) || Number(value) <= 0) return t('loads:createLoad.errors.enterWeightNumber');
+  if (Number(value) > MAX_LOAD_WEIGHT_KG) return t('loads:createLoad.errors.maxWeight', { max: formatKg(MAX_LOAD_WEIGHT_KG) });
   return null;
 };
 
@@ -81,27 +80,34 @@ const DayChip = ({ day, today, selected, onPress, width }) => {
   );
 };
 
-const RoutePoint = ({ kind, value }) => (
-  <View style={styles.routePoint}>
-    <View style={[styles.routeDot, kind === 'pickup' ? styles.routeDotPickup : styles.routeDotDropoff]} />
-    <View style={styles.routeText}>
-      <Text style={styles.routeLabel}>{kind === 'pickup' ? 'Pickup' : 'Dropoff'}</Text>
-      <Text style={[styles.routeValue, !value && styles.muted]} numberOfLines={2}>{value || 'Not chosen yet'}</Text>
+const RoutePoint = ({ kind, value }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.routePoint}>
+      <View style={[styles.routeDot, kind === 'pickup' ? styles.routeDotPickup : styles.routeDotDropoff]} />
+      <View style={styles.routeText}>
+        <Text style={styles.routeLabel}>{kind === 'pickup' ? t('loads:common.pickup') : t('loads:common.dropoff')}</Text>
+        <Text style={[styles.routeValue, !value && styles.muted]} numberOfLines={2}>{value || t('loads:createLoad.summary.notChosenYet')}</Text>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
-const SummaryRow = ({ label, value, empty = 'Not set' }) => (
-  <View style={styles.summaryRow}>
-    <Text style={styles.summaryLabel}>{label}</Text>
-    <Text style={[styles.summaryValue, !value && styles.muted]} numberOfLines={1}>{value || empty}</Text>
-  </View>
-);
+const SummaryRow = ({ label, value, empty }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.summaryRow}>
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <Text style={[styles.summaryValue, !value && styles.muted]} numberOfLines={1}>{value || empty || t('loads:createLoad.summary.notSet')}</Text>
+    </View>
+  );
+};
 
 // Step one of booking a truck: only what matching needs (what, how heavy,
 // where from and to, and when). Contacts, a map pin, a description and photos
 // are optional and folded away. Posting opens the trucks that can carry it.
 const CreateLoadScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const savedAddress = useSelector((state) => state.auth.user?.address);
   // A single column up to tablet; on a laptop the form and a summary sit side by side.
@@ -139,7 +145,7 @@ const CreateLoadScreen = ({ navigation }) => {
   if (!tree) {
     return loadError ? (
       <View style={styles.container}>
-        <EmptyState icon="offline" tone="error" title="Could not load address options" message={loadError} actionLabel="Try Again" onAction={loadTree} />
+        <EmptyState icon="offline" tone="error" title={t('loads:createLoad.couldNotLoadAddressOptionsTitle')} message={loadError} actionLabel={t('loads:common.tryAgain')} onAction={loadTree} />
       </View>
     ) : <Spinner />;
   }
@@ -154,7 +160,7 @@ const CreateLoadScreen = ({ navigation }) => {
         : await pickImages({ max: MAX_LOAD_PHOTOS - photos.length });
       if (assets.length) setPhotos((current) => [...current, ...assets].slice(0, MAX_LOAD_PHOTOS));
     } catch (error) {
-      notify('Could not add photos', getErrorMessage(error));
+      notify(t('loads:createLoad.couldNotAddPhotosTitle'), getErrorMessage(error));
     }
     setPhotoBusy(null);
   };
@@ -163,18 +169,18 @@ const CreateLoadScreen = ({ navigation }) => {
 
   const phoneInvalid = (stop) => Boolean(stop.phone.trim()) && !isValidPhone(stop.phone.trim());
   const stillNeeded = [
-    !goodsType.trim() && 'goods type',
-    !weight.trim() && 'weight',
-    !isPlaceComplete(stops.pickup.place) && 'pickup address',
-    !isPlaceComplete(stops.dropoff.place) && 'dropoff address',
+    !goodsType.trim() && t('loads:createLoad.missing.goodsType'),
+    !weight.trim() && t('loads:createLoad.missing.weight'),
+    !isPlaceComplete(stops.pickup.place) && t('loads:createLoad.missing.pickupAddress'),
+    !isPlaceComplete(stops.dropoff.place) && t('loads:createLoad.missing.dropoffAddress'),
   ].filter(Boolean);
-  const hasInvalidField = Boolean(weight.trim() && weightProblem(weight))
+  const hasInvalidField = Boolean(weight.trim() && weightProblem(weight, t))
     || phoneInvalid(stops.pickup) || phoneInvalid(stops.dropoff);
 
   // Errors show only once the user has tried to post, not while they fill in.
   const shown = (message) => (triedToPost ? message || null : null);
   const stopErrors = (stop) => (triedToPost
-    ? { ...missingPlaceFields(stop.place, 'the'), phone: phoneInvalid(stop) ? PHONE_HINT : null }
+    ? { ...missingPlaceFields(stop.place, 'the'), phone: phoneInvalid(stop) ? t('loads:createLoad.phoneHint') : null }
     : {});
 
   const handleFindTrucks = async () => {
@@ -209,12 +215,12 @@ const CreateLoadScreen = ({ navigation }) => {
       const openMatches = () => navigation.replace('TruckMatches', { loadId: load._id });
 
       if (photoError) {
-        notify('Load posted, but photos failed', `${photoError}. You can add them from the load's page.`, openMatches);
+        notify(t('loads:createLoad.loadPostedPhotosFailedTitle'), t('loads:createLoad.loadPostedPhotosFailedMessage', { error: photoError }), openMatches);
       } else {
         openMatches();
       }
     } catch (error) {
-      notify('Could not post the load', getErrorMessage(error));
+      notify(t('loads:createLoad.couldNotPostLoadTitle'), getErrorMessage(error));
       setPosting(false);
     }
   };
@@ -223,22 +229,22 @@ const CreateLoadScreen = ({ navigation }) => {
   const hasExtras = Boolean(description.trim()) || photos.length > 0;
 
   const stillNeededText = [
-    stillNeeded.length ? `Still needed: ${stillNeeded.join(', ')}.` : null,
-    hasInvalidField ? 'Fix the highlighted fields.' : null,
+    stillNeeded.length ? t('loads:createLoad.stillNeeded', { items: stillNeeded.join(', ') }) : null,
+    hasInvalidField ? t('loads:createLoad.fixHighlighted') : null,
   ].filter(Boolean).join(' ');
 
   const summary = (
     <Card style={wide && styles.sectionWide}>
-      <Text style={styles.summaryTitle} accessibilityRole="header">Summary</Text>
+      <Text style={styles.summaryTitle} accessibilityRole="header">{t('loads:createLoad.summary.title')}</Text>
       <RoutePoint kind="pickup" value={shortPlaceName(tree, stops.pickup.place)} />
       <View style={styles.routeConnector} />
       <RoutePoint kind="dropoff" value={shortPlaceName(tree, stops.dropoff.place)} />
 
       <View style={styles.summaryDivider} />
-      <SummaryRow label="Goods" value={goodsType.trim()} />
-      <SummaryRow label="Weight" value={weight.trim() && !weightProblem(weight) ? formatKg(Number(weight)) : null} />
-      <SummaryRow label="Pickup" value={dayLabel(pickupDay, days[0])} />
-      <SummaryRow label="Photos" value={photos.length ? String(photos.length) : null} empty="None" />
+      <SummaryRow label={t('loads:createLoad.summary.goods')} value={goodsType.trim()} />
+      <SummaryRow label={t('loads:createLoad.summary.weight')} value={weight.trim() && !weightProblem(weight, t) ? formatKg(Number(weight)) : null} />
+      <SummaryRow label={t('loads:createLoad.summary.pickup')} value={dayLabel(pickupDay, days[0])} />
+      <SummaryRow label={t('loads:createLoad.summary.photos')} value={photos.length ? String(photos.length) : null} empty={t('loads:createLoad.summary.none')} />
 
       {triedToPost && stillNeededText ? (
         <View style={styles.stillNeeded}>
@@ -247,45 +253,45 @@ const CreateLoadScreen = ({ navigation }) => {
         </View>
       ) : null}
 
-      <Button title="Find Trucks" icon="search" onPress={handleFindTrucks} loading={posting} style={styles.postButton} />
-      <Text style={styles.footnote}>Next, you will see trucks that can carry this load and send your price.</Text>
+      <Button title={t('loads:createLoad.findTrucksButton')} icon="search" onPress={handleFindTrucks} loading={posting} style={styles.postButton} />
+      <Text style={styles.footnote}>{t('loads:createLoad.footnote')}</Text>
     </Card>
   );
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={layout.contentStyle} keyboardShouldPersistTaps="handled">
-      <Text style={styles.intro}>Tell us what you are sending and where. Next, choose from trucks that can carry it.</Text>
+      <Text style={styles.intro}>{t('loads:createLoad.intro')}</Text>
 
       <View style={twoColumns ? styles.columns : null}>
         <View style={twoColumns ? styles.main : null}>
-          <FormSection icon="load" title="Shipment" description="Trucks are matched to the weight, so give your best estimate." wide={wide}>
+          <FormSection icon="load" title={t('loads:createLoad.shipmentSection.title')} description={t('loads:createLoad.shipmentSection.description')} wide={wide}>
             <View style={halfRow}>
               <Input
-                label="Goods Type"
+                label={t('loads:createLoad.goodsTypeLabel')}
                 value={goodsType}
                 onChangeText={setGoodsType}
-                placeholder="Rice, cement, furniture..."
+                placeholder={t('loads:createLoad.goodsTypePlaceholder')}
                 icon="load"
                 required
                 maxLength={100}
-                error={shown(!goodsType.trim() && 'Enter what you are shipping')}
+                error={shown(!goodsType.trim() && t('loads:createLoad.errors.enterGoodsType'))}
                 containerStyle={wide ? styles.grow2 : undefined}
               />
               <Input
-                label="Weight (kg)"
+                label={t('loads:createLoad.weightLabel')}
                 value={weight}
                 onChangeText={setWeight}
                 keyboardType="numeric"
-                placeholder="e.g. 6000"
+                placeholder={t('loads:createLoad.weightPlaceholder')}
                 icon="weight"
                 required
-                error={shown(weightProblem(weight))}
+                error={shown(weightProblem(weight, t))}
                 containerStyle={wide ? styles.grow1 : undefined}
               />
             </View>
           </FormSection>
 
-          <FormSection icon="route" title="Route" description="Choose each address from Nepal's official lists." wide={wide}>
+          <FormSection icon="route" title={t('loads:createLoad.routeSection.title')} description={t('loads:createLoad.routeSection.description')} wide={wide}>
             <RouteStop
               kind="pickup"
               stop={stops.pickup}
@@ -309,7 +315,7 @@ const CreateLoadScreen = ({ navigation }) => {
             />
           </FormSection>
 
-          <FormSection icon="calendar" title="Pickup Date" description="When the truck should collect the goods." wide={wide}>
+          <FormSection icon="calendar" title={t('loads:createLoad.pickupDateSection.title')} description={t('loads:createLoad.pickupDateSection.description')} wide={wide}>
             <View style={styles.dayGrid} accessibilityRole="radiogroup">
               {days.map((day) => (
                 <DayChip
@@ -328,31 +334,31 @@ const CreateLoadScreen = ({ navigation }) => {
             <Disclosure
               bordered={false}
               icon="image"
-              title="Description and Photos"
-              hint={`Packaging, handling needs, and up to ${MAX_LOAD_PHOTOS} photos.`}
+              title={t('loads:createLoad.descriptionPhotosSection.title')}
+              hint={t('loads:createLoad.descriptionPhotosSection.hint', { max: MAX_LOAD_PHOTOS })}
               badge={hasExtras
-                ? <StatusPill label="Added" tone="success" icon="checkmark" />
-                : <StatusPill label="Optional" />}
+                ? <StatusPill label={t('loads:common.added')} tone="success" icon="checkmark" />
+                : <StatusPill label={t('loads:common.optional')} />}
               open={moreOpen}
               onToggle={setMoreOpen}
             >
               <Input
-                label="Description"
+                label={t('loads:createLoad.descriptionLabel')}
                 value={description}
                 onChangeText={setDescription}
-                placeholder="Packaging, handling needs, loading help"
+                placeholder={t('loads:createLoad.descriptionPlaceholder')}
                 multiline
                 maxLength={1000}
                 icon="document"
                 style={styles.multiline}
               />
-              <Text style={styles.fieldLabel}>{`Photos (${photos.length} of ${MAX_LOAD_PHOTOS})`}</Text>
+              <Text style={styles.fieldLabel}>{t('loads:createLoad.photosCount', { count: photos.length, max: MAX_LOAD_PHOTOS })}</Text>
               <PhotoStrip photos={photos} onRemove={removePhoto} />
               {photos.length < MAX_LOAD_PHOTOS && (
                 <PhotoSourceButtons
                   onTakePhoto={() => handleAddPhotos('camera')}
                   onChoose={() => handleAddPhotos('library')}
-                  chooseLabel="Choose Photos"
+                  chooseLabel={t('loads:common.choosePhotos')}
                   busy={photoBusy}
                   style={wide ? styles.photoButtonsWide : undefined}
                 />

@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
@@ -16,6 +17,7 @@ import useScreenLayout from '../../hooks/useScreenLayout';
 // requests shippers sent to their trucks. Once a load leaves "open" it
 // disappears from browse, so this is the owner's way back to each of them.
 const MyQuotesScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -26,10 +28,10 @@ const MyQuotesScreen = ({ navigation }) => {
       const { data } = await api.get('/quotes/mine');
       setQuotes(data.quotes);
     } catch (error) {
-      notify('Error', getErrorMessage(error));
+      notify(t('trucks:myQuotes.errorTitle'), getErrorMessage(error));
     }
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -42,7 +44,7 @@ const MyQuotesScreen = ({ navigation }) => {
   if (loading && !refreshing && quotes.length === 0) {
     return (
       <View style={styles.container}>
-        <EmptyState icon="quote" title="Loading your offers" message="One moment..." />
+        <EmptyState icon="quote" title={t('trucks:myQuotes.loadingTitle')} message={t('trucks:myQuotes.loadingMessage')} />
       </View>
     );
   }
@@ -57,8 +59,8 @@ const MyQuotesScreen = ({ navigation }) => {
       ListEmptyComponent={
         <EmptyState
           icon="quote"
-          title="No offers yet"
-          message="Quote on loads with your trucks, or wait for shippers to request them."
+          title={t('trucks:myQuotes.emptyTitle')}
+          message={t('trucks:myQuotes.emptyMessage')}
         />
       }
       renderItem={({ item }) => {
@@ -66,19 +68,26 @@ const MyQuotesScreen = ({ navigation }) => {
         const request = openingSide(item) === 'shipper';
         const needsYou = isTurnOf(item, 'owner');
         const truck = item.truckId && typeof item.truckId === 'object' ? item.truckId : null;
+        const goodsType = load.goodsType || t('trucks:myQuotes.loadFallback');
 
         return (
           <Card
             style={styles.card}
             onPress={() => navigation.navigate('LoadDetail', { loadId: load._id || load })}
-            accessibilityLabel={`${load.goodsType || 'Load'} ${request ? 'booking request' : 'quote'}`}
+            accessibilityLabel={t('trucks:myQuotes.cardAccessibilityLabel', {
+              goodsType,
+              kind: request ? t('trucks:myQuotes.bookingRequestWord') : t('trucks:myQuotes.quoteWord'),
+            })}
           >
             <View style={styles.row}>
-              <Text style={styles.goodsType} numberOfLines={1}>{load.goodsType || 'Load'}</Text>
+              <Text style={styles.goodsType} numberOfLines={1}>{goodsType}</Text>
               <StatusBadge status={item.status} />
             </View>
             <Text style={styles.kind} numberOfLines={1}>
-              {[request ? 'Booking request from a shipper' : 'Your quote', truck && `${truckTypeLabel(truck.truckType)} ${truck.registrationNumber || ''}`.trim()]
+              {[
+                request ? t('trucks:myQuotes.bookingRequestFromShipper') : t('trucks:myQuotes.yourQuote'),
+                truck && `${truckTypeLabel(truck.truckType, t)} ${truck.registrationNumber || ''}`.trim(),
+              ]
                 .filter(Boolean)
                 .join(' · ')}
             </Text>
@@ -100,8 +109,8 @@ const MyQuotesScreen = ({ navigation }) => {
                 <Icon name="warning" size={iconSize.xs} color={colors.warningText} />
                 <Text style={styles.actionNeeded}>
                   {request && item.status === 'pending'
-                    ? 'A shipper wants your truck. Accept, counter or decline.'
-                    : 'The shipper countered. Your response is needed.'}
+                    ? t('trucks:myQuotes.shipperWantsYourTruck')
+                    : t('trucks:myQuotes.shipperCountered')}
                 </Text>
               </View>
             )}

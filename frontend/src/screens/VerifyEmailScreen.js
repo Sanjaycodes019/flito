@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import OtpInput from '../components/auth/OtpInput';
-import ResendCode from '../components/auth/ResendCode';
+import ResendCode, { RESEND_COOLDOWN_SECONDS } from '../components/auth/ResendCode';
 import Icon from '../theme/icons';
 import { colors, spacing, type, iconSize } from '../theme/tokens';
 import { authService } from '../services/auth';
@@ -14,10 +15,14 @@ import { setUser } from '../redux/slices/authSlice';
 import useScreenLayout from '../hooks/useScreenLayout';
 
 const VerifyEmailScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [code, setCode] = useState('');
-  const [sentAt, setSentAt] = useState(() => Date.now());
+  // This screen can open long after the signup email went out, so a new code
+  // can be asked for straight away. If one was sent moments ago, the server
+  // says how long to wait and the countdown picks that up.
+  const [sentAt, setSentAt] = useState(null);
   const [resending, setResending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   // A short code form: kept to a compact centered column on every screen.
@@ -26,11 +31,16 @@ const VerifyEmailScreen = ({ navigation }) => {
   const handleResend = async () => {
     setResending(true);
     try {
-      const data = await authService.resendVerification();
-      if (data.verificationCode) notify('Dev mode', `Verification code for testing: ${data.verificationCode}`);
+      await authService.resendVerification();
       setSentAt(Date.now());
+      notify(t('auth:shared.codeSentTitle'), t('auth:verifyEmail.codeSentMessage', { email: user?.email }));
     } catch (error) {
-      notify('Could not resend', getErrorMessage(error));
+      const wait = error?.response?.data?.retryAfterSeconds;
+      if (error?.response?.status === 429 && wait) {
+        setSentAt(Date.now() - (RESEND_COOLDOWN_SECONDS - wait) * 1000);
+      } else {
+        notify(t('auth:shared.couldNotResendTitle'), getErrorMessage(error));
+      }
     }
     setResending(false);
   };
@@ -41,9 +51,9 @@ const VerifyEmailScreen = ({ navigation }) => {
     try {
       const data = await authService.verifyEmail(user.email, code);
       dispatch(setUser(data.user));
-      notify('Email verified', 'Thanks, your email is confirmed.', () => navigation.goBack());
+      notify(t('auth:verifyEmail.emailVerifiedTitle'), t('auth:verifyEmail.emailVerifiedMessage'), () => navigation.goBack());
     } catch (error) {
-      notify('Could not verify', getErrorMessage(error));
+      notify(t('auth:verifyEmail.couldNotVerifyTitle'), getErrorMessage(error));
     }
     setSubmitting(false);
   };
@@ -54,9 +64,9 @@ const VerifyEmailScreen = ({ navigation }) => {
         <View style={styles.iconWrap}>
           <Icon name="unverified" size={iconSize.xl} color={colors.warningText} />
         </View>
-        <Text style={styles.title}>Verify Your Email</Text>
+        <Text style={styles.title}>{t('auth:verifyEmail.title')}</Text>
         <Text style={styles.subtitle}>
-          Enter the 6-digit code sent to <Text style={styles.emailText}>{user?.email}</Text>
+          {t('auth:shared.codeSentPrefix')}<Text style={styles.emailText}>{user?.email}</Text>{t('auth:shared.codeSentSuffix')}
         </Text>
       </View>
 
@@ -64,9 +74,9 @@ const VerifyEmailScreen = ({ navigation }) => {
         <View style={styles.otpWrap}>
           <OtpInput value={code} onChange={setCode} editable={!submitting} />
         </View>
-        <ResendCode sentAt={sentAt} onResend={handleResend} disabled={resending} />
+        <ResendCode sentAt={sentAt} cooldownSeconds={RESEND_COOLDOWN_SECONDS} onResend={handleResend} disabled={resending} />
 
-        <Button title="Verify Email" icon="checkmark" onPress={handleSubmit} loading={submitting} disabled={code.length !== 6} style={styles.submit} />
+        <Button title={t('auth:verifyEmail.submit')} icon="checkmark" onPress={handleSubmit} loading={submitting} disabled={code.length !== 6} style={styles.submit} />
       </Card>
     </ScrollView>
   );

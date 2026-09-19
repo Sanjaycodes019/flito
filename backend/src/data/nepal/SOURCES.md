@@ -18,7 +18,7 @@ Used for: province, district and local-level names and P-codes, and the
 local-level polygons behind "Use current location". This dataset has no ward
 boundaries, so wards are never detected automatically.
 
-## Ward counts and local-level categories
+## Ward counts, local-level categories and Nepali names
 
 **local-states-nepal** by Sagar Gautam: https://github.com/sagautam5/local-states-nepal
 
@@ -29,6 +29,11 @@ category (metropolitan city, sub-metropolitan city, municipality, rural
 municipality). Matched to the boundaries by name and land area within each
 district. Where its spelling differs from the Survey Department's, it is kept
 as a search alias.
+
+The same dataset also ships Devanagari names for every province, district
+and municipality, which is where `nameNe` (and each local level's
+`categoryNe`) comes from — matched to the English names above the same way,
+so no separate translation step or extra license applies.
 
 ## Tole, village or area suggestions
 
@@ -46,7 +51,11 @@ attribution next to a suggestion.
 
    ```
    node scripts/buildNepalLocations.js <path>/npl_admin3.geojson <path>/local-states-nepal/dataset
+   node scripts/addNepaliLocationNames.js <path>/local-states-nepal/dataset
    ```
 
-The script refuses to write output unless it finds 7 provinces, 77
-districts, 753 local levels and 6,743 wards.
+The first script refuses to write output unless it finds 7 provinces, 77
+districts, 753 local levels and 6,743 wards. The second adds `nameNe` (and
+`categoryNe` on local levels) to that output and reports any place it
+couldn't match — expect none; it uses the same dataset directory and only
+needs re-running if `local-states-nepal` renames something.
