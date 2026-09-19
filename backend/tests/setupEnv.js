@@ -4,3 +4,4 @@
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test_secret_used_only_by_the_test_suite_0123456789';
 process.env.JWT_EXPIRE = '1h';
+process.env.OSRM_URL = 'off'; // never call a routing server from the suite

@@ -14,6 +14,7 @@ const bookingView = (booking) => withVerification(booking, {
   trucks: ['truckId'],
 });
 const { requiresVerification } = require('../services/kycPolicy');
+const { busyDaysOf } = require('../services/tripSchedule');
 const { sendPushToUser, sendPushToUsers } = require('../services/push');
 
 // A ref may be a raw ObjectId or, on populated queries, a full user document.
@@ -195,8 +196,9 @@ exports.updateStatus = async (req, res, next) => {
 
     // A finished or cancelled booking frees its truck's day for other loads.
     if (booking.truckId && ['completed', 'cancelled'].includes(status)) {
-      const load = await Load.findById(booking.loadId).select('pickupDay');
-      if (load?.pickupDay) await Truck.updateOne({ _id: booking.truckId }, { $pull: { reservedDays: load.pickupDay } });
+      const load = await Load.findById(booking.loadId).select('pickupDay tripDays');
+      const busyDays = busyDaysOf(load);
+      if (busyDays.length) await Truck.updateOne({ _id: booking.truckId }, { $pull: { reservedDays: { $in: busyDays } } });
     }
 
     const parties = [booking.shipperId, booking.ownerId, booking.driverId].filter(Boolean);

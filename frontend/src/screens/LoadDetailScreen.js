@@ -13,7 +13,7 @@ import VerifiedBadge from '../components/common/VerifiedBadge';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
-import { formatCurrency, formatDate, formatKg, getErrorMessage, truckTypeLabel } from '../utils/helpers';
+import { formatCurrency, formatDate, formatKg, formatTrip, getErrorMessage, truckTypeLabel } from '../utils/helpers';
 import { dayLabel } from '../utils/nepalDate';
 import {
   MAX_OFFERS, isOpenQuote, offerHistory, openingSide, standingOffer,
@@ -170,7 +170,7 @@ const LoadDetailScreen = ({ route, navigation }) => {
             <Detail icon="pickup" label={t('loads:common.pickup')} value={load.pickupLocation?.address} />
             <Detail icon="dropoff" label={t('loads:common.dropoff')} value={load.dropoffLocation?.address} />
             {load.pickupDay ? <Detail icon="calendar" label={t('loads:loadDetail.pickupDateLabel')} value={dayLabel(load.pickupDay)} /> : null}
-            {load.distanceKm ? <Detail icon="route" label={t('loads:loadDetail.distanceLabel')} value={t('loads:truckMatches.aboutKmByRoad', { km: load.distanceKm })} /> : null}
+            {load.distanceKm ? <Detail icon="route" label={t('loads:loadDetail.distanceLabel')} value={formatTrip(t, load)} /> : null}
             {load.weight ? <Detail icon="weight" label={t('loads:common.weight')} value={formatKg(load.weight)} /> : null}
             {load.truckTypePreference && load.truckTypePreference !== 'any'
               ? <Detail icon="truck" label={t('loads:loadDetail.truckTypeLabel')} value={truckTypeLabel(load.truckTypePreference, t)} />

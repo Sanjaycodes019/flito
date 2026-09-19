@@ -1,5 +1,6 @@
 import i18n from '../i18n';
 import { translateServerMessage } from '../i18n/serverMessages';
+import { formatDayKey, nepalDay } from './nepalDate';
 import {
   PHONE_REGEX, EMAIL_REGEX, TRUCK_TYPE_LABELS, BODY_TYPE_LABELS,
   TRUCK_FEATURES, SERVICE_AREAS, INSURANCE_TYPES, KYC_DOCUMENT_LABELS, KYC_ID_TYPE_LABELS,
@@ -11,13 +12,11 @@ export const isValidEmail = (email) => typeof email === 'string' && EMAIL_REGEX.
 export const formatCurrency = (amount) =>
   `Rs. ${Number(amount || 0).toLocaleString('en-NP')}`;
 
+// A moment as a date in the calendar the user chose (AD or BS), read as the
+// day it is in Nepal.
 export const formatDate = (date) => {
   if (!date) return '';
-  return new Date(date).toLocaleDateString('en-NP', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatDayKey(nepalDay(new Date(date)));
 };
 
 export const getErrorMessage = (error) => {
@@ -88,4 +87,14 @@ export const kycDocumentLabel = (docType, t) => {
 export const kycIdTypeLabel = (idType, t) => {
   const fallback = KYC_ID_TYPE_LABELS[idType] || idType;
   return t ? t(`kyc:idTypes.${idType}`, fallback) : fallback;
+};
+
+// "200 km by road · about 2 days": the trip a load makes. "About" marks a
+// straight-line estimate, used when real route distances weren't available.
+export const formatTrip = (t, load) => {
+  if (!load?.distanceKm) return null;
+  const key = load.distanceSource === 'route' ? 'loads:truckMatches.kmByRoad' : 'loads:truckMatches.aboutKmByRoad';
+  const parts = [t(key, { km: load.distanceKm })];
+  if (load.tripDays > 1) parts.push(t('loads:truckMatches.tripDays', { count: load.tripDays }));
+  return parts.join(' · ');
 };

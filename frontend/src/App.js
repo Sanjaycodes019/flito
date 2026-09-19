@@ -9,6 +9,7 @@ import RootNavigator from './navigation/RootNavigator';
 import AlertHost from './components/common/AlertHost';
 import CameraCaptureHost from './components/common/CameraCaptureHost';
 import { initI18n } from './i18n';
+import { loadCalendarPreference } from './services/calendarPreference';
 import Spinner from './components/common/Spinner';
 
 // On cold start, check for a previously stored JWT and restore the session
@@ -49,7 +50,7 @@ export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
 
   useEffect(() => {
-    initI18n().then(() => setI18nReady(true));
+    initI18n().then(loadCalendarPreference).then(() => setI18nReady(true));
   }, []);
 
   if (!i18nReady) {

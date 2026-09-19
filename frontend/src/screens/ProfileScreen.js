@@ -11,6 +11,7 @@ import ProfileChecklist from '../components/profile/ProfileChecklist';
 import Modal from '../components/common/Modal';
 import ActionList from '../components/common/ActionList';
 import LanguageToggle from '../components/common/LanguageToggle';
+import CalendarToggle from '../components/common/CalendarToggle';
 import { SettingsSection, SettingsRow } from '../components/common/SettingsList';
 import { colors, spacing, type } from '../theme/tokens';
 import useScreenLayout from '../hooks/useScreenLayout';
@@ -37,6 +38,16 @@ const LanguageRow = ({ first }) => {
     <View style={[styles.languageRow, !first && styles.languageRowDivider]}>
       <Text style={styles.languageRowLabel}>{t('common:language.label')}</Text>
       <LanguageToggle />
+    </View>
+  );
+};
+
+const CalendarRow = () => {
+  const { t } = useTranslation();
+  return (
+    <View style={[styles.languageRow, styles.languageRowDivider]}>
+      <Text style={styles.languageRowLabel}>{t('common:calendar.label')}</Text>
+      <CalendarToggle />
     </View>
   );
 };
@@ -214,8 +225,9 @@ const ProfileScreen = ({ navigation }) => {
         <SettingsRow icon="logout" label={t('profile:rows.logOut')} destructive onPress={handleLogout} accessibilityLabel={t('profile:rows.logOutLabel')} />
       </SettingsSection>
 
-      <SettingsSection title={t('common:language.label')}>
+      <SettingsSection title={t('common:language.labelWithCalendar')}>
         <LanguageRow />
+        <CalendarRow />
       </SettingsSection>
 
       {!!APP_VERSION && <Text style={styles.version}>{t('profile:version', { version: APP_VERSION })}</Text>}

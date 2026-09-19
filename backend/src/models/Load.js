@@ -48,8 +48,13 @@ const loadSchema = new mongoose.Schema(
     // The pickup date as a Nepal calendar day ("2026-09-16"). Truck
     // availability is checked against it.
     pickupDay: String,
-    // Estimated road distance between the stops, in km.
+    // Road distance between the stops, in km, and whether it is a real
+    // route or the straight-line estimate used when routing was unavailable.
     distanceKm: Number,
+    distanceSource: { type: String, enum: ['route', 'estimate'] },
+    // How many days the trip keeps a truck busy from the pickup day (1 for a
+    // trip that fits in a day). A booking blocks the truck for all of them.
+    tripDays: { type: Number, default: 1, min: 1 },
     estimatedDeliveryDate: Date,
     truckTypePreference: {
       type: String,

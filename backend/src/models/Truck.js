@@ -94,9 +94,10 @@ const truckSchema = new mongoose.Schema(
       default: 'active',
     },
 
-    // Nepal days ("2026-09-16") the truck is booked for. A booking adds its
-    // pickup day with a conditional update, so one truck is never booked
-    // twice for the same day; cancelling or completing it removes the day.
+    // Nepal days ("2026-09-16") the truck is booked for. A booking adds every
+    // day its trip needs (from the pickup day, see services/tripSchedule.js)
+    // with one conditional update, so one truck is never booked twice for the
+    // same day; cancelling or completing it removes those days.
     reservedDays: {
       type: [String],
       default: [],

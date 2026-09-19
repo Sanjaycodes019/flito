@@ -2,7 +2,9 @@ const Truck = require('../models/Truck');
 const Booking = require('../models/Booking');
 const { NOMINAL_CAPACITY_KG } = require('../config/truckTypes');
 const { requiresVerification } = require('./kycPolicy');
-const { describeArea, estimateRoadKm } = require('./nepalLocations');
+const { describeArea } = require('./nepalLocations');
+const { roadDistance, roadDistancesTo } = require('./routing');
+const { busyDaysOf } = require('./tripSchedule');
 const { nepalDay, startOfNepalDay } = require('./nepalTime');
 const { formatKg } = require('../utils/format');
 
@@ -10,8 +12,8 @@ const { formatKg } = require('../utils/format');
 //
 // A truck is a candidate only when it can actually do the job: it is active,
 // its owner is verified and active, it carries at least the load's weight,
-// both stops are inside its service area, and it isn't already booked on the
-// pickup day. Candidates are then scored out of 100 on five signals
+// both stops are inside its service area, and it isn't already booked on any
+// day the trip needs. Candidates are then scored out of 100 on five signals
 // (WEIGHTS), and the strongest become the reasons a shipper sees on each truck.
 
 // How much each signal counts, out of 100.
@@ -90,7 +92,10 @@ const unavailableReason = (truck, load) => {
   }
   const outsideArea = serviceAreaReason(truck, load);
   if (outsideArea) return outsideArea;
-  if (load.pickupDay && (truck.reservedDays || []).includes(load.pickupDay)) return 'Already booked on the pickup date';
+  const busyDays = busyDaysOf(load);
+  if (busyDays.some((day) => (truck.reservedDays || []).includes(day))) {
+    return busyDays.length > 1 ? 'Already booked on some of the days this trip needs' : 'Already booked on the pickup date';
+  }
   return null;
 };
 
@@ -170,7 +175,8 @@ const publicTruck = (truck, insured) => ({
 // The trucks a shipper can choose for a load, best match first.
 const findMatches = async (load) => {
   const filter = { status: 'active' };
-  if (load.pickupDay) filter.reservedDays = { $ne: load.pickupDay };
+  const busyDays = busyDaysOf(load);
+  if (busyDays.length) filter.reservedDays = { $nin: busyDays };
   if (load.weight) filter.$or = [{ capacity: { $gte: load.weight } }, { capacity: null }];
 
   const trucks = await Truck.find(filter)
@@ -188,11 +194,14 @@ const findMatches = async (load) => {
   ]);
   const tripsByOwner = new Map(tripRows.map((row) => [String(row._id), row.trips]));
 
-  const tripKm = load.distanceKm ?? estimateRoadKm(load.pickupLocation, load.dropoffLocation);
+  const tripKm = load.distanceKm ?? (await roadDistance(load.pickupLocation, load.dropoffLocation)).km;
+  const based = candidates.filter((truck) => truck.baseLocation?.localLevelId);
+  const baseKms = await roadDistancesTo(based.map((truck) => truck.baseLocation), load.pickupLocation);
+  const kmToPickup = new Map(based.map((truck, i) => [String(truck._id), baseKms[i]]));
   const priced = candidates.map((truck) => ({
     truck,
     askingPrice: askingPriceFor(truck, tripKm),
-    distanceToPickupKm: truck.baseLocation?.localLevelId ? estimateRoadKm(truck.baseLocation, load.pickupLocation) : null,
+    distanceToPickupKm: kmToPickup.get(String(truck._id)) ?? null,
   }));
   const prices = priced.map((entry) => entry.askingPrice).filter((price) => price != null);
   const lowestAsking = prices.length ? Math.min(...prices) : null;

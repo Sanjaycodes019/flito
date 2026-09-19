@@ -230,4 +230,5 @@ module.exports = {
   describeAddress,
   isAddressComplete,
   estimateRoadKm,
+  pointOf,
 };

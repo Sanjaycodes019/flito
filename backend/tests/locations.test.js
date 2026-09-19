@@ -1,9 +1,6 @@
-// Address data and "use current location" run against the real boundary data;
-// only the OpenStreetMap lookup is replaced, so tests never call Nominatim.
-jest.mock('../src/services/reverseGeocode', () => ({ suggestAreaName: jest.fn() }));
-
+// Address data and "use current location" run against the real boundary,
+// ward and place data shipped with the server. Nothing is looked up online.
 const request = require('supertest');
-const { suggestAreaName } = require('../src/services/reverseGeocode');
 const { getTree, validateAddress, describeAddress } = require('../src/services/nepalLocations');
 const { setupTestDb, teardownTestDb, clearDb, signUp, as, app, sampleAddress } = require('./helpers');
 
@@ -12,8 +9,6 @@ afterAll(teardownTestDb);
 
 beforeEach(async () => {
   await clearDb();
-  jest.clearAllMocks();
-  suggestAreaName.mockResolvedValue('Basantapur');
 });
 
 const tree = getTree();
@@ -81,9 +76,42 @@ describe('detecting a location', () => {
     expect(nameOf(tree.provinces, res.body.provinceId)).toBe('Bagmati Province');
     expect(nameOf(tree.districts, res.body.districtId)).toBe('Kathmandu');
     expect(nameOf(tree.localLevels, res.body.localLevelId)).toBe('Kathmandu');
-    expect(res.body.areaName).toBe('Basantapur');
+    expect(res.body.areaName).toMatch(/Basantapur/);
     expect(res.body.areaSource).toBe('OpenStreetMap');
-    expect(res.body.ward).toBeUndefined();
+  });
+
+  it('finds the ward, from ward boundaries shipped with the server', async () => {
+    const user = await signUp({ role: 'shipper' });
+
+    // Baidam, on Pokhara's Lakeside: ward 6.
+    const res = await detect(user, { lat: 28.2096, lng: 83.9596 }).expect(200);
+
+    expect(res.body.ward).toBe(6);
+    expect(res.body.wardSource).toBe('OpenStreetMap');
+    const pokhara = tree.localLevels.find((l) => l.id === res.body.localLevelId);
+    expect(res.body.ward).toBeLessThanOrEqual(pokhara.wards);
+  });
+
+  it('answers with no ward, not a wrong one, where the ward is not mapped', async () => {
+    const user = await signUp({ role: 'shipper' });
+
+    // Inside Chitwan National Park: no municipality, so no ward.
+    const res = await detect(user, { lat: 27.5, lng: 84.35 }).expect(200);
+
+    expect(res.body.inNepal).toBe(true);
+    expect(res.body.ward).toBeNull();
+    expect(res.body.wardSource).toBeNull();
+  });
+
+  it('never returns a ward number the municipality does not have', async () => {
+    const user = await signUp({ role: 'driver' });
+    const points = [[27.7154, 85.3123], [27.6727, 85.3251], [26.4525, 87.2718], [28.05, 81.6167]];
+
+    for (const [lat, lng] of points) {
+      const body = (await detect(user, { lat, lng }).expect(200)).body;
+      const level = tree.localLevels.find((l) => l.id === body.localLevelId);
+      if (body.ward !== null) expect(body.ward).toBeLessThanOrEqual(level.wards);
+    }
   });
 
   it('finds other cities too', async () => {
@@ -100,14 +128,13 @@ describe('detecting a location', () => {
     expect(nameOf(tree.districts, biratnagar.districtId)).toBe('Morang');
   });
 
-  it('says so when the point is outside Nepal, without asking OpenStreetMap', async () => {
+  it('says so when the point is outside Nepal, ', async () => {
     const user = await signUp({ role: 'owner' });
 
     // New Delhi.
     const res = await detect(user, { lat: 28.6139, lng: 77.209 }).expect(200);
 
     expect(res.body).toEqual({ success: true, inNepal: false });
-    expect(suggestAreaName).not.toHaveBeenCalled();
   });
 
   it('requires a login and valid coordinates', async () => {

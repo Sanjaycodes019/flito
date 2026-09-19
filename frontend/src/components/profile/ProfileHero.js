@@ -7,6 +7,7 @@ import VerifiedBadge from '../common/VerifiedBadge';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, shadow, type, iconSize } from '../../theme/tokens';
 import { ROLES } from '../../utils/constants';
+import { formatMonthYear } from '../../utils/nepalDate';
 
 const ROLE_ICON = {
   [ROLES.SHIPPER]: 'shipper',
@@ -28,9 +29,7 @@ const AVATAR = 96;
 const RING = 4;
 const BADGE = 30;
 
-const monthYear = (date) => (date
-  ? new Date(date).toLocaleDateString('en-NP', { month: 'short', year: 'numeric' })
-  : null);
+const monthYear = formatMonthYear;
 
 // The profile photo is itself the button: tap it (or its camera badge) to
 // change it. On a laptop, hovering dims the photo and says what a click does.

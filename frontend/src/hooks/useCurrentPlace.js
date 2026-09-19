@@ -6,7 +6,7 @@ import { notify } from '../utils/alert';
 
 // Where the device is in Nepal's federal structure: asks for location access,
 // reads the most precise fix available and looks it up on the server.
-// `detect()` resolves to { place, coordinates, accuracy, areaName,
+// `detect()` resolves to { place, coordinates, accuracy, ward, areaName,
 // protectedArea }, or to null after telling the user why it couldn't.
 const useCurrentPlace = () => {
   const [detecting, setDetecting] = useState(false);
@@ -28,6 +28,7 @@ const useCurrentPlace = () => {
         place: { provinceId: result.provinceId, districtId: result.districtId, localLevelId: result.localLevelId },
         coordinates: { lat: coords.latitude, lng: coords.longitude },
         accuracy: coords.accuracy,
+        ward: result.ward || null,
         areaName: result.areaName || null,
         protectedArea: result.protectedArea || null,
       };

@@ -35,7 +35,8 @@
           "color": "#FF9F00"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-build-properties"
     ]
   }
 }

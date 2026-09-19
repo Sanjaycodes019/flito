@@ -2,7 +2,15 @@
   "language": {
     "label": "Language",
     "english": "English",
-    "nepali": "नेपाली"
+    "nepali": "नेपाली",
+    "labelWithCalendar": "Language & calendar"
+  },
+  "calendar": {
+    "label": "Calendar",
+    "ad": "AD",
+    "bs": "BS",
+    "adLong": "English calendar (AD)",
+    "bsLong": "Nepali calendar (BS)"
   },
   "actions": {
     "cancel": "Cancel",
@@ -48,7 +56,34 @@
     "year": "Year",
     "clear": "Clear",
     "clearLabel": "Clear {{label}}",
-    "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "bsMonths": [
+      "Baisakh",
+      "Jestha",
+      "Asar",
+      "Shrawan",
+      "Bhadra",
+      "Ashwin",
+      "Kartik",
+      "Mangsir",
+      "Poush",
+      "Magh",
+      "Falgun",
+      "Chaitra"
+    ]
   },
   "photo": {
     "takePhoto": "Take Photo",

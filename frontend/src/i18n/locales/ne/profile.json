@@ -139,7 +139,7 @@
     "useLocationTitle": "आफ्नो हालको स्थान प्रयोग गर्नुहोस्",
     "useLocationHint": "तपाईंको प्रदेश, जिल्ला र नगरपालिका भर्नेछ। वडा तपाईं आफैं छान्नुहोस्।",
     "useLocationButton": "हालको स्थान प्रयोग गर्नुहोस्",
-    "detectedHint": "सेभ गर्नुअघि आफ्नो वडा छान्नुहोस् र सबै कुरा जाँच्नुहोस्।",
+    "detectedHint": "सेभ गर्नुअघि वडा र सबै कुरा जाँच्नुहोस्।",
     "toleSuggestionHint": "OpenStreetMap (c) OpenStreetMap contributors बाट सुझाव गरिएको। सही नभए सम्पादन गर्नुहोस्।",
     "saveButton": "ठेगाना सेभ गर्नुहोस्",
     "saveFailedTitle": "तपाईंको ठेगाना सेभ गर्न सकिएन",

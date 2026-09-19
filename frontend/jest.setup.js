@@ -70,7 +70,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-nonce' }));
 // native view registration.
 jest.mock('react-native-svg', () => {
   const { View } = require('react-native');
-  return { __esModule: true, default: View, Svg: View, Path: View };
+  return { __esModule: true, default: View, Svg: View, Path: View, Circle: View };
 });
 
 // @expo/vector-icons pulls in expo-font/expo-asset, which reach for native

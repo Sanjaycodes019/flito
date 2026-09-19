@@ -18,6 +18,7 @@ const {
   standingOffer,
 } = require('../services/negotiation');
 const { requiresVerification } = require('../services/kycPolicy');
+const { busyDaysOf } = require('../services/tripSchedule');
 const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 const { formatCurrency } = require('../utils/format');
 const { fail } = require('../utils/respond');
@@ -288,21 +289,28 @@ exports.acceptQuote = async (req, res, next) => {
     const { quote, load, side } = negotiation;
     const finalPrice = standingOffer(quote).price;
 
-    // The truck first. Its pickup day is added with a conditional update, so
-    // two bookings racing for one truck on the same day can't both get it.
+    // The truck first. Every day the trip needs is added with one conditional
+    // update, so two bookings racing for one truck on overlapping days can't
+    // both get it.
+    const busyDays = busyDaysOf(load);
     let truck = null;
     if (quote.truckId) {
-      truck = load.pickupDay
+      truck = busyDays.length
         ? await Truck.findOneAndUpdate(
-          { _id: quote.truckId, status: 'active', reservedDays: { $ne: load.pickupDay } },
-          { $push: { reservedDays: load.pickupDay } },
+          { _id: quote.truckId, status: 'active', reservedDays: { $nin: busyDays } },
+          { $push: { reservedDays: { $each: busyDays } } },
           { new: true },
         )
         : await Truck.findById(quote.truckId);
-      if (!truck) return fail(res, 409, 'QUOTES_TRUCK_NOT_AVAILABLE_ON_DATE', 'That truck is no longer available on the pickup date');
+      if (!truck) {
+        const message = busyDays.length > 1
+          ? 'That truck is no longer available for all the days this trip needs'
+          : 'That truck is no longer available on the pickup date';
+        return fail(res, 409, 'QUOTES_TRUCK_NOT_AVAILABLE_ON_DATE', message);
+      }
     }
     const releaseTruck = async () => {
-      if (truck && load.pickupDay) await Truck.updateOne({ _id: truck._id }, { $pull: { reservedDays: load.pickupDay } });
+      if (truck && busyDays.length) await Truck.updateOne({ _id: truck._id }, { $pull: { reservedDays: { $in: busyDays } } });
     };
 
     // Then the load, claimed atomically: when two acceptances race on the same

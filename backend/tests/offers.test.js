@@ -404,3 +404,69 @@ describe('fleet details', () => {
     expect((await matchesFor(shipper, acrossTown)).matches.map((m) => m.truck._id)).toEqual([local._id]);
   });
 });
+
+describe('long hauls keep the truck busy for every day of the trip', () => {
+  // Kathmandu to Biratnagar is a long haul: more than a day for a loaded truck.
+  const longHaul = { dropoffLocation: placeIn('Biratnagar', 1, 'Rangeli Road') };
+
+  const bookLongHaul = async () => {
+    const shipper = await newUser('shipper');
+    const owner = await newUser('owner');
+    const truck = await addTruck(owner);
+    const load = await postLoad(shipper, { ...longHaul, pickupDate: addDays(nepalDay(), 2) });
+    const quote = (await requestTruck(shipper, load, truck, 60000).expect(201)).body.quote;
+    const { booking } = (await as(owner.token).patch(`/api/quotes/${quote._id}/accept`).expect(200)).body;
+    return { shipper, owner, truck, load, booking };
+  };
+
+  it('works out how many days a trip needs from its distance', async () => {
+    const shipper = await newUser('shipper');
+    expect((await postLoad(shipper)).tripDays).toBe(1);
+
+    const far = await postLoad(shipper, longHaul);
+    expect(far.distanceKm).toBeGreaterThan(300);
+    expect(far.tripDays).toBeGreaterThanOrEqual(2);
+    expect(far.distanceSource).toBe('estimate');
+  });
+
+  it('reserves each day of the trip, and only those', async () => {
+    const { truck, load } = await bookLongHaul();
+    const days = Array.from({ length: load.tripDays }, (_, i) => addDays(load.pickupDay, i));
+
+    const reserved = (await Truck().findById(truck._id)).reservedDays;
+    expect([...reserved].sort()).toEqual(days);
+    expect(reserved).not.toContain(addDays(load.pickupDay, load.tripDays));
+    expect(reserved).not.toContain(addDays(load.pickupDay, -1));
+  });
+
+  it('keeps the truck out of matches for a load that starts mid-trip, and back in once it ends', async () => {
+    const { shipper, truck, load } = await bookLongHaul();
+
+    const midTrip = await postLoad(shipper, { pickupDate: addDays(load.pickupDay, 1) });
+    expect((await matchesFor(shipper, midTrip)).matches).toHaveLength(0);
+
+    const afterTrip = await postLoad(shipper, { pickupDate: addDays(load.pickupDay, load.tripDays) });
+    expect((await matchesFor(shipper, afterTrip)).matches.map((m) => m.truck._id)).toEqual([truck._id]);
+
+    const before = await postLoad(shipper, { pickupDate: addDays(load.pickupDay, -1) });
+    expect((await matchesFor(shipper, before)).matches.map((m) => m.truck._id)).toEqual([truck._id]);
+  });
+
+  it("refuses a second trip that would overlap, and says why to the owner", async () => {
+    const { shipper, owner, truck, load } = await bookLongHaul();
+
+    // A one-day job that lands on the long haul's last day.
+    const overlapping = await postLoad(shipper, { pickupDate: addDays(load.pickupDay, load.tripDays - 1) });
+    const { trucks } = (await as(owner.token).get(`/api/loads/${overlapping._id}/my-trucks`).expect(200)).body;
+    expect(trucks.find((t) => t._id === truck._id).unavailableReason).toMatch(/booked/i);
+    expect((await requestTruck(shipper, overlapping, truck, 15000)).status).toBeGreaterThanOrEqual(400);
+  });
+
+  it('frees every day when the booking is cancelled', async () => {
+    const { shipper, truck, booking } = await bookLongHaul();
+
+    await as(shipper.token).patch(`/api/bookings/${booking._id}/status`).send({ status: 'cancelled' }).expect(200);
+
+    expect((await Truck().findById(truck._id)).reservedDays).toEqual([]);
+  });
+});

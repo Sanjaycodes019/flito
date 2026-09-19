@@ -48,11 +48,13 @@ export const choosePlaceField = (tree, place, key, value) => {
   return { ...place, [key]: value };
 };
 
-// A detected location over what was already filled in. The ward stays only if
-// the municipality didn't change, and a suggested tole replaces the typed one.
+// A detected location over what was already filled in. A detected ward is used;
+// otherwise the ward stays only if the municipality didn't change. A suggested
+// tole replaces the typed one.
 export const mergeDetectedPlace = (current, detected) => ({
   ...detected.place,
-  ward: detected.place.localLevelId && detected.place.localLevelId === current.localLevelId ? current.ward : null,
+  ward: detected.ward
+    || (detected.place.localLevelId && detected.place.localLevelId === current.localLevelId ? current.ward : null),
   tole: detected.areaName || current.tole,
 });
 

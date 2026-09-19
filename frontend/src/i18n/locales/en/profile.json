@@ -139,7 +139,7 @@
     "useLocationTitle": "Use your current location",
     "useLocationHint": "Fills in your province, district and municipality. You choose the ward.",
     "useLocationButton": "Use Current Location",
-    "detectedHint": "Choose your ward and check everything before saving.",
+    "detectedHint": "Check the ward and everything else before saving.",
     "toleSuggestionHint": "Suggested from OpenStreetMap (c) OpenStreetMap contributors. Edit it if it is not right.",
     "saveButton": "Save Address",
     "saveFailedTitle": "Could not save your address",

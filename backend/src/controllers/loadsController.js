@@ -9,7 +9,8 @@ const {
   isExpired,
   loadExpiresAt,
 } = require('../services/expiry');
-const { estimateRoadKm } = require('../services/nepalLocations');
+const { roadDistance } = require('../services/routing');
+const { tripDaysFor } = require('../services/tripSchedule');
 const { nepalDay, startOfNepalDay } = require('../services/nepalTime');
 const {
   askingPriceFor,
@@ -36,6 +37,8 @@ exports.createLoad = async (req, res, next) => {
       estimatedDeliveryDate, truckTypePreference, budgetEstimate,
     } = req.body;
 
+    const route = await roadDistance(pickupLocation, dropoffLocation);
+
     const load = await Load.create({
       shipperId: req.user.userId,
       goodsType,
@@ -47,7 +50,9 @@ exports.createLoad = async (req, res, next) => {
       dropoffLocation,
       pickupDay,
       preferredPickupDate: startOfNepalDay(pickupDay),
-      distanceKm: estimateRoadKm(pickupLocation, dropoffLocation),
+      distanceKm: route.km,
+      distanceSource: route.source,
+      tripDays: tripDaysFor(route.km),
       estimatedDeliveryDate,
       truckTypePreference,
       budgetEstimate,

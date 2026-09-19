@@ -17,8 +17,8 @@ export const fetchLocations = () => {
   return treeRequest;
 };
 
-// The province, district and local level at a point, plus a suggested
-// tole/area name. The ward is never detected; the user chooses it.
+// The province, district, local level and ward at a point (the ward is null
+// where it isn't mapped), plus a suggested tole/area name.
 export const detectLocation = async ({ lat, lng }) => {
   const { data } = await api.post('/locations/detect', { lat, lng });
   return data;

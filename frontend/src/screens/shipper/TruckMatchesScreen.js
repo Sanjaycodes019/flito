@@ -15,7 +15,7 @@ import { colors, spacing, type, iconSize } from '../../theme/tokens';
 import useScreenLayout from '../../hooks/useScreenLayout';
 import api from '../../services/api';
 import socketService from '../../services/socket';
-import { formatCurrency, formatKg, getErrorMessage } from '../../utils/helpers';
+import { formatCurrency, formatKg, formatTrip, getErrorMessage } from '../../utils/helpers';
 import { dayLabel } from '../../utils/nepalDate';
 import { notify } from '../../utils/alert';
 
@@ -144,7 +144,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
 
         <View style={styles.metaRow}>
           {load.pickupDay ? <Meta icon="calendar" text={t('loads:truckMatches.pickupOn', { day: dayLabel(load.pickupDay) })} /> : null}
-          {load.distanceKm ? <Meta icon="route" text={t('loads:truckMatches.aboutKmByRoad', { km: load.distanceKm })} /> : null}
+          {load.distanceKm ? <Meta icon="route" text={formatTrip(t, load)} /> : null}
           {takingOffers ? <Meta icon="send" text={t('loads:truckMatches.requestsWaiting', { open: openRequests, max: maxOpenRequests })} /> : null}
         </View>
 

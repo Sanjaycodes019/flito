@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
+import CalendarToggle from '../../components/common/CalendarToggle';
 import Input from '../../components/common/Input';
 import Spinner from '../../components/common/Spinner';
 import EmptyState from '../../components/common/EmptyState';
@@ -316,6 +317,7 @@ const CreateLoadScreen = ({ navigation }) => {
           </FormSection>
 
           <FormSection icon="calendar" title={t('loads:createLoad.pickupDateSection.title')} description={t('loads:createLoad.pickupDateSection.description')} wide={wide}>
+            <CalendarToggle compact style={styles.calendarToggle} />
             <View style={styles.dayGrid} accessibilityRole="radiogroup">
               {days.map((day) => (
                 <DayChip
@@ -405,6 +407,7 @@ const styles = StyleSheet.create({
 
   stopDivider: { height: 1, backgroundColor: colors.divider, marginVertical: spacing.xxl },
 
+  calendarToggle: { marginBottom: spacing.sm },
   dayGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -spacing.xs },
   dayCell: { padding: spacing.xs },
   dayChip: {

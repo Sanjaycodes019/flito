@@ -4,7 +4,8 @@ const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const { getTree, locate } = require('../services/nepalLocations');
-const { suggestAreaName } = require('../services/reverseGeocode');
+const { wardAt } = require('../services/nepalWards');
+const { suggestPlace } = require('../services/nepalPlaces');
 const { fail } = require('../utils/respond');
 
 // Nepal's provinces, districts and local levels (with ward counts). Public
@@ -14,11 +15,11 @@ router.get('/', (req, res) => {
   res.json({ success: true, locations: getTree() });
 });
 
-// Each detection may call OpenStreetMap, whose public service allows about
-// one request a second for the whole app, so one user can't use it all up.
+// Detection is answered from data on the server, so this only keeps one user
+// from hammering it.
 const detectLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 30,
+  limit: 60,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
@@ -27,9 +28,11 @@ const detectLimiter = rateLimit({
 
 const isCoordinate = (value, limit) => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= limit;
 
-// "Use current location": the province, district and local level containing
-// the point, plus a suggested tole/area name. The ward is left to the user.
-router.post('/detect', authMiddleware, detectLimiter, async (req, res, next) => {
+// "Use current location": the province, district, local level and ward
+// containing the point, plus a suggested tole/area name, all from data shipped
+// with the server. The ward is null where it isn't mapped, and the app asks
+// the person to check it either way.
+router.post('/detect', authMiddleware, detectLimiter, (req, res, next) => {
   try {
     const { lat, lng } = req.body || {};
     if (!isCoordinate(lat, 90) || !isCoordinate(lng, 180)) {
@@ -39,13 +42,17 @@ router.post('/detect', authMiddleware, detectLimiter, async (req, res, next) => 
     const place = locate(lat, lng);
     if (!place) return res.json({ success: true, inNepal: false });
 
-    const areaName = await suggestAreaName(lat, lng);
+    const ward = wardAt(place.localLevelId, lat, lng);
+    const suggestion = suggestPlace(lat, lng);
     res.json({
       success: true,
       inNepal: true,
       ...place,
-      areaName,
-      areaSource: areaName ? 'OpenStreetMap' : null,
+      ward,
+      wardSource: ward ? 'OpenStreetMap' : null,
+      areaName: suggestion?.name || null,
+      areaNameNe: suggestion?.nameNe || null,
+      areaSource: suggestion ? 'OpenStreetMap' : null,
     });
   } catch (error) {
     next(error);
