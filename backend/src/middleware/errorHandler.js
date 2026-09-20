@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const multer = require('multer');
 const { fail } = require('../utils/respond');
 
@@ -30,7 +31,6 @@ const uploadError = (err) => {
 };
 
 // Centralized error handler. Must be registered last, after all routes.
-// eslint-disable-next-line no-unused-vars
 module.exports = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     const { code, message } = uploadError(err);
@@ -56,7 +56,7 @@ module.exports = (err, req, res, next) => {
 
   // Client errors are fully described in the response; only log what points to
   // a bug or an outage.
-  if (status >= 500) console.error(err.stack || err.message);
+  if (status >= 500) logger.error(err.stack || err.message);
 
   // Unexpected failures don't echo internal error text back to clients.
   const message = status >= 500 && !err.status ? 'Internal server error' : err.message;

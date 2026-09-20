@@ -11,6 +11,7 @@ import CameraCaptureHost from './components/common/CameraCaptureHost';
 import { initI18n } from './i18n';
 import { loadCalendarPreference } from './services/calendarPreference';
 import Spinner from './components/common/Spinner';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // On cold start, check for a previously stored JWT and restore the session
 // by fetching the current user, before rendering the real navigator.
@@ -61,7 +62,9 @@ export default function App() {
     <Provider store={store}>
       <Bootstrap>
         <StatusBar style="dark" />
-        <RootNavigator />
+        <ErrorBoundary>
+          <RootNavigator />
+        </ErrorBoundary>
         <AlertHost />
         <CameraCaptureHost />
       </Bootstrap>

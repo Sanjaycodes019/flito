@@ -1,5 +1,8 @@
 # FLITO
 
+[![CI](https://github.com/Sanjaycodes019/flito/actions/workflows/ci.yml/badge.svg)](https://github.com/Sanjaycodes019/flito/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Freight & Load Interchange for Truck Operations**, a digital freight matching platform connecting trucks with cargo to eliminate empty return trips in Nepal.
 
 Shippers post loads. Truck owners bid on them. A booking is created when a bid is accepted, a driver is assigned, and both sides track the delivery to completion.
@@ -33,7 +36,7 @@ flito/
 ├── backend/
 │   └── src/
 │       ├── config/       database.js, validateEnv.js
-│       ├── models/       User, Load, Quote, Booking, Payment
+│       ├── models/       User, Truck, Load, Quote, Booking, Payment, Notification
 │       ├── controllers/  auth, loads, quotes, bookings
 │       ├── routes/       auth, loads, quotes, bookings, admin, users
 │       ├── middleware/   auth (+requireRole), errorHandler, validators
@@ -73,7 +76,7 @@ cp .env.example .env     # defaults already point at localhost:5000
 npm run web              # http://localhost:8081
 ```
 
-Check the backend is healthy: `curl http://localhost:5000/api/health` → `{"status":"ok"}`
+Check the backend is healthy: `curl http://localhost:5000/api/health` → `{"status":"ok","db":"up","uptime":12}` (503 when the database is down)
 
 ### Tests
 
@@ -82,14 +85,29 @@ cd backend
 npm test
 ```
 
-274 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering email/password signup and login, email verification, password reset, the language of emailed codes, booking permissions, real road distances and multi-day truck availability, ward and tole detection, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, the admin lists (users, loads, bookings, review queues: paging, newest-first order, access) and account suspension, and push notifications (Expo's API is mocked, no real push is ever sent by the suite).
+283 API tests run against a real in-memory MongoDB (no external services, nothing to configure), covering email/password signup and login, email verification, password reset, the language of emailed codes, booking permissions, real road distances and multi-day truck availability, ward and tole detection, quote negotiation turn-taking, competitive bidding and double-booking protection, rating averages, expiry, fleet ownership scoping, file uploads, KYC, identity verification gating, the admin lists (users, loads, bookings, review queues: paging, newest-first order, access) and account suspension, the in-app notification feed, security headers and query-operator stripping, and push notifications (Expo's API is mocked, no real push is ever sent by the suite).
 
 ```bash
 cd frontend
 npm test
 ```
 
-118 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: the login, signup, forgot/reset password and email verification screens (`AuthScreens`), the AD/BS calendar and date picker (`DateField`, `bsCalendar`), counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, Google sign-in, the WebView-based map/signature canvases) are mocked. See `jest.setup.js`.
+123 component tests (Jest + React Native Testing Library) cover the app's core business logic at the UI layer: the login, signup, forgot/reset password and email verification screens (`AuthScreens`), the AD/BS calendar and date picker (`DateField`, `bsCalendar`), counter-offer negotiation turn-taking (`LoadDetailScreen`), the KYC upload/submit flow (`KycScreen`), and booking status transitions per role (`BookingDetailScreen`). `services/api` and native modules (location, image/document pickers, notifications, Google sign-in, the WebView-based map/signature canvases) are mocked. See `jest.setup.js`.
+
+### Code quality
+
+```bash
+npm run lint            # in backend/ or frontend/ (ESLint)
+npm run test:coverage   # coverage report
+```
+
+CI (`.github/workflows/ci.yml`) runs lint and the full test suite for both projects on every push and pull request. A pre-commit hook (Husky + lint-staged, installed by `npm install` at the repo root) lints staged files. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+### Docker
+
+```bash
+docker compose up --build   # API on :5000 with a local MongoDB
+```
 
 ### Demo data
 
@@ -147,6 +165,8 @@ A standalone Android build (EAS) additionally needs an **Android** OAuth client 
 | `CLOUDINARY_CLOUD_NAME` | backend `.env`, Render | Cloudinary cloud name (file uploads) |
 | `CLOUDINARY_API_KEY` | backend `.env`, Render | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | backend `.env`, Render | Cloudinary API secret, server only, never in the app |
+| `SENTRY_DSN` | backend `.env`, Render | Sentry DSN for error tracking. Optional: blank disables it |
+| `LOG_LEVEL` | backend `.env`, Render | `debug` / `info` / `warn` / `error` (default `info`). Logs are structured JSON (pino) |
 | `EXPO_PUBLIC_API_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com/api` |
 | `EXPO_PUBLIC_SOCKET_URL` | frontend `.env`, Vercel | `https://flito-api.onrender.com` |
 | `EXPO_PUBLIC_GOOGLE_CLIENT_ID` | frontend `.env`, Vercel | Same Google OAuth Web client ID as the backend. Optional |

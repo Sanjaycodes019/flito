@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const axios = require('axios');
 
 // Transactional email for verification codes and password resets. Brevo
@@ -34,7 +35,7 @@ exports.isConfigured = isConfigured;
 
 exports.sendEmail = async ({ to, toName, subject, html }) => {
   if (!isConfigured()) {
-    console.log(`[email:dev] to ${to}: ${subject}\n${html.replace(/<[^>]+>/g, ' ').trim()}`);
+    logger.info(`[email:dev] to ${to}: ${subject}\n${html.replace(/<[^>]+>/g, ' ').trim()}`);
     return { delivered: false, dev: true };
   }
 
@@ -43,7 +44,7 @@ exports.sendEmail = async ({ to, toName, subject, html }) => {
     return { delivered: true, response };
   } catch (error) {
     const detail = error.response?.data || error.message;
-    console.error(`[email] delivery to ${to} failed:`, detail);
+    logger.error(`[email] delivery to ${to} failed:`, detail);
     const err = new Error('Could not send the email right now, please try again');
     err.status = 502;
     throw err;

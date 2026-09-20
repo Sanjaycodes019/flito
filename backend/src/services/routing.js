@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const axios = require('axios');
 const { pointOf, estimateRoadKm } = require('./nepalLocations');
 
@@ -89,7 +90,7 @@ const roadDistance = async (from, to) => {
         return { km, source: 'route' };
       }
     } catch (error) {
-      console.error('[routing] falling back to an estimate:', error.message);
+      logger.error('[routing] falling back to an estimate:', error.message);
     }
   }
   return { km: estimateRoadKm(from, to), source: 'estimate' };
@@ -123,7 +124,7 @@ const roadDistancesTo = async (origins, to) => {
         const kms = await fetchTable(keys.map((k) => unique.get(k)), destination);
         kms.forEach((km, i) => { if (km != null) remember(keys[i], km); });
       } catch (error) {
-        console.error('[routing] falling back to estimates:', error.message);
+        logger.error('[routing] falling back to estimates:', error.message);
         break;
       }
     }

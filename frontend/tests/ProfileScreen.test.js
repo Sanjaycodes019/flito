@@ -83,9 +83,10 @@ describe('profile page', () => {
 
   it('shows identity verification status and opens it', async () => {
     const navigation = fakeNavigation();
-    const { findByText, findByLabelText } = renderProfile(fakeUser('driver', { kycStatus: 'pending' }), navigation);
+    const { findAllByText, findByLabelText } = renderProfile(fakeUser('driver', { kycStatus: 'pending' }), navigation);
 
-    expect(await findByText('Under review')).toBeTruthy();
+    // The pill shows on the identity row and again in the profile-strength card.
+    expect((await findAllByText('Under review')).length).toBeGreaterThan(0);
     fireEvent.press(await findByLabelText('Identity, Your documents are under review'));
 
     expect(navigation.navigate).toHaveBeenCalledWith('Kyc');

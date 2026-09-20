@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -23,7 +24,7 @@ const load = () => {
     try {
       data = JSON.parse(zlib.gunzipSync(fs.readFileSync(FILE)).toString('utf8'));
     } catch (error) {
-      console.error('[nepalWards] ward boundaries unavailable:', error.message);
+      logger.error('[nepalWards] ward boundaries unavailable:', error.message);
       data = { scale: 1e5, localLevels: {} };
     }
   }

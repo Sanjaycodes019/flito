@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // Builds FLITO's Nepal address data from two public datasets. The downloads
 // themselves are not committed; this script and its output are. See
 // src/data/nepal/SOURCES.md for where to get them and their licenses.

@@ -218,5 +218,10 @@
       "description": "KYC approvals, disputes, platform metrics",
       "action": "Open Dashboard"
     }
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "message": "The app hit an unexpected problem. Please try again.",
+    "retry": "Try again"
   }
 }

@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const axios = require('axios');
 
 // SMS delivery for OTPs. Sparrow SMS is the common gateway for Nepal; the
@@ -34,7 +35,7 @@ exports.isConfigured = isConfigured;
 
 exports.sendSms = async (phone, text) => {
   if (!isConfigured()) {
-    console.log(`[sms:dev] to ${phone}: ${text}`);
+    logger.info(`[sms:dev] to ${phone}: ${text}`);
     return { delivered: false, dev: true };
   }
 
@@ -44,7 +45,7 @@ exports.sendSms = async (phone, text) => {
   } catch (error) {
     // Surface the failure to the caller but never leak the token.
     const detail = error.response?.data || error.message;
-    console.error(`[sms] delivery to ${phone} failed:`, detail);
+    logger.error(`[sms] delivery to ${phone} failed:`, detail);
     throw new Error('Could not send the verification code, please try again');
   }
 };

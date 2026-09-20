@@ -1,9 +1,10 @@
+const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
 const events = require('./events');
 
 const setupSocketHandlers = (io) => {
   io.on('connection', (socket) => {
-    console.log('Socket connected:', socket.id);
+    logger.info('Socket connected:', socket.id);
 
     // Client authenticates its socket and joins a private per-user room
     // (`user-<id>`) so REST controllers can push targeted events via
@@ -28,7 +29,7 @@ const setupSocketHandlers = (io) => {
     });
 
     socket.on('disconnect', () => {
-      console.log('Socket disconnected:', socket.id);
+      logger.info('Socket disconnected:', socket.id);
     });
   });
 };

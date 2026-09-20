@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const Load = require('../models/Load');
 const Quote = require('../models/Quote');
 const { endOfNepalDay } = require('./nepalTime');
@@ -56,7 +57,7 @@ const expireStale = async (now = new Date()) => {
 };
 
 const startExpirySweep = (intervalMs = SWEEP_INTERVAL_MS) => {
-  const run = () => expireStale().catch((err) => console.error('[expiry] sweep failed:', err.message));
+  const run = () => expireStale().catch((err) => logger.error('[expiry] sweep failed:', err.message));
   run();
   const timer = setInterval(run, intervalMs);
   timer.unref(); // never keep the process alive just for the sweep

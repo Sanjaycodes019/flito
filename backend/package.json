@@ -10,7 +10,11 @@
     "test:watch": "jest --watch --runInBand",
     "create-admin": "node scripts/createAdmin.js",
     "seed": "node scripts/seedDemo.js",
-    "migrate-auth-indexes": "node scripts/migrateAuthIndexes.js"
+    "migrate-auth-indexes": "node scripts/migrateAuthIndexes.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "test:coverage": "jest --runInBand --coverage"
   },
   "keywords": [
     "truck",
@@ -23,23 +27,34 @@
     "node": ">=18.x"
   },
   "dependencies": {
+    "@sentry/node": "^10.75.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.11.0",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.4.1",
     "google-auth-library": "^11.0.2",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.0",
     "multer": "^2.3.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
     "socket.io": "^4.7.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
     "jest": "^30.5.1",
     "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.7",
+    "prettier": "^3.9.8",
     "supertest": "^7.2.2"
   },
   "jest": {
@@ -47,6 +62,10 @@
     "testTimeout": 30000,
     "setupFiles": [
       "<rootDir>/tests/setupEnv.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/server.js"
     ]
   },
   "nodemonConfig": {

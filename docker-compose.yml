@@ -1,0 +1,28 @@
+# Local development: the API plus a MongoDB, no Atlas account needed.
+#   docker compose up --build
+services:
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://mongo:27017/flito
+      JWT_SECRET: local-development-secret-change-me-0123456789
+      FRONTEND_URL: http://localhost:8081
+
+volumes:
+  mongo-data:

@@ -33,7 +33,7 @@ const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = t
     canvasRef.current?.postMessage(next ? { type: 'setPicked', lat: next.lat, lng: next.lng } : { type: 'clearPicked' });
   }, [value?.lat, value?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const useCurrentLocation = async () => {
+  const locateMe = async () => {
     setLocating(true);
     try {
       const { granted } = await Location.requestForegroundPermissionsAsync();
@@ -75,7 +75,7 @@ const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = t
             variant="tertiary"
             size="sm"
             loading={locating}
-            onPress={() => useCurrentLocation().catch(() => {})}
+            onPress={() => locateMe().catch(() => {})}
             style={styles.locateButton}
           />
         )}

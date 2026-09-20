@@ -1,0 +1,14 @@
+{
+  "name": "flito",
+  "private": true,
+  "description": "FLITO monorepo tooling and pre-commit hooks. The apps live in backend/ and frontend/.",
+  "scripts": {
+    "prepare": "husky",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "test": "npm --prefix backend test && npm --prefix frontend test"
+  },
+  "devDependencies": {
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0"
+  }
+}

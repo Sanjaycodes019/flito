@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { codeFields, issueCode, redeemCode } = require('../services/verification');
@@ -46,7 +47,7 @@ exports.signup = async (req, res, next) => {
       await issueCode(user, 'verifyEmail', { language: languageOf(req) });
     } catch (err) {
       verificationEmailSent = false;
-      console.error('[signup] verification email failed:', err.message);
+      logger.error('[signup] verification email failed:', err.message);
     }
 
     res.status(201).json({ success: true, token: signToken(user), user: publicUser(user), verificationEmailSent });
@@ -232,7 +233,7 @@ exports.forgotPassword = async (req, res, next) => {
       try {
         await issueCode(user, 'resetPassword', { language: languageOf(req) });
       } catch (err) {
-        if (err.status !== 429) console.error('[forgot-password] email failed:', err.message);
+        if (err.status !== 429) logger.error('[forgot-password] email failed:', err.message);
       }
     }
 

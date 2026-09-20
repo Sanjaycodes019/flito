@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const cloudinary = require('cloudinary').v2;
 
 // File storage behind a small interface so the provider can change without
@@ -30,7 +31,7 @@ const ensureConfigured = () => {
 };
 
 const toStorageError = (error, unreadableMessage) => {
-  console.error('[storage] upload failed:', error.message);
+  logger.error('[storage] upload failed:', error.message);
   // Cloudinary answers 4xx when the file itself is unusable.
   const clientFault = error.http_code >= 400 && error.http_code < 500;
   const err = new Error(clientFault ? unreadableMessage : 'Upload to storage failed, please try again');
@@ -53,7 +54,7 @@ const deleteAssets = async (publicIds = [], { type = 'upload' } = {}) => {
   ensureConfigured();
   await Promise.all(publicIds.map((publicId) => cloudinary.uploader
     .destroy(publicId, { resource_type: 'image', type, invalidate: true })
-    .catch((err) => console.error(`[storage] could not delete ${publicId}, remove it manually:`, err.message))));
+    .catch((err) => logger.error(`[storage] could not delete ${publicId}, remove it manually:`, err.message))));
 };
 
 // ── Public photos (loads, proof of delivery) ─────────────────────────────

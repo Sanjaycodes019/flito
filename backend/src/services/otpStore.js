@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 // OTP storage, kept behind a tiny async interface so the backing store can
 // change without touching auth logic.
 //
@@ -27,7 +28,7 @@ const createRedisBackend = () => {
   // Required lazily so the `redis` package is only needed when actually used.
   const { createClient } = require('redis');
   const client = createClient({ url: process.env.REDIS_URL });
-  client.on('error', (err) => console.error('[otpStore] redis error:', err.message));
+  client.on('error', (err) => logger.error('[otpStore] redis error:', err.message));
   const ready = client.connect();
   const key = (phone) => `otp:${phone}`;
 

@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
@@ -95,7 +96,7 @@ exports.updateProfile = async (req, res, next) => {
         // A new address gets its code straight away, whatever was sent before.
         await issueCode(user, 'verifyEmail', { ignoreCooldown: true, language: languageOf(req) });
       } catch (err) {
-        console.error('[updateProfile] verification email failed:', err.message);
+        logger.error('[updateProfile] verification email failed:', err.message);
       }
     }
 

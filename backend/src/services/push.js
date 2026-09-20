@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const axios = require('axios');
 
 // Talks to Expo's push API directly over HTTP rather than via the
@@ -61,7 +62,7 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
     }
   } catch (error) {
     // A failed push should never break the request that triggered it.
-    console.error(`[push] send to user ${userId} failed:`, error.message);
+    logger.error(`[push] send to user ${userId} failed:`, error.message);
   }
 };
 

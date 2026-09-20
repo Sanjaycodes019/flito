@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // Adds Devanagari names to FLITO's Nepal address data, from the same
 // local-states-nepal dataset buildNepalLocations.js already uses for ward
 // counts and categories (see src/data/nepal/SOURCES.md).

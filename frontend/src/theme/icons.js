@@ -127,7 +127,6 @@ const GLYPHS = {
 const Icon = ({ name, size = iconSize.md, color = colors.textPrimary, style, ...rest }) => {
   const glyph = GLYPHS[name];
   if (!glyph && __DEV__) {
-    // eslint-disable-next-line no-console
     console.warn(`Icon: unknown semantic name "${name}". Add it to theme/icons.js.`);
   }
   return (

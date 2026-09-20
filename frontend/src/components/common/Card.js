@@ -10,7 +10,22 @@ const Card = ({ children, style, containerStyle, onPress, accessibilityLabel, el
   if (!onPress) {
     return <View style={[styles.card, shadow[elevation], style]}>{children}</View>;
   }
+  return (
+    <InteractiveCard
+      style={style}
+      containerStyle={containerStyle}
+      onPress={onPress}
+      accessibilityLabel={accessibilityLabel}
+      elevation={elevation}
+    >
+      {children}
+    </InteractiveCard>
+  );
+};
 
+// Split out so its hooks run on every render of this component. Calling them
+// after Card's early return would change the hook order when `onPress` toggles.
+const InteractiveCard = ({ children, style, containerStyle, onPress, accessibilityLabel, elevation }) => {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const scale = useRef(new Animated.Value(1)).current;

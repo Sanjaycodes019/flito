@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -36,7 +37,7 @@ const load = () => {
       index.get(key).push(place);
     });
   } catch (error) {
-    console.error('[nepalPlaces] place names unavailable:', error.message);
+    logger.error('[nepalPlaces] place names unavailable:', error.message);
   }
   return index;
 };
