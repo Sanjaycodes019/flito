@@ -3,7 +3,7 @@ import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import DashboardCard from '../components/home/DashboardCard';
+import ActionTile from '../components/home/ActionTile';
 import Grid from '../components/common/Grid';
 import Avatar from '../components/common/Avatar';
 import VerifiedBadge from '../components/common/VerifiedBadge';
@@ -103,8 +103,7 @@ const HomeScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
-  const { isPhone, isDesktop } = layout;
-  const cardColumns = isPhone ? 1 : isDesktop ? 3 : 2;
+  const { isPhone } = layout;
   const roleSubtitle = user?.role ? t(`common:home.roleSubtitle.${user.role}`, '') : '';
 
   const needsVerification = (isOwner || isDriver) && user?.kycStatus !== 'approved';
@@ -120,110 +119,35 @@ const HomeScreen = ({ navigation }) => {
   // A dash instead of a misleading 0 while the first fetch is still running.
   const count = (n, loading) => (loading && n === 0 ? '-' : String(n));
 
-  const cards = [];
+  // Big picture buttons instead of paragraphs. The first tile of each role is
+  // its main job and spans the row; a number says how much is waiting.
+  const go = (route) => () => navigation.navigate(route);
+  const tile = (key, icon, badge, route, extra = {}) => (
+    <ActionTile key={key} icon={icon} title={t(`common:home.tiles.${key}`)} badge={badge} onPress={go(route)} {...extra} />
+  );
+  let mainTile = null;
+  const tiles = [];
   if (isShipper) {
-    cards.push(
-      <DashboardCard
-        key="post"
-        icon="load"
-        title={t('common:home.postLoad.title')}
-        description={t('common:home.postLoad.description')}
-        actionLabel={t('common:home.postLoad.action')}
-        onAction={() => navigation.navigate('CreateLoad')}
-      />,
-      <DashboardCard
-        key="loads"
-        icon="document"
-        title={t('common:home.yourLoads.title', { count: loads.length })}
-        description={loadsLoading ? t('common:home.loading') : t('common:home.yourLoads.awaitingQuotes', { count: awaitingQuotes })}
-        actionLabel={t('common:home.yourLoads.action')}
-        variant="secondary"
-        onAction={() => navigation.navigate('LoadsList')}
-      />,
-      <DashboardCard
-        key="bookings"
-        icon="truckDelivery"
-        title={t('common:home.activeBookingsCard.title', { count: activeBookings.length })}
-        description={t('common:home.activeBookingsCard.description')}
-        actionLabel={t('common:home.activeBookingsCard.action')}
-        variant="secondary"
-        onAction={() => navigation.navigate('Bookings')}
-      />,
+    mainTile = tile('postLoad', 'load', null, 'CreateLoad', { primary: true });
+    tiles.push(
+      tile('myLoads', 'document', awaitingQuotes, 'LoadsList'),
+      tile('bookings', 'truckDelivery', activeBookings.length, 'Bookings'),
     );
   }
   if (isOwner) {
-    cards.push(
-      <DashboardCard
-        key="browse"
-        icon="search"
-        title={t('common:home.browseLoads.title', { count: loads.length })}
-        description={t('common:home.browseLoads.description')}
-        actionLabel={t('common:home.browseLoads.action')}
-        onAction={() => navigation.navigate('LoadsList')}
-      />,
-      <DashboardCard
-        key="quotes"
-        icon="quote"
-        title={t('common:home.offers.title')}
-        description={awaitingMyResponse > 0
-          ? t('common:home.offers.waitingForReply', { count: awaitingMyResponse })
-          : t('common:home.offers.description')}
-        actionLabel={t('common:home.offers.action')}
-        variant="secondary"
-        onAction={() => navigation.navigate('MyQuotes')}
-      />,
-      <DashboardCard
-        key="bookings"
-        icon="truckDelivery"
-        title={t('common:home.myBookings.title', { count: activeBookings.length })}
-        description={t('common:home.myBookings.description')}
-        actionLabel={t('common:home.myBookings.action')}
-        variant="secondary"
-        onAction={() => navigation.navigate('Bookings')}
-      />,
-      <DashboardCard
-        key="fleet"
-        icon="fleet"
-        title={t('common:home.myFleet.title')}
-        description={t('common:home.myFleet.description')}
-        actionLabel={t('common:home.myFleet.action')}
-        variant="secondary"
-        onAction={() => navigation.navigate('Fleet')}
-      />,
+    mainTile = tile('findLoads', 'search', null, 'LoadsList', { primary: true });
+    tiles.push(
+      tile('offers', 'quote', awaitingMyResponse, 'MyQuotes'),
+      tile('bookings', 'truckDelivery', activeBookings.length, 'Bookings'),
+      tile('myTrucks', 'fleet', null, 'Fleet'),
     );
   }
   if (isDriver) {
-    cards.push(
-      <DashboardCard
-        key="jobs"
-        icon="jobs"
-        title={t('common:home.activeJobs.title', { count: activeBookings.length })}
-        description={bookingsLoading ? t('common:home.loading') : t('common:home.activeJobs.description')}
-        actionLabel={t('common:home.activeJobs.action')}
-        onAction={() => navigation.navigate('Jobs')}
-      />,
-      <DashboardCard
-        key="earnings"
-        icon="earnings"
-        title={t('common:home.earnings.title')}
-        value={formatCurrency(todaysEarnings)}
-        actionLabel={t('common:home.earnings.action')}
-        variant="secondary"
-        onAction={() => navigation.navigate('Earnings')}
-      />,
-    );
+    mainTile = tile('myJobs', 'jobs', activeBookings.length, 'Jobs', { primary: true });
+    tiles.push(tile('earnings', 'earnings', null, 'Earnings', { value: formatCurrency(todaysEarnings) }));
   }
   if (user?.role === ROLES.ADMIN) {
-    cards.push(
-      <DashboardCard
-        key="admin"
-        icon="admin"
-        title={t('common:home.adminDashboard.title')}
-        description={t('common:home.adminDashboard.description')}
-        actionLabel={t('common:home.adminDashboard.action')}
-        onAction={() => navigation.navigate('AdminUsers')}
-      />,
-    );
+    mainTile = tile('admin', 'admin', null, 'AdminUsers', { primary: true });
   }
 
   return (
@@ -264,6 +188,9 @@ const HomeScreen = ({ navigation }) => {
         />
       )}
 
+      {mainTile && <View style={styles.mainTile}>{mainTile}</View>}
+      {tiles.length > 0 && <Grid columns={isPhone ? 1 : 2} gap={spacing.md}>{tiles}</Grid>}
+
       {isShipper && (
         <>
           <Text style={styles.sectionLabel}>{t('common:home.overview')}</Text>
@@ -276,12 +203,6 @@ const HomeScreen = ({ navigation }) => {
         </>
       )}
 
-      {cards.length > 0 && (
-        <>
-          <Text style={styles.sectionLabel}>{t('common:home.quickActions')}</Text>
-          <Grid columns={cardColumns}>{cards}</Grid>
-        </>
-      )}
     </ScrollView>
   );
 };
@@ -303,7 +224,7 @@ const styles = themedStyles(() => ({
   avatarWide: { marginRight: spacing.lg },
   headerText: { flex: 1, minWidth: 0 },
   greetingRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
-  greeting: { ...type.h1, color: colors.textPrimary },
+  greeting: { ...type.h2, color: colors.textPrimary },
   greetingWide: { ...type.display },
   roleChip: {
     backgroundColor: colors.primaryMuted,
@@ -312,7 +233,8 @@ const styles = themedStyles(() => ({
     paddingVertical: 2,
   },
   roleText: { ...type.caption, color: colors.primaryText, textTransform: 'capitalize' },
-  subtitle: { ...type.body, color: colors.textMuted, marginTop: spacing.xxs },
+  subtitle: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
+  mainTile: { marginBottom: spacing.md },
 
   sectionLabel: {
     ...type.caption,
@@ -327,7 +249,7 @@ const styles = themedStyles(() => ({
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     ...shadow.level1,
   },
   statHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -340,7 +262,7 @@ const styles = themedStyles(() => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statValue: { ...type.display, color: colors.textPrimary, marginTop: spacing.sm },
+  statValue: { ...type.h1, color: colors.textPrimary, marginTop: spacing.xs },
 }));
 
 export default HomeScreen;

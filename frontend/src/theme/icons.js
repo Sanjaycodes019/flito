@@ -52,6 +52,29 @@ const GLYPHS = {
   gps: 'crosshairs-gps',
   navigate: 'navigation-variant-outline',
 
+  // Goods and truck kinds (picture buttons)
+  goodsCement: 'wall',
+  goodsFood: 'grain',
+  goodsFurniture: 'sofa-outline',
+  goodsProduce: 'carrot',
+  goodsStone: 'terrain',
+  goodsFuel: 'gas-station-outline',
+  goodsMachine: 'engine-outline',
+  goodsOther: 'dots-horizontal-circle-outline',
+  truckPickup: 'van-utility',
+  truckSmall: 'truck-outline',
+  truckMedium: 'truck-delivery-outline',
+  truckLarge: 'truck',
+  truckContainer: 'truck-cargo-container',
+  truckTrailer: 'truck-trailer',
+  bodyFlatbed: 'truck-flatbed',
+  bodyTipper: 'dump-truck',
+  bodyTanker: 'tanker-truck',
+  bodyCold: 'snowflake',
+  fuel: 'gas-station-outline',
+  electric: 'flash-outline',
+  area: 'map-outline',
+
   // Money
   price: 'currency-inr', // Rs. amounts, closest available currency glyph
   wallet: 'wallet-outline',

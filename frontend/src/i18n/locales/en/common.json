@@ -226,11 +226,29 @@
       "title": "Admin Dashboard",
       "description": "KYC approvals, disputes, platform metrics",
       "action": "Open Dashboard"
+    },
+    "tiles": {
+      "postLoad": "Post a load",
+      "myLoads": "My loads",
+      "bookings": "Bookings",
+      "findLoads": "Find loads",
+      "offers": "Offers",
+      "myTrucks": "My trucks",
+      "myJobs": "My jobs",
+      "earnings": "Earnings",
+      "admin": "Admin"
     }
   },
   "errorBoundary": {
     "title": "Something went wrong",
     "message": "The app hit an unexpected problem. Please try again.",
     "retry": "Try again"
+  },
+  "wizard": {
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "cancel": "Cancel",
+    "stepOf": "Step {{current}} of {{total}}"
   }
 }

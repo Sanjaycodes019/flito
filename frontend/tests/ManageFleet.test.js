@@ -29,6 +29,11 @@ const renderFleet = (trucks = []) => {
   return renderWithProviders(<ManageFleet />, { user: fakeUser('owner') });
 };
 
+// Leaves the current step: "Next", or "Skip" on an optional step left empty.
+const next = (screen) => {
+  fireEvent.press(screen.queryByText('Next') || screen.getByText('Skip'));
+};
+
 const pick = async (screen, fieldLabel, optionLabel) => {
   fireEvent.press(await screen.findByLabelText(fieldLabel));
   fireEvent.press(await screen.findByLabelText(optionLabel));
@@ -52,30 +57,40 @@ describe('my fleet', () => {
     expect(screen.getByDisplayValue('10000')).toBeTruthy();
 
     await pick(screen, 'Make', 'Tata');
+    next(screen);
+
+    await screen.findByText('More about the truck');
     fireEvent.changeText(screen.getByLabelText('Model'), '1613');
     await pick(screen, 'Year of Manufacture', '2019');
     fireEvent.press(screen.getByLabelText('Covered / Container'));
     fireEvent.changeText(screen.getByLabelText('Length (ft)'), '19');
+    next(screen);
 
+    await screen.findByText('Where does it work?');
     await pick(screen, 'Base province', 'Bagmati Province');
     await pick(screen, 'Base district', 'Lalitpur');
     await pick(screen, 'Base municipality', 'Lalitpur');
     fireEvent.press(screen.getByLabelText('Within its province'));
+    next(screen);
 
+    await screen.findByText('Your price and extras');
     fireEvent.changeText(screen.getByLabelText('Rate per km (Rs.)'), '70');
     fireEvent.changeText(screen.getByLabelText('Minimum Charge (Rs.)'), '4000');
     fireEvent.press(screen.getByLabelText('Tarpaulin cover'));
     fireEvent.press(screen.getByLabelText('Helper (khalasi) comes along'));
 
-    // Papers are folded away until opened.
-    expect(screen.queryByLabelText('Chassis Number')).toBeNull();
-    fireEvent.press(screen.getByLabelText('Papers'));
+    next(screen);
+
+    // Papers have a step of their own, and it can be skipped.
+    await screen.findByText('Truck papers');
     fireEvent.press(screen.getByLabelText('Third-Party'));
     fireEvent.changeText(screen.getByLabelText('Insurance Company'), 'Shikhar Insurance');
     await pick(screen, 'Insurance valid until, day', '15');
     await pick(screen, 'Insurance valid until, month', 'Mar');
     await pick(screen, 'Insurance valid until, year', String(NEXT_YEAR));
+    next(screen);
 
+    expect(await screen.findByText('Check and save')).toBeTruthy();
     fireEvent.press(screen.getByText('Add Truck'));
 
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/trucks', {
@@ -102,18 +117,34 @@ describe('my fleet', () => {
     await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
   });
 
-  it("won't add a truck without its capacity, or with a malformed chassis number", async () => {
+  it("won't move past a truck without its capacity", async () => {
     const screen = renderFleet();
 
     fireEvent.press(await screen.findByText('Add Truck'));
     fireEvent.changeText(screen.getByLabelText('Registration Number'), 'BA 3 KHA 7788');
     fireEvent.press(screen.getByLabelText('Other Vehicle'));
-    fireEvent.press(screen.getByLabelText('Papers'));
-    fireEvent.changeText(screen.getByLabelText('Chassis Number'), 'MAT#1');
-    fireEvent.press(screen.getByText('Add Truck'));
+    next(screen);
 
     expect(await screen.findByText('Enter the most it carries, from 100 to 60,000 kg')).toBeTruthy();
-    expect(screen.getByText('Letters and digits, as on the bluebook')).toBeTruthy();
+    expect(screen.getByText('Step 1 of 6')).toBeTruthy();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it('asks for a malformed chassis number to be fixed on the papers step', async () => {
+    const screen = renderFleet();
+
+    fireEvent.press(await screen.findByText('Add Truck'));
+    fireEvent.changeText(screen.getByLabelText('Registration Number'), 'BA 3 KHA 7788');
+    next(screen);
+    next(screen);
+    next(screen);
+    next(screen);
+    await screen.findByText('Truck papers');
+    fireEvent.changeText(screen.getByLabelText('Chassis Number'), 'MAT#1');
+    next(screen);
+
+    expect(await screen.findByText('Letters and digits, as on the bluebook')).toBeTruthy();
+    expect(screen.getByText('Truck papers')).toBeTruthy();
     expect(api.post).not.toHaveBeenCalled();
   });
 
@@ -122,10 +153,14 @@ describe('my fleet', () => {
 
     fireEvent.press(await screen.findByText('Add Truck'));
     fireEvent.changeText(screen.getByLabelText('Registration Number'), 'BA 3 KHA 7788');
+    next(screen);
+    next(screen);
+    await screen.findByText('Where does it work?');
     fireEvent.press(screen.getByLabelText('Within its district'));
-    fireEvent.press(screen.getByText('Add Truck'));
+    next(screen);
 
     expect(await screen.findByText('Set a base to limit where the truck works')).toBeTruthy();
+    expect(screen.getByText('Where does it work?')).toBeTruthy();
     expect(api.post).not.toHaveBeenCalled();
   });
 

@@ -66,6 +66,47 @@
       "none": "None",
       "notSet": "Not set",
       "notChosenYet": "Not chosen yet"
+    },
+    "goodsChoices": {
+      "cement": "Cement / Bricks",
+      "food": "Rice / Food",
+      "furniture": "Furniture",
+      "produce": "Vegetables / Fruit",
+      "stone": "Sand / Stone",
+      "fuel": "Fuel / Water",
+      "machine": "Machine",
+      "other": "Something else"
+    },
+    "weightHelper": "Not sure? Give your best guess. 1 ton = 1000 kg.",
+    "steps": {
+      "goods": {
+        "title": "What are you sending?",
+        "hint": "Tap a picture, or type it below."
+      },
+      "weight": {
+        "title": "How heavy is it?",
+        "hint": "Tap a number, or type your own."
+      },
+      "pickup": {
+        "title": "Where should we pick it up?",
+        "hint": "Choose the place one step at a time."
+      },
+      "dropoff": {
+        "title": "Where should it go?",
+        "hint": "Choose the place it must reach."
+      },
+      "date": {
+        "title": "When should it be picked up?",
+        "hint": "Tap the day."
+      },
+      "extras": {
+        "title": "Add a photo or note",
+        "hint": "This is optional. You can skip it."
+      },
+      "review": {
+        "title": "Check and send",
+        "hint": "Is everything right? Then tap the button."
+      }
     }
   },
   "truckMatches": {

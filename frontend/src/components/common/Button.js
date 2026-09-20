@@ -48,6 +48,8 @@ const VARIANTS = themed(() => ({
 }));
 
 const SIZES = {
+  // Large: for the main step buttons of a guided flow. 56px is easy to hit with a thumb.
+  lg: { height: 56, paddingHorizontal: spacing.xxl, fontSize: 17, icon: 24, gap: spacing.sm },
   md: { height: 48, paddingHorizontal: spacing.xl, fontSize: textType.bodyMedium.fontSize, icon: iconSize.md, gap: spacing.sm },
   // 40px plus the 8px hitSlop below reaches the 44-48px minimum touch target
   // recommended on both iOS and Android, even though the drawn chip looks

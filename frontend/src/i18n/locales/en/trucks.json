@@ -1,45 +1,148 @@
 {
   "types": {
-    "pickup": { "label": "Pickup", "description": "Usually up to 1.5 tonnes", "examples": "Mahindra Bolero, Tata Yodha" },
-    "mini-truck": { "label": "Mini Truck", "description": "Usually up to 2.5 tonnes", "examples": "Tata Ace, Ashok Leyland Dost" },
-    "light-truck": { "label": "Light Truck (Canter)", "description": "Usually 3 to 7 tonnes", "examples": "Tata 407, Eicher Pro" },
-    "6-wheeler": { "label": "6-Wheeler Truck", "description": "Usually 9 to 12 tonnes", "examples": "Tata 1613, Ashok Leyland 1616" },
-    "10-wheeler": { "label": "10-Wheeler Truck", "description": "Usually 15 to 20 tonnes", "examples": "Tata 2518, BharatBenz 2523" },
-    "12-wheeler": { "label": "12-Wheeler Truck", "description": "Usually 20 to 25 tonnes", "examples": "Tata 3118, Ashok Leyland 3118" },
-    "trailer": { "label": "Trailer", "description": "25 tonnes and more", "examples": "Low-bed and long trailers" },
-    "other": { "label": "Other Vehicle", "description": "Enter its capacity", "examples": "" },
-    "6-ton": { "label": "6-Ton Truck", "description": "Older class: pick a current one", "examples": "" },
-    "10-ton": { "label": "10-Ton Truck", "description": "Older class: pick a current one", "examples": "" },
-    "14-ton": { "label": "14-Ton Truck", "description": "Older class: pick a current one", "examples": "" },
-    "18-wheeler": { "label": "18-Wheeler", "description": "Older class: pick a current one", "examples": "" }
+    "pickup": {
+      "label": "Pickup",
+      "description": "Usually up to 1.5 tonnes",
+      "examples": "Mahindra Bolero, Tata Yodha"
+    },
+    "mini-truck": {
+      "label": "Mini Truck",
+      "description": "Usually up to 2.5 tonnes",
+      "examples": "Tata Ace, Ashok Leyland Dost"
+    },
+    "light-truck": {
+      "label": "Light Truck (Canter)",
+      "description": "Usually 3 to 7 tonnes",
+      "examples": "Tata 407, Eicher Pro"
+    },
+    "6-wheeler": {
+      "label": "6-Wheeler Truck",
+      "description": "Usually 9 to 12 tonnes",
+      "examples": "Tata 1613, Ashok Leyland 1616"
+    },
+    "10-wheeler": {
+      "label": "10-Wheeler Truck",
+      "description": "Usually 15 to 20 tonnes",
+      "examples": "Tata 2518, BharatBenz 2523"
+    },
+    "12-wheeler": {
+      "label": "12-Wheeler Truck",
+      "description": "Usually 20 to 25 tonnes",
+      "examples": "Tata 3118, Ashok Leyland 3118"
+    },
+    "trailer": {
+      "label": "Trailer",
+      "description": "25 tonnes and more",
+      "examples": "Low-bed and long trailers"
+    },
+    "other": {
+      "label": "Other Vehicle",
+      "description": "Enter its capacity",
+      "examples": ""
+    },
+    "6-ton": {
+      "label": "6-Ton Truck",
+      "description": "Older class: pick a current one",
+      "examples": ""
+    },
+    "10-ton": {
+      "label": "10-Ton Truck",
+      "description": "Older class: pick a current one",
+      "examples": ""
+    },
+    "14-ton": {
+      "label": "14-Ton Truck",
+      "description": "Older class: pick a current one",
+      "examples": ""
+    },
+    "18-wheeler": {
+      "label": "18-Wheeler",
+      "description": "Older class: pick a current one",
+      "examples": ""
+    }
   },
   "bodyTypes": {
-    "open": { "label": "Open Body", "description": "Side walls, no roof" },
-    "covered": { "label": "Covered / Container", "description": "Closed box body" },
-    "flatbed": { "label": "Flatbed", "description": "Flat deck, no walls" },
-    "tipper": { "label": "Tipper", "description": "Sand, gravel and aggregate" },
-    "tanker": { "label": "Tanker", "description": "Fuel, water or milk" },
-    "refrigerated": { "label": "Refrigerated", "description": "Cold chain goods" }
+    "open": {
+      "label": "Open Body",
+      "description": "Side walls, no roof"
+    },
+    "covered": {
+      "label": "Covered / Container",
+      "description": "Closed box body"
+    },
+    "flatbed": {
+      "label": "Flatbed",
+      "description": "Flat deck, no walls"
+    },
+    "tipper": {
+      "label": "Tipper",
+      "description": "Sand, gravel and aggregate"
+    },
+    "tanker": {
+      "label": "Tanker",
+      "description": "Fuel, water or milk"
+    },
+    "refrigerated": {
+      "label": "Refrigerated",
+      "description": "Cold chain goods"
+    }
   },
   "fuelTypes": {
-    "diesel": { "label": "Diesel" },
-    "petrol": { "label": "Petrol" },
-    "electric": { "label": "Electric" }
+    "diesel": {
+      "label": "Diesel"
+    },
+    "petrol": {
+      "label": "Petrol"
+    },
+    "electric": {
+      "label": "Electric"
+    }
   },
   "serviceAreas": {
-    "nepal": { "label": "Anywhere in Nepal", "description": "Loads to and from any district" },
-    "province": { "label": "Within its province", "description": "Both stops in the base province" },
-    "district": { "label": "Within its district", "description": "Both stops in the base district" }
+    "nepal": {
+      "label": "Anywhere in Nepal",
+      "description": "Loads to and from any district"
+    },
+    "province": {
+      "label": "Within its province",
+      "description": "Both stops in the base province"
+    },
+    "district": {
+      "label": "Within its district",
+      "description": "Both stops in the base district"
+    }
   },
   "insuranceTypes": {
-    "third-party": { "label": "Third-Party", "description": "The minimum the law requires" },
-    "comprehensive": { "label": "Comprehensive", "description": "Also covers damage to the truck" }
+    "third-party": {
+      "label": "Third-Party",
+      "description": "The minimum the law requires"
+    },
+    "comprehensive": {
+      "label": "Comprehensive",
+      "description": "Also covers damage to the truck"
+    }
   },
   "features": {
-    "tarpaulin": { "label": "Tarpaulin cover", "short": "Tarpaulin", "description": "Keeps goods dry in the rain" },
-    "helper": { "label": "Helper (khalasi) comes along", "short": "Helper", "description": "An extra hand for loading and unloading" },
-    "gpsTracker": { "label": "GPS tracker fitted", "short": "GPS", "description": "The truck can be followed on a map" },
-    "hillRoads": { "label": "Handles hill and dirt roads", "short": "Hill roads", "description": "Fit for rough routes off the highway" }
+    "tarpaulin": {
+      "label": "Tarpaulin cover",
+      "short": "Tarpaulin",
+      "description": "Keeps goods dry in the rain"
+    },
+    "helper": {
+      "label": "Helper (khalasi) comes along",
+      "short": "Helper",
+      "description": "An extra hand for loading and unloading"
+    },
+    "gpsTracker": {
+      "label": "GPS tracker fitted",
+      "short": "GPS",
+      "description": "The truck can be followed on a map"
+    },
+    "hillRoads": {
+      "label": "Handles hill and dirt roads",
+      "short": "Hill roads",
+      "description": "Fit for rough routes off the highway"
+    }
   },
   "documents": {
     "bluebook": "Bluebook",
@@ -195,6 +298,42 @@
       "assignDriverButton": "Assign Driver",
       "markInMaintenanceButton": "Mark In Maintenance",
       "markActiveButton": "Mark Active"
+    },
+    "steps": {
+      "truck": {
+        "title": "Tell us about your truck",
+        "hint": "Number plate, kind of truck, and how much it can carry."
+      },
+      "about": {
+        "title": "More about the truck",
+        "hint": "Body type and size. You can skip what you do not know."
+      },
+      "where": {
+        "title": "Where does it work?",
+        "hint": "Choose where the truck is kept and how far it goes."
+      },
+      "price": {
+        "title": "Your price and extras",
+        "hint": "Optional. Shippers like to know your price."
+      },
+      "papers": {
+        "title": "Truck papers",
+        "hint": "Optional now. You can add them later."
+      },
+      "review": {
+        "title": "Check and save",
+        "hint": "Is everything right? Then tap the button."
+      }
+    },
+    "review": {
+      "plate": "Number plate",
+      "type": "Kind of truck",
+      "capacity": "Can carry",
+      "body": "Body",
+      "area": "Works",
+      "rate": "Price",
+      "notSet": "Not set",
+      "fixHint": "Some answers need fixing. Tap Back to see them."
     }
   },
   "myQuotes": {

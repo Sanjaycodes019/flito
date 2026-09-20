@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
@@ -7,6 +7,7 @@ import Input from '../../components/common/Input';
 import SelectField from '../../components/common/SelectField';
 import DateField from '../../components/common/DateField';
 import Disclosure from '../../components/common/Disclosure';
+import StepWizard from '../../components/common/StepWizard';
 import Spinner from '../../components/common/Spinner';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
@@ -86,6 +87,8 @@ const paperStatus = (date, t) => {
 };
 
 const ManageFleet = () => {
+  const scrollRef = useRef(null);
+  const toTop = () => scrollRef.current?.scrollTo({ y: 0, animated: false });
   const { t } = useTranslation();
   const [trucks, setTrucks] = useState([]);
   const [tree, setTree] = useState(null);
@@ -161,6 +164,7 @@ const ManageFleet = () => {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.container}
       contentContainerStyle={layout.contentStyle}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
@@ -176,14 +180,14 @@ const ManageFleet = () => {
         )}
       </View>
 
-      {adding && <TruckForm tree={tree} wide={wide} onSaved={handleSaved} onCancel={() => setAdding(false)} />}
+      {adding && <TruckForm tree={tree} wide={wide} onSaved={handleSaved} onCancel={() => setAdding(false)} onStepChange={toTop} />}
 
       {trucks.length === 0 && !adding && (
         <EmptyState icon="fleet" title={t('trucks:fleet.emptyTitle')} message={t('trucks:fleet.emptyMessage')} />
       )}
 
       {trucks.map((truck) => (editingId === truck._id ? (
-        <TruckForm key={truck._id} tree={tree} wide={wide} truck={truck} onSaved={handleSaved} onCancel={() => setEditingId(null)} />
+        <TruckForm key={truck._id} tree={tree} wide={wide} truck={truck} onSaved={handleSaved} onCancel={() => setEditingId(null)} onStepChange={toTop} />
       ) : (
         <TruckCard
           key={truck._id}
@@ -205,11 +209,18 @@ const ManageFleet = () => {
   );
 };
 
+// A picture for each choice, so a truck or body can be picked by looking.
+const TYPE_ICONS = { pickup: 'truckPickup', 'mini-truck': 'truckSmall', 'light-truck': 'truckMedium', '6-wheeler': 'truckLarge', '10-wheeler': 'truckContainer', '12-wheeler': 'truckTrailer', trailer: 'truckTrailer', other: 'goodsOther', '6-ton': 'truckLarge', '10-ton': 'truckLarge', '14-ton': 'truckContainer', '18-wheeler': 'truckTrailer' };
+const BODY_ICONS = { open: 'load', covered: 'truckContainer', flatbed: 'bodyFlatbed', tipper: 'bodyTipper', tanker: 'bodyTanker', refrigerated: 'bodyCold' };
+const FUEL_ICONS = { diesel: 'fuel', petrol: 'fuel', electric: 'electric' };
+const AREA_ICONS = { nepal: 'area', province: 'area', district: 'area' };
+
 // Cards to pick one option from, each with an optional description and examples.
-const OptionGrid = ({ options, value, onChange, columns, allowClear = false }) => (
+const OptionGrid = ({ options, value, onChange, columns, allowClear = false, icons }) => (
   <View style={styles.optionGrid} accessibilityRole="radiogroup">
     {options.map((option) => {
       const selected = value === option.value;
+      const icon = icons?.[option.value];
       return (
         <View key={option.value} style={[styles.optionCell, { width: `${100 / columns}%` }]}>
           <Pressable
@@ -219,6 +230,7 @@ const OptionGrid = ({ options, value, onChange, columns, allowClear = false }) =
             accessibilityLabel={option.label}
             style={[styles.option, selected && styles.optionSelected]}
           >
+            {icon ? <Icon name={icon} size={24} color={selected ? colors.primaryText : colors.textSecondary} style={styles.optionIcon} /> : null}
             <View style={styles.optionTop}>
               <Text style={[styles.optionLabel, selected && styles.optionLabelSelected]} numberOfLines={2}>{option.label}</Text>
               {selected && <Icon name="checkmark" size={iconSize.sm} color={colors.primaryText} />}
@@ -248,17 +260,9 @@ const CheckRow = ({ label, description, checked, onToggle }) => (
   </Pressable>
 );
 
-const FormBlock = ({ title, hint, first, children }) => (
-  <View style={[styles.block, first && styles.blockFirst]}>
-    <Text style={styles.blockTitle} accessibilityRole="header">{title}</Text>
-    {hint ? <Text style={styles.blockHint}>{hint}</Text> : null}
-    <View style={styles.blockBody}>{children}</View>
-  </View>
-);
-
 // Adds a truck, or edits one when `truck` is given (the registration can't
 // change). Filled in the way a truck is described on its bluebook in Nepal.
-const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
+const TruckForm = ({ tree, truck, wide, onSaved, onCancel, onStepChange }) => {
   const { t } = useTranslation();
   const editing = Boolean(truck);
   const startType = truck?.truckType || '6-wheeler';
@@ -292,7 +296,6 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
   const [policyNumber, setPolicyNumber] = useState(truck?.insurance?.policyNumber || '');
   const [insuranceUntil, setInsuranceUntil] = useState(dayKeyOf(truck?.insurance?.validUntil));
   const [emissionUntil, setEmissionUntil] = useState(dayKeyOf(truck?.emissionTestValidUntil));
-  const [papersOpen, setPapersOpen] = useState(false);
   const [triedToSave, setTriedToSave] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -362,12 +365,10 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
     engineNumber: numberProblem(engineNumber),
   };
   const shown = (key) => (triedToSave ? errors[key] || null : null);
-  const papersHaveErrors = Boolean(errors.chassisNumber || errors.engineNumber);
 
   const handleSave = async () => {
     setTriedToSave(true);
     if (Object.values(errors).some(Boolean)) {
-      if (papersHaveErrors) setPapersOpen(true);
       return;
     }
 
@@ -415,22 +416,24 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
 
   const pair = wide ? styles.row : null;
   const half = wide ? styles.half : undefined;
-  const papersAdded = [bluebookUntil, insuranceUntil, emissionUntil, chassisNumber.trim(), engineNumber.trim()].filter(Boolean).length;
 
-  return (
-    <Card style={wide && styles.formWide}>
-      <Text style={styles.formTitle}>
-        {editing ? t('trucks:fleet.editTruckTitle', { registrationNumber: truck.registrationNumber }) : t('trucks:fleet.addTruckTitle')}
-      </Text>
-      <Text style={styles.formIntro}>{t('trucks:fleet.formIntro')}</Text>
-      {editing && ['approved', 'pending'].includes(truck.verification?.status) && (
-        <View style={styles.warning}>
-          <Icon name="warning" size={iconSize.sm} color={colors.warningText} />
-          <Text style={styles.warningText}>{t('trucks:fleet.verificationChangeWarning')}</Text>
-        </View>
-      )}
+  const clean = (...keys) => () => keys.every((key) => !errors[key]);
+  const stepText = (key) => ({ title: t(`trucks:fleet.steps.${key}.title`), hint: t(`trucks:fleet.steps.${key}.hint`) });
+  const anyError = Object.values(errors).some(Boolean);
+  const chosenType = typeOptions.find((option) => option.value === truckType);
+  const chosenBody = bodyTypeOptions.find((option) => option.value === bodyType);
+  const chosenArea = serviceAreaOptions.find((option) => option.value === serviceArea);
+  const paperFields = [bluebookUntil, insuranceUntil, emissionUntil, chassisNumber.trim(), engineNumber.trim(), insuranceType];
+  const featureCount = Object.values(features).filter(Boolean).length;
 
-      <FormBlock title={t('trucks:fleet.vehicleSection')} first>
+  const steps = [
+    {
+      key: 'truck',
+      icon: 'truckLarge',
+      ...stepText('truck'),
+      check: clean('registrationNumber', 'capacity'),
+      content: (
+        <>
         {!editing && (
           <Input
             label={t('trucks:fleet.registrationNumberLabel')}
@@ -450,7 +453,7 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
           {t('trucks:fleet.truckTypeFieldLabel')}
           <Text style={styles.required}> *</Text>
         </Text>
-        <OptionGrid options={typeOptions} value={truckType} onChange={chooseType} columns={wide ? 4 : 2} />
+        <OptionGrid icons={TYPE_ICONS} options={typeOptions} value={truckType} onChange={chooseType} columns={wide ? 4 : 2} />
 
         <View style={pair}>
           <Input
@@ -475,6 +478,19 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
           />
         </View>
 
+
+        </>
+      ),
+    },
+    {
+      key: 'about',
+      icon: 'truckContainer',
+      ...stepText('about'),
+      optional: true,
+      isEmpty: () => !model.trim() && !manufactured && !bed.lengthFt.trim() && !bed.widthFt.trim() && !bed.heightFt.trim(),
+      check: clean('lengthFt', 'widthFt', 'heightFt'),
+      content: (
+        <>
         <View style={pair}>
           <Input
             label={t('trucks:fleet.modelLabel')}
@@ -496,15 +512,12 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
         </View>
 
         <Text style={styles.fieldLabel}>{t('trucks:fleet.fuelFieldLabel')}</Text>
-        <OptionGrid options={fuelTypeOptions} value={fuelType} onChange={setFuelType} columns={3} />
-      </FormBlock>
-
-      <FormBlock title={t('trucks:fleet.bodySection')} hint={t('trucks:fleet.bodySectionHint')}>
+        <OptionGrid icons={FUEL_ICONS} options={fuelTypeOptions} value={fuelType} onChange={setFuelType} columns={3} />
         <Text style={styles.fieldLabel}>
           {t('trucks:fleet.bodyTypeFieldLabel')}
           <Text style={styles.required}> *</Text>
         </Text>
-        <OptionGrid options={bodyTypeOptions} value={bodyType} onChange={setBodyType} columns={wide ? 3 : 2} />
+        <OptionGrid icons={BODY_ICONS} options={bodyTypeOptions} value={bodyType} onChange={setBodyType} columns={wide ? 3 : 2} />
 
         <Text style={styles.fieldLabel}>{t('trucks:fleet.cargoBedFieldLabel')}</Text>
         <View style={styles.row}>
@@ -536,9 +549,18 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
             containerStyle={styles.third}
           />
         </View>
-      </FormBlock>
-
-      <FormBlock title={t('trucks:fleet.baseSection')} hint={t('trucks:fleet.baseSectionHint')}>
+        </>
+      ),
+    },
+    {
+      key: 'where',
+      icon: 'area',
+      ...stepText('where'),
+      optional: true,
+      isEmpty: () => !baseStarted && serviceArea === 'nepal',
+      check: clean('base'),
+      content: (
+        <>
         {tree ? (
           <NepalAddressFields
             tree={tree}
@@ -558,13 +580,19 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
         )}
 
         <Text style={styles.fieldLabel}>{t('trucks:fleet.serviceAreaFieldLabel')}</Text>
-        <OptionGrid options={serviceAreaOptions} value={serviceArea} onChange={setServiceArea} columns={wide ? 3 : 1} />
-      </FormBlock>
-
-      <FormBlock
-        title={t('trucks:fleet.pricingSection')}
-        hint={t('trucks:fleet.pricingSectionHint')}
-      >
+        <OptionGrid icons={AREA_ICONS} options={serviceAreaOptions} value={serviceArea} onChange={setServiceArea} columns={wide ? 3 : 1} />
+        </>
+      ),
+    },
+    {
+      key: 'price',
+      icon: 'price',
+      ...stepText('price'),
+      optional: true,
+      isEmpty: () => !ratePerKm.trim() && !minimumCharge.trim() && featureCount === 0,
+      check: clean('ratePerKm', 'minimumCharge'),
+      content: (
+        <>
         <View style={pair}>
           <Input
             label={t('trucks:fleet.ratePerKmLabel')}
@@ -587,9 +615,7 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
             containerStyle={half}
           />
         </View>
-      </FormBlock>
-
-      <FormBlock title={t('trucks:fleet.featuresSection')} hint={t('trucks:fleet.featuresSectionHint')}>
+          <Text style={styles.fieldLabel}>{t('trucks:fleet.featuresSection')}</Text>
         <View style={styles.featureGrid}>
           {TRUCK_FEATURES.map((feature) => (
             <View key={feature.key} style={[styles.featureCell, { width: wide ? '50%' : '100%' }]}>
@@ -602,17 +628,18 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
             </View>
           ))}
         </View>
-      </FormBlock>
-
-      <View style={styles.block}>
-        <Disclosure
-          title={t('trucks:fleet.papersSection')}
-          hint={t('trucks:fleet.papersSectionHint')}
-          icon="document"
-          badge={<StatusPill label={papersAdded ? t('trucks:fleet.papersAddedCount', { count: papersAdded }) : t('trucks:fleet.papersOptional')} tone={papersAdded ? 'success' : 'muted'} />}
-          open={papersOpen || (triedToSave && papersHaveErrors)}
-          onToggle={setPapersOpen}
-        >
+        </>
+      ),
+    },
+    {
+      key: 'papers',
+      icon: 'document',
+      ...stepText('papers'),
+      optional: true,
+      isEmpty: () => paperFields.every((value) => !value),
+      check: clean('chassisNumber', 'engineNumber'),
+      content: (
+        <>
           <View style={pair}>
             <Input
               label={t('trucks:fleet.chassisNumberLabel')}
@@ -678,20 +705,69 @@ const TruckForm = ({ tree, truck, wide, onSaved, onCancel }) => {
             onChange={setEmissionUntil}
             years={expiryYears}
           />
-        </Disclosure>
-      </View>
+        </>
+      ),
+    },
+    {
+      key: 'review',
+      icon: 'success',
+      ...stepText('review'),
+      content: (
+        <Card>
+          <ReviewRow label={t('trucks:fleet.review.plate')} value={editing ? truck.registrationNumber : registrationNumber.trim()} />
+          <ReviewRow label={t('trucks:fleet.review.type')} value={chosenType?.label} />
+          <ReviewRow label={t('trucks:fleet.review.capacity')} value={capacity.trim() ? `${Number(capacity).toLocaleString('en-NP')} kg` : null} />
+          <ReviewRow label={t('trucks:fleet.review.body')} value={chosenBody?.label} />
+          <ReviewRow label={t('trucks:fleet.review.area')} value={chosenArea?.label} />
+          <ReviewRow label={t('trucks:fleet.review.rate')} value={ratePerKm.trim() ? `Rs. ${ratePerKm.trim()} / km` : null} />
+          {triedToSave && anyError ? (
+            <View style={styles.warning}>
+              <Icon name="warning" size={iconSize.sm} color={colors.errorText} />
+              <Text style={styles.warningText}>{t('trucks:fleet.review.fixHint')}</Text>
+            </View>
+          ) : null}
+        </Card>
+      ),
+    },
+  ];
 
-      <View style={styles.formActions}>
-        <Button title={t('trucks:fleet.cancelButton')} variant="ghost" onPress={onCancel} style={styles.formAction} />
-        <Button
-          title={editing ? t('trucks:fleet.saveChangesButton') : t('trucks:fleet.addTruckButton')}
-          icon={editing ? 'checkmark' : 'add'}
-          onPress={handleSave}
-          loading={saving}
-          style={styles.formAction}
+  return (
+    <Card style={wide && styles.formWide}>
+      <Text style={styles.formTitle}>
+        {editing ? t('trucks:fleet.editTruckTitle', { registrationNumber: truck.registrationNumber }) : t('trucks:fleet.addTruckTitle')}
+      </Text>
+      {editing && ['approved', 'pending'].includes(truck.verification?.status) && (
+        <View style={styles.warning}>
+          <Icon name="warning" size={iconSize.sm} color={colors.warningText} />
+          <Text style={styles.warningText}>{t('trucks:fleet.verificationChangeWarning')}</Text>
+        </View>
+      )}
+
+      <View style={styles.wizard}>
+        <StepWizard
+          steps={steps}
+          freeJump={editing}
+          finishLabel={editing ? t('trucks:fleet.saveChangesButton') : t('trucks:fleet.addTruckButton')}
+          finishIcon={editing ? 'checkmark' : 'add'}
+          onFinish={handleSave}
+          finishing={saving}
+          onCancel={onCancel}
+          onBlocked={() => setTriedToSave(true)}
+          onAdvance={() => setTriedToSave(false)}
+          onStepChange={onStepChange}
         />
       </View>
     </Card>
+  );
+};
+
+const ReviewRow = ({ label, value }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.reviewRow}>
+      <Text style={styles.reviewLabel}>{label}</Text>
+      <Text style={[styles.reviewValue, !value && styles.reviewMuted]} numberOfLines={2}>{value || t('trucks:fleet.review.notSet')}</Text>
+    </View>
   );
 };
 
@@ -1037,17 +1113,18 @@ const styles = themedStyles(() => ({
   optionCell: { padding: spacing.xs },
   option: {
     flexGrow: 1,
-    padding: spacing.md,
+    padding: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
   },
+  optionIcon: { marginBottom: spacing.xs },
   optionSelected: { borderColor: colors.primaryText, backgroundColor: colors.primaryMuted },
   optionTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.xs },
-  optionLabel: { ...type.bodyMedium, color: colors.textPrimary, flexShrink: 1 },
+  optionLabel: { ...type.smallMedium, color: colors.textPrimary, flexShrink: 1 },
   optionLabelSelected: { color: colors.primaryText },
-  optionDescription: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
+  optionDescription: { ...type.small, fontSize: 12, color: colors.textMuted, marginTop: spacing.xxs },
   optionExamples: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs, fontStyle: 'italic' },
 
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -spacing.xs },
@@ -1071,6 +1148,11 @@ const styles = themedStyles(() => ({
   errorText: { ...type.small, color: colors.errorText, marginBottom: spacing.sm },
   clearBase: { alignSelf: 'flex-start' },
 
+  wizard: { marginTop: spacing.lg },
+  reviewRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md, paddingVertical: spacing.sm },
+  reviewLabel: { ...type.body, color: colors.textMuted },
+  reviewValue: { ...type.bodyMedium, color: colors.textPrimary, flexShrink: 1, textAlign: 'right' },
+  reviewMuted: { color: colors.textMuted, fontWeight: '400' },
   formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.xl },
   formAction: { minWidth: 140 },
 

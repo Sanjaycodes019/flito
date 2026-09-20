@@ -50,6 +50,20 @@ const fillStop = async (screen, stop, { province, district, municipality, ward, 
   fireEvent.changeText(screen.getByLabelText(`${stop} tole, village or area`), tole);
 };
 
+// Leaves the current step: "Next", or "Skip" on an optional step left empty.
+const next = (screen) => {
+  fireEvent.press(screen.queryByText('Next') || screen.getByText('Skip'));
+};
+
+// Answers the first two questions (goods, weight) and lands on the pickup step.
+const toPickupStep = async (screen) => {
+  fireEvent.changeText(await screen.findByLabelText('Goods Type'), 'Cement bags');
+  next(screen);
+  fireEvent.changeText(await screen.findByLabelText('Weight (kg)'), '6000');
+  next(screen);
+  await screen.findByText('Where should we pick it up?');
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   fetchLocations.mockResolvedValue(TREE);
@@ -57,51 +71,81 @@ beforeEach(() => {
 });
 
 describe('posting a load', () => {
-  it('asks only for the essentials, with the extras folded away', async () => {
+  it('asks one question at a time, with pictures to tap', async () => {
     const screen = renderForm();
 
-    expect(await screen.findByLabelText('Goods Type')).toBeTruthy();
-    expect(screen.getByLabelText('Weight (kg)')).toBeTruthy();
-    expect(screen.getByLabelText('Pickup province')).toBeTruthy();
-    expect(screen.getByLabelText('Dropoff province')).toBeTruthy();
-    expect(screen.getByLabelText(/^Today, /)).toBeTruthy();
+    expect(await screen.findByText('What are you sending?')).toBeTruthy();
+    expect(screen.getByText('Step 1 of 7')).toBeTruthy();
+    expect(screen.getByLabelText('Cement / Bricks')).toBeTruthy();
+    // Nothing from the later questions is on screen yet.
+    expect(screen.queryByLabelText('Weight (kg)')).toBeNull();
+    expect(screen.queryByLabelText('Pickup province')).toBeNull();
 
-    // Contacts, the map, the description and photos wait behind their toggles.
-    expect(screen.queryByLabelText('Pickup contact phone')).toBeNull();
-    expect(screen.queryByLabelText('Description')).toBeNull();
-    expect(screen.queryByTestId('webview')).toBeNull();
+    // Tapping a picture answers it.
+    fireEvent.press(screen.getByLabelText('Rice / Food'));
+    expect(screen.getByDisplayValue('Rice / Food')).toBeTruthy();
+    next(screen);
 
-    fireEvent.press(screen.getByLabelText('Pickup contact and exact point'));
-    expect(screen.getByLabelText('Pickup contact phone')).toBeTruthy();
-    expect(screen.queryByTestId('webview')).toBeNull();
-
-    fireEvent.press(screen.getByLabelText('Pickup point on map'));
-    expect(screen.getAllByTestId('webview')).toHaveLength(1);
+    expect(await screen.findByText('How heavy is it?')).toBeTruthy();
+    expect(screen.getByText('Step 2 of 7')).toBeTruthy();
+    fireEvent.press(screen.getByText('Back'));
+    expect(await screen.findByText('What are you sending?')).toBeTruthy();
+    // Going back keeps the answer.
+    expect(screen.getByDisplayValue('Rice / Food')).toBeTruthy();
   });
 
-  it('says what is still needed instead of posting', async () => {
+  it('says what is missing instead of moving on', async () => {
     const screen = renderForm();
 
-    fireEvent.press(await screen.findByText('Find Trucks'));
+    await screen.findByText('What are you sending?');
+    next(screen);
 
-    expect(await screen.findByText('Still needed: goods type, weight, pickup address, dropoff address.')).toBeTruthy();
-    expect(screen.getAllByText('Choose the province')).toHaveLength(2);
-    expect(screen.getByText('Enter the weight in kg')).toBeTruthy();
+    expect(await screen.findByText('Enter what you are shipping')).toBeTruthy();
+    expect(screen.getByText('Step 1 of 7')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Goods Type'), 'Cement bags');
+    next(screen);
+    await screen.findByText('How heavy is it?');
+    next(screen);
+
+    expect(await screen.findByText('Enter the weight in kg')).toBeTruthy();
     expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it('will not leave an address step until it is complete', async () => {
+    const screen = renderForm();
+
+    await toPickupStep(screen);
+    next(screen);
+
+    expect(await screen.findByText('Choose the province')).toBeTruthy();
+    expect(screen.getByText('Where should we pick it up?')).toBeTruthy();
   });
 
   it('posts the load for the chosen day and opens the trucks that can carry it', async () => {
     const screen = renderForm();
 
-    fireEvent.changeText(await screen.findByLabelText('Goods Type'), 'Cement bags');
-    fireEvent.changeText(screen.getByLabelText('Weight (kg)'), '6000');
+    await toPickupStep(screen);
     await fillStop(screen, 'Pickup', { province: 'Bagmati Province', district: 'Kathmandu', municipality: 'Kathmandu', ward: 'Ward 16', tole: 'Balaju' });
-    await fillStop(screen, 'Dropoff', { province: 'Gandaki Province', district: 'Kaski', municipality: 'Pokhara', ward: 'Ward 6', tole: 'Lakeside' });
-    fireEvent.press(screen.getByLabelText(/^Tomorrow, /));
+    next(screen);
 
-    // The summary follows along.
+    await screen.findByText('Where should it go?');
+    await fillStop(screen, 'Dropoff', { province: 'Gandaki Province', district: 'Kaski', municipality: 'Pokhara', ward: 'Ward 6', tole: 'Lakeside' });
+    next(screen);
+
+    await screen.findByText('When should it be picked up?');
+    fireEvent.press(screen.getByLabelText(/^Tomorrow, /));
+    next(screen);
+
+    // Photos and a note are optional, so this step can be skipped.
+    await screen.findByText('Add a photo or note');
+    next(screen);
+
+    // The last step reads everything back.
+    expect(await screen.findByText('Check and send')).toBeTruthy();
     expect(screen.getByText('Balaju, Kathmandu')).toBeTruthy();
     expect(screen.getByText('Lakeside, Pokhara')).toBeTruthy();
+    expect(screen.getByText('Cement bags')).toBeTruthy();
 
     fireEvent.press(screen.getByText('Find Trucks'));
 
@@ -118,14 +162,16 @@ describe('posting a load', () => {
   it('keeps the contact details open when the phone needs fixing', async () => {
     const screen = renderForm();
 
-    fireEvent.press(await screen.findByLabelText('Dropoff contact and exact point'));
-    fireEvent.changeText(screen.getByLabelText('Dropoff contact phone'), '98412');
-    // Folded away again before trying to post.
-    fireEvent.press(screen.getByLabelText('Dropoff contact and exact point'));
-    fireEvent.press(screen.getByText('Find Trucks'));
+    await toPickupStep(screen);
+    await fillStop(screen, 'Pickup', { province: 'Bagmati Province', district: 'Kathmandu', municipality: 'Kathmandu', ward: 'Ward 16', tole: 'Balaju' });
+    fireEvent.press(screen.getByLabelText('Pickup contact and exact point'));
+    fireEvent.changeText(screen.getByLabelText('Pickup contact phone'), '98412');
+    // Folded away again before moving on.
+    fireEvent.press(screen.getByLabelText('Pickup contact and exact point'));
+    next(screen);
 
     expect(await screen.findByText('Use a +977 number, e.g. +9779841234567')).toBeTruthy();
-    expect(api.post).not.toHaveBeenCalled();
+    expect(screen.getByText('Where should we pick it up?')).toBeTruthy();
   });
 
   it('fills a stop from the current location and leaves the ward to the shipper', async () => {
@@ -136,14 +182,13 @@ describe('posting a load', () => {
     });
     const screen = renderForm();
 
+    await toPickupStep(screen);
     fireEvent.press(await screen.findByLabelText('Use current location for pickup'));
 
     expect(await screen.findByLabelText('Pickup municipality, Kathmandu')).toBeTruthy();
     expect(screen.getByDisplayValue('Basantapur')).toBeTruthy();
     expect(screen.getByLabelText('Pickup ward number')).toBeTruthy();
     expect(screen.getByText('Filled in from your location')).toBeTruthy();
-    // The dropoff is untouched.
-    expect(screen.getByLabelText('Dropoff province')).toBeTruthy();
   });
 
   it("uses the shipper's saved address for a stop", async () => {
@@ -152,9 +197,10 @@ describe('posting a load', () => {
     });
     const screen = renderForm(user);
 
+    await toPickupStep(screen);
     fireEvent.press(await screen.findByLabelText('Use my address for pickup'));
 
     expect(await screen.findByLabelText('Pickup ward number, Ward 20')).toBeTruthy();
-    expect(screen.getByText('Basantapur, Kathmandu')).toBeTruthy();
+    expect(screen.getByDisplayValue('Basantapur')).toBeTruthy();
   });
 });

@@ -1,45 +1,148 @@
 {
   "types": {
-    "pickup": { "label": "पिकअप", "description": "सामान्यतया १.५ टनसम्म", "examples": "Mahindra Bolero, Tata Yodha" },
-    "mini-truck": { "label": "मिनी ट्रक", "description": "सामान्यतया २.५ टनसम्म", "examples": "Tata Ace, Ashok Leyland Dost" },
-    "light-truck": { "label": "लाइट ट्रक (क्यान्टर)", "description": "सामान्यतया ३ देखि ७ टनसम्म", "examples": "Tata 407, Eicher Pro" },
-    "6-wheeler": { "label": "६-पाङ्ग्रे ट्रक", "description": "सामान्यतया ९ देखि १२ टनसम्म", "examples": "Tata 1613, Ashok Leyland 1616" },
-    "10-wheeler": { "label": "१०-पाङ्ग्रे ट्रक", "description": "सामान्यतया १५ देखि २० टनसम्म", "examples": "Tata 2518, BharatBenz 2523" },
-    "12-wheeler": { "label": "१२-पाङ्ग्रे ट्रक", "description": "सामान्यतया २० देखि २५ टनसम्म", "examples": "Tata 3118, Ashok Leyland 3118" },
-    "trailer": { "label": "ट्रेलर", "description": "२५ टन र त्यसभन्दा बढी", "examples": "लो-बेड र लामो ट्रेलरहरू" },
-    "other": { "label": "अन्य सवारी", "description": "यसको क्षमता लेख्नुहोस्", "examples": "" },
-    "6-ton": { "label": "६-टन ट्रक", "description": "पुरानो वर्ग: हालको एउटा छान्नुहोस्", "examples": "" },
-    "10-ton": { "label": "१०-टन ट्रक", "description": "पुरानो वर्ग: हालको एउटा छान्नुहोस्", "examples": "" },
-    "14-ton": { "label": "१४-टन ट्रक", "description": "पुरानो वर्ग: हालको एउटा छान्नुहोस्", "examples": "" },
-    "18-wheeler": { "label": "१८-पाङ्ग्रे ट्रक", "description": "पुरानो वर्ग: हालको एउटा छान्नुहोस्", "examples": "" }
+    "pickup": {
+      "label": "पिकअप",
+      "description": "सामान्यतया १.५ टनसम्म",
+      "examples": "Mahindra Bolero, Tata Yodha"
+    },
+    "mini-truck": {
+      "label": "मिनी ट्रक",
+      "description": "सामान्यतया २.५ टनसम्म",
+      "examples": "Tata Ace, Ashok Leyland Dost"
+    },
+    "light-truck": {
+      "label": "लाइट ट्रक (क्यान्टर)",
+      "description": "सामान्यतया ३ देखि ७ टनसम्म",
+      "examples": "Tata 407, Eicher Pro"
+    },
+    "6-wheeler": {
+      "label": "६-पाङ्ग्रे ट्रक",
+      "description": "सामान्यतया ९ देखि १२ टनसम्म",
+      "examples": "Tata 1613, Ashok Leyland 1616"
+    },
+    "10-wheeler": {
+      "label": "१०-पाङ्ग्रे ट्रक",
+      "description": "सामान्यतया १५ देखि २० टनसम्म",
+      "examples": "Tata 2518, BharatBenz 2523"
+    },
+    "12-wheeler": {
+      "label": "१२-पाङ्ग्रे ट्रक",
+      "description": "सामान्यतया २० देखि २५ टनसम्म",
+      "examples": "Tata 3118, Ashok Leyland 3118"
+    },
+    "trailer": {
+      "label": "ट्रेलर",
+      "description": "२५ टन र त्यसभन्दा बढी",
+      "examples": "लो-बेड र लामो ट्रेलरहरू"
+    },
+    "other": {
+      "label": "अन्य सवारी",
+      "description": "यसको क्षमता लेख्नुहोस्",
+      "examples": ""
+    },
+    "6-ton": {
+      "label": "६-टन ट्रक",
+      "description": "पुरानो वर्ग: हालको एउटा छान्नुहोस्",
+      "examples": ""
+    },
+    "10-ton": {
+      "label": "१०-टन ट्रक",
+      "description": "पुरानो वर्ग: हालको एउटा छान्नुहोस्",
+      "examples": ""
+    },
+    "14-ton": {
+      "label": "१४-टन ट्रक",
+      "description": "पुरानो वर्ग: हालको एउटा छान्नुहोस्",
+      "examples": ""
+    },
+    "18-wheeler": {
+      "label": "१८-पाङ्ग्रे ट्रक",
+      "description": "पुरानो वर्ग: हालको एउटा छान्नुहोस्",
+      "examples": ""
+    }
   },
   "bodyTypes": {
-    "open": { "label": "खुला बडी", "description": "छेउ पर्खाल, माथि छाना छैन" },
-    "covered": { "label": "ढाकिएको / कन्टेनर", "description": "बन्द बाकस बडी" },
-    "flatbed": { "label": "फ्ल्याटबेड", "description": "समतल डेक, पर्खाल छैन" },
-    "tipper": { "label": "टिपर", "description": "बालुवा, गिट्टी र एग्रीगेट" },
-    "tanker": { "label": "ट्याङ्कर", "description": "इन्धन, पानी वा दूध" },
-    "refrigerated": { "label": "रेफ्रिजरेटेड", "description": "कोल्ड चेन सामानका लागि" }
+    "open": {
+      "label": "खुला बडी",
+      "description": "छेउ पर्खाल, माथि छाना छैन"
+    },
+    "covered": {
+      "label": "ढाकिएको / कन्टेनर",
+      "description": "बन्द बाकस बडी"
+    },
+    "flatbed": {
+      "label": "फ्ल्याटबेड",
+      "description": "समतल डेक, पर्खाल छैन"
+    },
+    "tipper": {
+      "label": "टिपर",
+      "description": "बालुवा, गिट्टी र एग्रीगेट"
+    },
+    "tanker": {
+      "label": "ट्याङ्कर",
+      "description": "इन्धन, पानी वा दूध"
+    },
+    "refrigerated": {
+      "label": "रेफ्रिजरेटेड",
+      "description": "कोल्ड चेन सामानका लागि"
+    }
   },
   "fuelTypes": {
-    "diesel": { "label": "डिजेल" },
-    "petrol": { "label": "पेट्रोल" },
-    "electric": { "label": "इलेक्ट्रिक" }
+    "diesel": {
+      "label": "डिजेल"
+    },
+    "petrol": {
+      "label": "पेट्रोल"
+    },
+    "electric": {
+      "label": "इलेक्ट्रिक"
+    }
   },
   "serviceAreas": {
-    "nepal": { "label": "नेपालभर जहाँ पनि", "description": "जुनसुकै जिल्लाबाट वा जिल्लामा भाडा" },
-    "province": { "label": "आफ्नो प्रदेशभित्र", "description": "दुवै ठाउँ आधार प्रदेशभित्र" },
-    "district": { "label": "आफ्नो जिल्लाभित्र", "description": "दुवै ठाउँ आधार जिल्लाभित्र" }
+    "nepal": {
+      "label": "नेपालभर जहाँ पनि",
+      "description": "जुनसुकै जिल्लाबाट वा जिल्लामा भाडा"
+    },
+    "province": {
+      "label": "आफ्नो प्रदेशभित्र",
+      "description": "दुवै ठाउँ आधार प्रदेशभित्र"
+    },
+    "district": {
+      "label": "आफ्नो जिल्लाभित्र",
+      "description": "दुवै ठाउँ आधार जिल्लाभित्र"
+    }
   },
   "insuranceTypes": {
-    "third-party": { "label": "थर्ड-पार्टी", "description": "कानूनले चाहिने न्यूनतम" },
-    "comprehensive": { "label": "कम्प्रिहेन्सिभ", "description": "ट्रकको क्षतिलाई पनि कभर गर्छ" }
+    "third-party": {
+      "label": "थर्ड-पार्टी",
+      "description": "कानूनले चाहिने न्यूनतम"
+    },
+    "comprehensive": {
+      "label": "कम्प्रिहेन्सिभ",
+      "description": "ट्रकको क्षतिलाई पनि कभर गर्छ"
+    }
   },
   "features": {
-    "tarpaulin": { "label": "त्रिपाल छोप", "short": "त्रिपाल", "description": "वर्षामा सामान सुख्खा राख्छ" },
-    "helper": { "label": "सहयोगी (खलासी) सँगै आउँछ", "short": "सहयोगी", "description": "लोड र अनलोड गर्न थप हात" },
-    "gpsTracker": { "label": "जीपीएस ट्र्याकर जडित", "short": "जीपीएस", "description": "नक्सामा ट्रक पछ्याउन सकिन्छ" },
-    "hillRoads": { "label": "पहाडी र कच्ची बाटो चलाउन सक्ने", "short": "पहाडी बाटो", "description": "हाइवे बाहिरका खस्रो बाटोका लागि उपयुक्त" }
+    "tarpaulin": {
+      "label": "त्रिपाल छोप",
+      "short": "त्रिपाल",
+      "description": "वर्षामा सामान सुख्खा राख्छ"
+    },
+    "helper": {
+      "label": "सहयोगी (खलासी) सँगै आउँछ",
+      "short": "सहयोगी",
+      "description": "लोड र अनलोड गर्न थप हात"
+    },
+    "gpsTracker": {
+      "label": "जीपीएस ट्र्याकर जडित",
+      "short": "जीपीएस",
+      "description": "नक्सामा ट्रक पछ्याउन सकिन्छ"
+    },
+    "hillRoads": {
+      "label": "पहाडी र कच्ची बाटो चलाउन सक्ने",
+      "short": "पहाडी बाटो",
+      "description": "हाइवे बाहिरका खस्रो बाटोका लागि उपयुक्त"
+    }
   },
   "documents": {
     "bluebook": "ब्लूबुक",
@@ -195,6 +298,42 @@
       "assignDriverButton": "चालक तोक्नुहोस्",
       "markInMaintenanceButton": "मर्मतमा राख्नुहोस्",
       "markActiveButton": "सक्रिय बनाउनुहोस्"
+    },
+    "steps": {
+      "truck": {
+        "title": "आफ्नो ट्रकबारे बताउनुहोस्",
+        "hint": "नम्बर प्लेट, ट्रकको किसिम, र कति बोक्न सक्छ।"
+      },
+      "about": {
+        "title": "ट्रकबारे थप",
+        "hint": "बडीको किसिम र आकार। थाहा नभएको छोड्न सक्नुहुन्छ।"
+      },
+      "where": {
+        "title": "कहाँ चल्छ?",
+        "hint": "ट्रक कहाँ राखिन्छ र कति टाढा जान्छ छान्नुहोस्।"
+      },
+      "price": {
+        "title": "तपाईंको भाडा र सुविधा",
+        "hint": "ऐच्छिक। ढुवानीकर्ताले तपाईंको भाडा जान्न चाहन्छन्।"
+      },
+      "papers": {
+        "title": "ट्रकका कागजात",
+        "hint": "अहिले ऐच्छिक। पछि थप्न सक्नुहुन्छ।"
+      },
+      "review": {
+        "title": "जाँच गर्नुहोस् र सुरक्षित गर्नुहोस्",
+        "hint": "सबै ठिक छ? अनि बटन छुनुहोस्।"
+      }
+    },
+    "review": {
+      "plate": "नम्बर प्लेट",
+      "type": "ट्रकको किसिम",
+      "capacity": "बोक्न सक्ने",
+      "body": "बडी",
+      "area": "चल्ने ठाउँ",
+      "rate": "भाडा",
+      "notSet": "तोकिएको छैन",
+      "fixHint": "केही उत्तर मिलाउनु पर्छ। हेर्न पछाडि छुनुहोस्।"
     }
   },
   "myQuotes": {

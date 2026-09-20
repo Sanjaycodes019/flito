@@ -1,21 +1,19 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, Platform } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, Pressable } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import CalendarToggle from '../../components/common/CalendarToggle';
 import Input from '../../components/common/Input';
 import Spinner from '../../components/common/Spinner';
 import EmptyState from '../../components/common/EmptyState';
-import Disclosure from '../../components/common/Disclosure';
+import StepWizard from '../../components/common/StepWizard';
+import ChoiceTile, { ChoiceGrid } from '../../components/common/ChoiceTile';
 import PhotoStrip from '../../components/common/PhotoStrip';
 import PhotoSourceButtons from '../../components/common/PhotoSourceButtons';
-import { StatusPill } from '../../components/common/SettingsList';
 import RouteStop, { emptyStop } from '../../components/loads/RouteStop';
 import { isPlaceComplete, missingPlaceFields, shortPlaceName } from '../../components/address/NepalAddressFields';
-import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
+import { colors, spacing, radius, type, themedStyles } from '../../theme/tokens';
 import { MAX_LOAD_PHOTOS, MAX_LOAD_WEIGHT_KG, PICKUP_DAYS_SHOWN } from '../../utils/constants';
 import { formatKg, getErrorMessage, isValidPhone } from '../../utils/helpers';
 import { dayLabel, describeDay, upcomingDays } from '../../utils/nepalDate';
@@ -26,8 +24,18 @@ import { pickImages, takePhoto, uploadPhotos } from '../../services/uploads';
 import { notify } from '../../utils/alert';
 import { addLoad } from '../../redux/slices/loadsSlice';
 
-// Web only: the summary stays in view beside the form while it scrolls.
-const stickyOnWeb = Platform.OS === 'web' ? { position: 'sticky', top: spacing.xxl } : null;
+// Quick picks so most people never have to type. "Other" clears the box for their own words.
+const GOODS_CHOICES = [
+  { key: 'cement', icon: 'goodsCement' },
+  { key: 'food', icon: 'goodsFood' },
+  { key: 'furniture', icon: 'goodsFurniture' },
+  { key: 'produce', icon: 'goodsProduce' },
+  { key: 'stone', icon: 'goodsStone' },
+  { key: 'fuel', icon: 'goodsFuel' },
+  { key: 'machine', icon: 'goodsMachine' },
+  { key: 'other', icon: 'goodsOther' },
+];
+const WEIGHT_CHOICES = [500, 1000, 2000, 5000, 10000, 20000];
 
 const weightProblem = (text, t) => {
   const value = text.trim();
@@ -44,21 +52,6 @@ const stopPayload = ({ place, contactPerson, phone, coordinates }) => ({
   ...(phone.trim() ? { phone: phone.trim() } : {}),
   ...(coordinates ? { coordinates } : {}),
 });
-
-const FormSection = ({ icon, title, description, wide, children }) => (
-  <Card style={wide && styles.sectionWide}>
-    <View style={styles.sectionHeader}>
-      <View style={styles.sectionIcon}>
-        <Icon name={icon} size={iconSize.md} color={colors.primaryText} />
-      </View>
-      <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle} accessibilityRole="header">{title}</Text>
-        {description ? <Text style={styles.sectionDescription}>{description}</Text> : null}
-      </View>
-    </View>
-    {children}
-  </Card>
-);
 
 const DayChip = ({ day, today, selected, onPress, width }) => {
   const [hovered, setHovered] = useState(false);
@@ -104,17 +97,15 @@ const SummaryRow = ({ label, value, empty }) => {
   );
 };
 
-// Step one of booking a truck: only what matching needs (what, how heavy,
-// where from and to, and when). Contacts, a map pin, a description and photos
-// are optional and folded away. Posting opens the trucks that can carry it.
+// Step one of booking a truck, one question at a time: what, how heavy, where
+// from, where to, and when. Photos and a note are optional. The last step shows
+// everything back and posting opens the trucks that can carry it.
 const CreateLoadScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const savedAddress = useSelector((state) => state.auth.user?.address);
   // A single column up to tablet; on a laptop the form and a summary sit side by side.
-  const layout = useScreenLayout('narrow', 'wide');
-  const wide = !layout.isPhone;
-  const twoColumns = layout.isDesktop;
+  const layout = useScreenLayout('narrow');
 
   const days = upcomingDays(PICKUP_DAYS_SHOWN);
 
@@ -124,7 +115,7 @@ const CreateLoadScreen = ({ navigation }) => {
   const [weight, setWeight] = useState('');
   const [stops, setStops] = useState({ pickup: emptyStop, dropoff: emptyStop });
   const [pickupDay, setPickupDay] = useState(days[0]);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const scrollRef = useRef(null);
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState([]);
   // Which photo source is working: 'camera', 'library' or null.
@@ -226,154 +217,187 @@ const CreateLoadScreen = ({ navigation }) => {
     }
   };
 
-  const halfRow = wide ? styles.row : null;
   const hasExtras = Boolean(description.trim()) || photos.length > 0;
 
-  const stillNeededText = [
-    stillNeeded.length ? t('loads:createLoad.stillNeeded', { items: stillNeeded.join(', ') }) : null,
-    hasInvalidField ? t('loads:createLoad.fixHighlighted') : null,
-  ].filter(Boolean).join(' ');
+  const stepTitle = (key) => t(`loads:createLoad.steps.${key}.title`);
+  const stepHint = (key) => t(`loads:createLoad.steps.${key}.hint`);
 
-  const summary = (
-    <Card style={wide && styles.sectionWide}>
-      <Text style={styles.summaryTitle} accessibilityRole="header">{t('loads:createLoad.summary.title')}</Text>
-      <RoutePoint kind="pickup" value={shortPlaceName(tree, stops.pickup.place)} />
-      <View style={styles.routeConnector} />
-      <RoutePoint kind="dropoff" value={shortPlaceName(tree, stops.dropoff.place)} />
+  const goodsChoices = GOODS_CHOICES.map((choice) => ({ ...choice, label: t(`loads:createLoad.goodsChoices.${choice.key}`) }));
+  const weightChoices = WEIGHT_CHOICES.map((kg) => ({ kg, label: formatKg(kg) }));
+  const stopDone = (stop) => isPlaceComplete(stop.place) && !phoneInvalid(stop);
 
-      <View style={styles.summaryDivider} />
-      <SummaryRow label={t('loads:createLoad.summary.goods')} value={goodsType.trim()} />
-      <SummaryRow label={t('loads:createLoad.summary.weight')} value={weight.trim() && !weightProblem(weight, t) ? formatKg(Number(weight)) : null} />
-      <SummaryRow label={t('loads:createLoad.summary.pickup')} value={dayLabel(pickupDay, days[0])} />
-      <SummaryRow label={t('loads:createLoad.summary.photos')} value={photos.length ? String(photos.length) : null} empty={t('loads:createLoad.summary.none')} />
-
-      {triedToPost && stillNeededText ? (
-        <View style={styles.stillNeeded}>
-          <Icon name="warning" size={iconSize.sm} color={colors.errorText} />
-          <Text style={styles.stillNeededText}>{stillNeededText}</Text>
-        </View>
-      ) : null}
-
-      <Button title={t('loads:createLoad.findTrucksButton')} icon="search" onPress={handleFindTrucks} loading={posting} style={styles.postButton} />
-      <Text style={styles.footnote}>{t('loads:createLoad.footnote')}</Text>
-    </Card>
-  );
+  const steps = [
+    {
+      key: 'goods',
+      icon: 'load',
+      title: stepTitle('goods'),
+      hint: stepHint('goods'),
+      check: () => Boolean(goodsType.trim()),
+      content: (
+        <>
+          <ChoiceGrid>
+            {goodsChoices.map((choice) => (
+              <ChoiceTile
+                key={choice.key}
+                icon={choice.icon}
+                label={choice.label}
+                columns={4}
+                selected={choice.key !== 'other' && goodsType === choice.label}
+                onPress={() => setGoodsType(choice.key === 'other' ? '' : choice.label)}
+              />
+            ))}
+          </ChoiceGrid>
+          <Input
+            label={t('loads:createLoad.goodsTypeLabel')}
+            value={goodsType}
+            onChangeText={setGoodsType}
+            placeholder={t('loads:createLoad.goodsTypePlaceholder')}
+            icon="load"
+            required
+            maxLength={100}
+            error={shown(!goodsType.trim() && t('loads:createLoad.errors.enterGoodsType'))}
+          />
+        </>
+      ),
+    },
+    {
+      key: 'weight',
+      icon: 'weight',
+      title: stepTitle('weight'),
+      hint: stepHint('weight'),
+      check: () => !weightProblem(weight, t),
+      content: (
+        <>
+          <ChoiceGrid>
+            {weightChoices.map((choice) => (
+              <ChoiceTile
+                key={choice.kg}
+                label={choice.label}
+                columns={3}
+                selected={weight.trim() === String(choice.kg)}
+                onPress={() => setWeight(String(choice.kg))}
+              />
+            ))}
+          </ChoiceGrid>
+          <Input
+            label={t('loads:createLoad.weightLabel')}
+            value={weight}
+            onChangeText={setWeight}
+            keyboardType="numeric"
+            placeholder={t('loads:createLoad.weightPlaceholder')}
+            icon="weight"
+            required
+            error={shown(weightProblem(weight, t))}
+            helperText={t('loads:createLoad.weightHelper')}
+          />
+        </>
+      ),
+    },
+    {
+      key: 'pickup',
+      icon: 'pickup',
+      title: stepTitle('pickup'),
+      hint: stepHint('pickup'),
+      check: () => stopDone(stops.pickup),
+      content: (
+        <RouteStop kind="pickup" stop={stops.pickup} onChange={updateStop('pickup')} tree={tree} errors={stopErrors(stops.pickup)} savedAddress={savedAddress} />
+      ),
+    },
+    {
+      key: 'dropoff',
+      icon: 'dropoff',
+      title: stepTitle('dropoff'),
+      hint: stepHint('dropoff'),
+      check: () => stopDone(stops.dropoff),
+      content: (
+        <RouteStop kind="dropoff" stop={stops.dropoff} onChange={updateStop('dropoff')} tree={tree} errors={stopErrors(stops.dropoff)} savedAddress={savedAddress} />
+      ),
+    },
+    {
+      key: 'date',
+      icon: 'calendar',
+      title: stepTitle('date'),
+      hint: stepHint('date'),
+      content: (
+        <>
+          <CalendarToggle compact style={styles.calendarToggle} />
+          <View style={styles.dayGrid} accessibilityRole="radiogroup">
+            {days.map((day) => (
+              <DayChip key={day} day={day} today={days[0]} selected={pickupDay === day} onPress={() => setPickupDay(day)} width={layout.isPhone ? '25%' : `${100 / days.length}%`} />
+            ))}
+          </View>
+        </>
+      ),
+    },
+    {
+      key: 'extras',
+      icon: 'image',
+      title: stepTitle('extras'),
+      hint: stepHint('extras'),
+      optional: true,
+      isEmpty: () => !hasExtras,
+      content: (
+        <>
+          <Input
+            label={t('loads:createLoad.descriptionLabel')}
+            value={description}
+            onChangeText={setDescription}
+            placeholder={t('loads:createLoad.descriptionPlaceholder')}
+            multiline
+            maxLength={1000}
+            icon="document"
+            style={styles.multiline}
+          />
+          <Text style={styles.fieldLabel}>{t('loads:createLoad.photosCount', { count: photos.length, max: MAX_LOAD_PHOTOS })}</Text>
+          <PhotoStrip photos={photos} onRemove={removePhoto} />
+          {photos.length < MAX_LOAD_PHOTOS && (
+            <PhotoSourceButtons
+              onTakePhoto={() => handleAddPhotos('camera')}
+              onChoose={() => handleAddPhotos('library')}
+              chooseLabel={t('loads:common.choosePhotos')}
+              busy={photoBusy}
+            />
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'review',
+      icon: 'success',
+      title: stepTitle('review'),
+      hint: stepHint('review'),
+      content: (
+        <Card>
+          <RoutePoint kind="pickup" value={shortPlaceName(tree, stops.pickup.place)} />
+          <View style={styles.routeConnector} />
+          <RoutePoint kind="dropoff" value={shortPlaceName(tree, stops.dropoff.place)} />
+          <View style={styles.summaryDivider} />
+          <SummaryRow label={t('loads:createLoad.summary.goods')} value={goodsType.trim()} />
+          <SummaryRow label={t('loads:createLoad.summary.weight')} value={weight.trim() && !weightProblem(weight, t) ? formatKg(Number(weight)) : null} />
+          <SummaryRow label={t('loads:createLoad.summary.pickup')} value={dayLabel(pickupDay, days[0])} />
+          <SummaryRow label={t('loads:createLoad.summary.photos')} value={photos.length ? String(photos.length) : null} empty={t('loads:createLoad.summary.none')} />
+          <Text style={styles.footnote}>{t('loads:createLoad.footnote')}</Text>
+        </Card>
+      ),
+    },
+  ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={layout.contentStyle} keyboardShouldPersistTaps="handled">
-      <Text style={styles.intro}>{t('loads:createLoad.intro')}</Text>
-
-      <View style={twoColumns ? styles.columns : null}>
-        <View style={twoColumns ? styles.main : null}>
-          <FormSection icon="load" title={t('loads:createLoad.shipmentSection.title')} description={t('loads:createLoad.shipmentSection.description')} wide={wide}>
-            <View style={halfRow}>
-              <Input
-                label={t('loads:createLoad.goodsTypeLabel')}
-                value={goodsType}
-                onChangeText={setGoodsType}
-                placeholder={t('loads:createLoad.goodsTypePlaceholder')}
-                icon="load"
-                required
-                maxLength={100}
-                error={shown(!goodsType.trim() && t('loads:createLoad.errors.enterGoodsType'))}
-                containerStyle={wide ? styles.grow2 : undefined}
-              />
-              <Input
-                label={t('loads:createLoad.weightLabel')}
-                value={weight}
-                onChangeText={setWeight}
-                keyboardType="numeric"
-                placeholder={t('loads:createLoad.weightPlaceholder')}
-                icon="weight"
-                required
-                error={shown(weightProblem(weight, t))}
-                containerStyle={wide ? styles.grow1 : undefined}
-              />
-            </View>
-          </FormSection>
-
-          <FormSection icon="route" title={t('loads:createLoad.routeSection.title')} description={t('loads:createLoad.routeSection.description')} wide={wide}>
-            <RouteStop
-              kind="pickup"
-              stop={stops.pickup}
-              onChange={updateStop('pickup')}
-              tree={tree}
-              errors={stopErrors(stops.pickup)}
-              wide={wide}
-              inlineActions={layout.isDesktop}
-              savedAddress={savedAddress}
-            />
-            <View style={styles.stopDivider} />
-            <RouteStop
-              kind="dropoff"
-              stop={stops.dropoff}
-              onChange={updateStop('dropoff')}
-              tree={tree}
-              errors={stopErrors(stops.dropoff)}
-              wide={wide}
-              inlineActions={layout.isDesktop}
-              savedAddress={savedAddress}
-            />
-          </FormSection>
-
-          <FormSection icon="calendar" title={t('loads:createLoad.pickupDateSection.title')} description={t('loads:createLoad.pickupDateSection.description')} wide={wide}>
-            <CalendarToggle compact style={styles.calendarToggle} />
-            <View style={styles.dayGrid} accessibilityRole="radiogroup">
-              {days.map((day) => (
-                <DayChip
-                  key={day}
-                  day={day}
-                  today={days[0]}
-                  selected={pickupDay === day}
-                  onPress={() => setPickupDay(day)}
-                  width={layout.isPhone ? '25%' : `${100 / days.length}%`}
-                />
-              ))}
-            </View>
-          </FormSection>
-
-          <Card style={wide && styles.sectionWide}>
-            <Disclosure
-              bordered={false}
-              icon="image"
-              title={t('loads:createLoad.descriptionPhotosSection.title')}
-              hint={t('loads:createLoad.descriptionPhotosSection.hint', { max: MAX_LOAD_PHOTOS })}
-              badge={hasExtras
-                ? <StatusPill label={t('loads:common.added')} tone="success" icon="checkmark" />
-                : <StatusPill label={t('loads:common.optional')} />}
-              open={moreOpen}
-              onToggle={setMoreOpen}
-            >
-              <Input
-                label={t('loads:createLoad.descriptionLabel')}
-                value={description}
-                onChangeText={setDescription}
-                placeholder={t('loads:createLoad.descriptionPlaceholder')}
-                multiline
-                maxLength={1000}
-                icon="document"
-                style={styles.multiline}
-              />
-              <Text style={styles.fieldLabel}>{t('loads:createLoad.photosCount', { count: photos.length, max: MAX_LOAD_PHOTOS })}</Text>
-              <PhotoStrip photos={photos} onRemove={removePhoto} />
-              {photos.length < MAX_LOAD_PHOTOS && (
-                <PhotoSourceButtons
-                  onTakePhoto={() => handleAddPhotos('camera')}
-                  onChoose={() => handleAddPhotos('library')}
-                  chooseLabel={t('loads:common.choosePhotos')}
-                  busy={photoBusy}
-                  style={wide ? styles.photoButtonsWide : undefined}
-                />
-              )}
-            </Disclosure>
-          </Card>
-
-          {!twoColumns && summary}
-        </View>
-
-        {twoColumns && <View style={[styles.side, stickyOnWeb]}>{summary}</View>}
-      </View>
-    </ScrollView>
+    <View style={styles.container}>
+      <StepWizard
+        fixedFooter
+        scrollRef={scrollRef}
+        contentStyle={layout.contentStyle}
+        steps={steps}
+        finishLabel={t('loads:createLoad.findTrucksButton')}
+        finishIcon="search"
+        onFinish={handleFindTrucks}
+        finishing={posting}
+        onBlocked={() => setTriedToPost(true)}
+        onAdvance={() => setTriedToPost(false)}
+        onStepChange={() => scrollRef.current?.scrollTo({ y: 0, animated: false })}
+      />
+    </View>
   );
 };
 
@@ -421,7 +445,7 @@ const styles = themedStyles(() => ({
   },
   dayChipHovered: { borderColor: colors.borderStrong },
   dayChipSelected: { borderColor: colors.primaryText, backgroundColor: colors.primaryMuted },
-  dayName: { ...type.smallMedium, color: colors.textPrimary },
+  dayName: { ...type.bodyMedium, fontSize: 14, lineHeight: 20, color: colors.textPrimary },
   dayDate: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
   dayTextSelected: { color: colors.primaryText },
 
