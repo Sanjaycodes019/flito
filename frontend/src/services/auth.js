@@ -1,3 +1,4 @@
+import { resetNotifications } from './notifications';
 import api from './api';
 import storage from './storage';
 import { unregisterPushNotifications } from './pushNotifications';
@@ -69,6 +70,7 @@ export const authService = {
     // cold-start cleanup path): the failure is caught inside and swallowed.
     await unregisterPushNotifications();
     await storage.removeItem('authToken');
+    resetNotifications();
   },
 
   getToken: async () => storage.getItem('authToken'),

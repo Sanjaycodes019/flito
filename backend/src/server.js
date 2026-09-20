@@ -7,6 +7,7 @@ const connectDB = require('./config/database');
 const createApp = require('./app');
 const setupSocketHandlers = require('./socket/handlers');
 const { startExpirySweep } = require('./services/expiry');
+const { setIo } = require('./services/push');
 
 validateEnv();
 
@@ -26,6 +27,7 @@ const bootstrap = async () => {
     cors: { origin: allowedOrigins, credentials: true },
   });
   setupSocketHandlers(io);
+  setIo(io);
 
   server.on('request', createApp({ io }));
 

@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import api from './api';
 import { navigate } from '../navigation/navigationRef';
+import { refreshNotifications } from './notifications';
 
 // Web has no Expo push token to register. Browser push needs its own VAPID
 // setup, out of scope here. The web build stays fully live via the existing
@@ -17,7 +18,7 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true,
   }),
 });
 
@@ -33,6 +34,9 @@ export const registerForPushNotifications = async () => {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
         importance: Notifications.AndroidImportance.HIGH,
+        showBadge: true,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF9F00',
       });
     }
 
@@ -73,7 +77,7 @@ export const unregisterPushNotifications = async () => {
 
 // Where tapping a notification of each `data.type` should land. Mirrors the
 // nested-navigator shape used elsewhere (see VerificationPrompt.js).
-const routeForNotification = (data) => {
+export const routeForNotification = (data) => {
   if (data?.type === 'load' && data.loadId) {
     return ['HomeTab', { screen: 'LoadDetail', params: { loadId: data.loadId } }];
   }
@@ -92,6 +96,9 @@ export const subscribeToNotificationTaps = () => {
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const route = routeForNotification(response.notification.request.content.data);
     if (route) navigate(...route);
+    refreshNotifications();
   });
-  return () => subscription.remove();
+  // A push that lands while the app is open bumps the count right away.
+  const received = Notifications.addNotificationReceivedListener(() => refreshNotifications());
+  return () => { subscription.remove(); received.remove(); };
 };

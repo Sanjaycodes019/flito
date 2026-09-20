@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { colors, spacing, type } from '../theme/tokens';
 import { BrandMark, ProfileButton } from '../components/navigation/DesktopNav';
+import NotificationBell from '../components/navigation/NotificationBell';
 import LanguageToggle from '../components/common/LanguageToggle';
 import { ADMIN_SECTIONS } from '../admin/sections';
 import { ROLE_NAV } from './roleNav';
@@ -24,6 +25,7 @@ const HeaderRight = ({ isDesktop, isPhone, isRoot }) => {
   return (
     <View style={styles.headerRight}>
       {(!isPhone || isRoot) && <LanguageToggle compact />}
+      <NotificationBell />
       <ProfileButton />
     </View>
   );

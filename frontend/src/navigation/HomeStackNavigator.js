@@ -11,6 +11,7 @@ import BookingsListScreen from '../screens/BookingsListScreen';
 import BookingDetailScreen from '../screens/BookingDetailScreen';
 import ManageFleet from '../screens/owner/ManageFleet';
 import MyQuotesScreen from '../screens/owner/MyQuotesScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 import EarningsScreen from '../screens/driver/EarningsScreen';
 import { renderAdminScreens, AdminHome } from '../admin/navigation';
 import useBreakpoint from '../hooks/useBreakpoint';
@@ -40,6 +41,7 @@ const HomeStackNavigator = () => {
       <Stack.Screen name="MyQuotes" component={MyQuotesScreen} options={{ title: t('navigation:homeStack.myQuotes') }} />
       <Stack.Screen name="Fleet" component={ManageFleet} options={{ title: t('navigation:homeStack.fleet') }} />
       <Stack.Screen name="Earnings" component={EarningsScreen} options={{ title: t('navigation:homeStack.earnings') }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: t('navigation:homeStack.notifications') }} />
       {renderAdminScreens(Stack, t)}
     </Stack.Navigator>
   );

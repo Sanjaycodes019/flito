@@ -22,9 +22,22 @@ const isExpoPushToken = (value) => typeof value === 'string' && EXPO_PUSH_TOKEN_
 // keeps being tried until it fails the upfront format check or the
 // immediate-error case handled below. Acceptable for launch; revisit if
 // push volume grows enough to matter.
+// The socket server, so a stored notification can also tell an open app to
+// refresh its unread count instantly (server.js hands it over at startup).
+let io = null;
+const setIo = (server) => { io = server; };
+
 const sendPushToUser = async (userId, { title, body, data = {} }) => {
   try {
     const User = require('../models/User'); // required lazily to dodge a require cycle with models that pull in services
+    const Notification = require('../models/Notification');
+
+    // Stored first, whether or not this person has a device registered: the
+    // in-app feed and unread count don't depend on push.
+    await Notification.create({ userId, title, body, data });
+    const unreadCount = await Notification.countDocuments({ userId, readAt: { $exists: false } });
+    io?.to(`user-${userId}`).emit('notification', { unreadCount });
+
     const user = await User.findById(userId).select('pushToken');
     const token = user?.pushToken;
     if (!token) return;
@@ -38,7 +51,7 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
 
     const { data: result } = await axios.post(
       EXPO_PUSH_ENDPOINT,
-      [{ to: token, sound: 'default', title, body, data, priority: 'high' }],
+      [{ to: token, sound: 'default', title, body, data, priority: 'high', badge: unreadCount, channelId: 'default' }],
       { headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, timeout: 10000 },
     );
     const ticket = result?.data?.[0];
@@ -57,4 +70,4 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
 const sendPushToUsers = (userIds, notification) =>
   Promise.all([...new Set(userIds.filter(Boolean).map(String))].map((id) => sendPushToUser(id, notification)));
 
-module.exports = { sendPushToUser, sendPushToUsers, isExpoPushToken };
+module.exports = { sendPushToUser, sendPushToUsers, isExpoPushToken, setIo };

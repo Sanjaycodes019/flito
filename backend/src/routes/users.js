@@ -16,6 +16,9 @@ router.get('/lookup', requireRole('owner', 'admin'), usersController.lookupDrive
 
 router.patch('/me', validateProfileUpdate, usersController.updateProfile);
 
+router.get('/me/notifications', usersController.listNotifications);
+router.post('/me/notifications/read', usersController.markNotificationsRead);
+
 router.patch('/me/push-token', validatePushToken, usersController.registerPushToken);
 router.delete('/me/push-token', usersController.unregisterPushToken);
 

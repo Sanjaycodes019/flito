@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Keyboard, Platform } from 'react-native';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
@@ -14,6 +14,26 @@ import { ADMIN_SECTIONS } from '../admin/sections';
 import { ROLE_NAV, isItemActive } from './roleNav';
 
 const BAR_HEIGHT = 62;
+// The raised main action sticks out above the bar. Android only delivers touches
+// inside a view's own bounds, so the bar's frame includes that headroom (with the
+// coloured surface drawn below it) instead of letting the button overhang.
+const CTA_LIFT = 14;
+// Android phones with three-button navigation report no bottom inset, so keep a
+// little breathing room under the labels there.
+const MIN_BOTTOM_GAP = Platform.OS === 'android' ? 6 : 0;
+
+// True while the keyboard is up. The bar steps aside then, so it doesn't ride on
+// top of the keyboard and squeeze a form into a sliver.
+const useKeyboardOpen = () => {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (Platform.OS === 'web') return undefined;
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setOpen(true));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setOpen(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  return open;
+};
 
 // The navigation of the signed-in app, drawn from one place so every role
 // looks and behaves alike:
@@ -112,6 +132,7 @@ const AppTabBar = ({ state, navigation }) => {
   const role = useSelector((s) => s.auth.user?.role);
   const isAdmin = role === 'admin';
   const stats = useAdminStats({ passive: isDesktop || !isAdmin });
+  const keyboardOpen = useKeyboardOpen();
 
   const focused = state.routes[state.index];
   const nestedName = focused.name === 'HomeTab' ? getFocusedRouteNameFromRoute(focused) ?? 'Home' : null;
@@ -120,22 +141,30 @@ const AppTabBar = ({ state, navigation }) => {
     return isAdmin ? null : <RoleSidebar role={role} focusedTab={focused.name} nestedName={nestedName} navigation={navigation} />;
   }
 
+  if (keyboardOpen) return null;
+
   const items = barItems({ role, t, navigation, focusedTab: focused.name, nestedName, stats });
+  const bottom = Math.max(insets.bottom, MIN_BOTTOM_GAP);
+  const lift = items.some((item) => item.cta) ? CTA_LIFT : 0;
 
   return (
-    <View style={[styles.bar, { height: BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom }]} accessibilityRole="tablist">
+    <View style={[styles.bar, { height: BAR_HEIGHT + bottom + lift, paddingTop: spacing.xs + lift, paddingBottom: bottom }]} accessibilityRole="tablist">
+      <View style={[styles.barSurface, { top: lift }]} pointerEvents="none" />
       {items.map((item) => <TabItem key={item.key} item={item} />)}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
+  bar: { flexDirection: 'row' },
+  barSurface: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.divider,
-    paddingTop: spacing.xs,
   },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0 },
   pill: { width: 52, height: 30, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
@@ -144,7 +173,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    marginTop: -14,
+    marginTop: -CTA_LIFT,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

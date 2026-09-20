@@ -209,3 +209,35 @@ describe('sending pushes', () => {
     expect(res.status).toBe(201);
   });
 });
+
+describe('notification feed and unread count', () => {
+  it('stores each push, counts it unread, and sends the count as the icon badge', async () => {
+    const shipper = await newUser('shipper');
+    const owner = await newUser('owner');
+    await registerToken(shipper, VALID_TOKEN).expect(200);
+    const { sendPushToUser } = require('../src/services/push');
+
+    await sendPushToUser(shipper.id, { title: 'One', body: 'a', data: { type: 'load' } });
+    await sendPushToUser(shipper.id, { title: 'Two', body: 'b' });
+    await sendPushToUser(owner.id, { title: 'Not yours', body: 'c' });
+
+    expect(pushCallTo(VALID_TOKEN).badge).toBe(1);
+    const res = await as(shipper.token).get('/api/users/me/notifications').expect(200);
+    expect(res.body.unreadCount).toBe(2);
+    expect(res.body.notifications.map((n) => n.title)).toEqual(['Two', 'One']);
+  });
+
+  it('marks notifications read', async () => {
+    const shipper = await newUser('shipper');
+    const { sendPushToUser } = require('../src/services/push');
+    await sendPushToUser(shipper.id, { title: 'One', body: 'a' });
+    await sendPushToUser(shipper.id, { title: 'Two', body: 'b' });
+
+    const list = await as(shipper.token).get('/api/users/me/notifications').expect(200);
+    const one = await as(shipper.token).post('/api/users/me/notifications/read')
+      .send({ ids: [list.body.notifications[0].id, 'garbage'] }).expect(200);
+    expect(one.body.unreadCount).toBe(1);
+    const all = await as(shipper.token).post('/api/users/me/notifications/read').send({}).expect(200);
+    expect(all.body.unreadCount).toBe(0);
+  });
+});

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const storage = require('../services/storage');
 const { publicUser } = require('../services/userView');
 const { kycView } = require('../services/kycView');
@@ -127,6 +128,48 @@ exports.unregisterPushToken = async (req, res, next) => {
   try {
     await User.updateOne({ _id: req.user.userId }, { $unset: { pushToken: '' } });
     res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── Notification feed ──────────────────────────────────────────────────────
+
+exports.listNotifications = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const [items, unreadCount] = await Promise.all([
+      Notification.find({ userId }).sort({ createdAt: -1 }).limit(50).lean(),
+      Notification.countDocuments({ userId, readAt: { $exists: false } }),
+    ]);
+    res.json({
+      success: true,
+      unreadCount,
+      notifications: items.map((n) => ({
+        id: n._id,
+        title: n.title,
+        body: n.body,
+        data: n.data,
+        read: !!n.readAt,
+        createdAt: n.createdAt,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Marks the given ids read, or everything when no ids are sent.
+exports.markNotificationsRead = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const filter = { userId, readAt: { $exists: false } };
+    if (Array.isArray(req.body?.ids) && req.body.ids.length) {
+      filter._id = { $in: req.body.ids.filter((id) => mongoose.isValidObjectId(id)) };
+    }
+    await Notification.updateMany(filter, { readAt: new Date() });
+    const unreadCount = await Notification.countDocuments({ userId, readAt: { $exists: false } });
+    res.json({ success: true, unreadCount });
   } catch (error) {
     next(error);
   }
