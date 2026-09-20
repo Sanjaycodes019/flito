@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import useBreakpoint from '../../hooks/useBreakpoint';
 
 export const PAGE_SIZES = [12, 24, 48];
@@ -90,7 +90,7 @@ const Pagination = ({ page, totalPages, total, pageSize, loading, onChange, onPa
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   wrap: {
     marginTop: spacing.xl,
     paddingTop: spacing.lg,
@@ -138,6 +138,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));
 
 export default Pagination;

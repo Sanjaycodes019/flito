@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +9,7 @@ import Spinner from '../../components/common/Spinner';
 import Avatar from '../../components/common/Avatar';
 import StatusBadge from '../../components/common/StatusBadge';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import useScreenLayout from '../../hooks/useScreenLayout';
 import api from '../../services/api';
 import { formatDate } from '../../utils/helpers';
@@ -223,7 +223,7 @@ const DashboardScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   heroText: { flex: 1 },
@@ -276,6 +276,6 @@ const styles = StyleSheet.create({
   userText: { flex: 1, minWidth: 0 },
   userName: { ...type.bodyMedium, color: colors.textPrimary },
   userMeta: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
-});
+}));
 
 export default DashboardScreen;

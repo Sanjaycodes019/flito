@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import useBreakpoint from '../../hooks/useBreakpoint';
 import { webInputReset } from '../../components/common/Input';
 
@@ -135,7 +135,7 @@ const FilterBar = ({ search, onSearch, searchPlaceholder, groups = [], filters, 
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   bar: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -210,6 +210,6 @@ const styles = StyleSheet.create({
   countTextSelected: { color: colors.textOnDark },
   clear: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, alignSelf: 'flex-start', paddingVertical: spacing.xs },
   clearText: { ...type.smallMedium, color: colors.textLink },
-});
+}));
 
 export default FilterBar;

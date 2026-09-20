@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
 import Avatar from '../common/Avatar';
-import LanguageToggle from '../common/LanguageToggle';
 import { BrandMark } from './DesktopNav';
 import { logout } from '../../redux/slices/authSlice';
 import { authService } from '../../services/auth';
 import socketService from '../../services/socket';
 import { confirmAction } from '../../utils/alert';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 export const SIDEBAR_WIDTH = 264;
 
@@ -126,10 +125,6 @@ export const AccountCard = ({ current }) => {
         <FooterTile icon="logout" label={t('profile:rows.logOut')} destructive onPress={handleLogout} />
       </View>
 
-      <View style={styles.languageRow}>
-        <Text style={styles.languageLabel}>{t('common:language.label')}</Text>
-        <LanguageToggle compact />
-      </View>
     </View>
   );
 };
@@ -163,7 +158,7 @@ export const SidebarFrame = ({ tagIcon, tag, group, action, current, children })
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   sidebar: {
     width: SIDEBAR_WIDTH,
     backgroundColor: colors.surface,
@@ -268,6 +263,4 @@ const styles = StyleSheet.create({
   tileHoveredDanger: { backgroundColor: colors.errorMuted, borderColor: colors.errorMuted },
   tileActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primaryText },
   tileLabel: { fontSize: 11, fontWeight: '600' },
-  languageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  languageLabel: { ...type.small, color: colors.textMuted },
-});
+}));

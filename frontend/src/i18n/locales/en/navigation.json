@@ -28,7 +28,11 @@
     "editProfile": "Edit Profile",
     "kyc": "Identity Verification",
     "verifyEmail": "Verify Email",
-    "address": "Address"
+    "address": "Address",
+    "settings": "Settings",
+    "languageSettings": "Language & Region",
+    "appearanceSettings": "Appearance",
+    "securitySettings": "Sign-in & Security"
   },
   "menu": "Menu"
 }

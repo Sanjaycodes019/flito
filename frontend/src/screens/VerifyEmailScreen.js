@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Button from '../components/common/Button';
@@ -7,7 +7,7 @@ import Card from '../components/common/Card';
 import OtpInput from '../components/auth/OtpInput';
 import ResendCode, { RESEND_COOLDOWN_SECONDS } from '../components/auth/ResendCode';
 import Icon from '../theme/icons';
-import { colors, spacing, type, iconSize } from '../theme/tokens';
+import { colors, spacing, type, iconSize, themedStyles } from '../theme/tokens';
 import { authService } from '../services/auth';
 import { getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
@@ -82,7 +82,7 @@ const VerifyEmailScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   header: { alignItems: 'center', marginVertical: spacing.xxl },
   iconWrap: {
@@ -94,11 +94,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  title: { ...type.h1, color: colors.secondary },
+  title: { ...type.h1, color: colors.textPrimary },
   subtitle: { ...type.body, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center' },
   emailText: { fontWeight: '700', color: colors.textPrimary },
   otpWrap: { marginBottom: spacing.sm, marginTop: spacing.sm },
   submit: { marginTop: spacing.sm },
-});
+}));
 
 export default VerifyEmailScreen;

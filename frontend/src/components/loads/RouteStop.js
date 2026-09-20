@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Button from '../common/Button';
 import Input from '../common/Input';
@@ -15,7 +15,7 @@ import NepalAddressFields, {
 } from '../address/NepalAddressFields';
 import useCurrentPlace from '../../hooks/useCurrentPlace';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles, themed } from '../../theme/tokens';
 
 const CONTACT_NAME_MAX_LENGTH = 60;
 
@@ -23,10 +23,10 @@ export const emptyStop = { place: emptyPlace, contactPerson: '', phone: '', coor
 
 // Icon/tint stay fixed per stop; the text is resolved from translations
 // inside RouteStop, keyed by `kind`.
-const STOP_STYLE = {
+const STOP_STYLE = themed(() => ({
   pickup: { icon: 'pickup', tint: colors.accentMuted, ink: colors.accentText },
   dropoff: { icon: 'dropoff', tint: colors.primaryMuted, ink: colors.primaryText },
-};
+}));
 
 // The map stays folded away until someone wants to pin the exact spot.
 const MapPin = ({ title, coordinates, onChange, wide }) => {
@@ -194,7 +194,7 @@ const RouteStop = ({ kind, stop, onChange, tree, errors = {}, wide = false, inli
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   marker: { width: 40, height: 40, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   heading: { flex: 1, minWidth: 0 },
@@ -209,6 +209,6 @@ const styles = StyleSheet.create({
 
   removePin: { alignSelf: 'flex-end' },
   detailsEnd: { height: spacing.md },
-});
+}));
 
 export default RouteStop;

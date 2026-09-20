@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, Text, FlatList, RefreshControl } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
@@ -9,7 +9,7 @@ import EmptyState from '../components/common/EmptyState';
 import Input from '../components/common/Input';
 import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
-import { colors, spacing, type, iconSize } from '../theme/tokens';
+import { colors, spacing, type, iconSize, themedStyles } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, formatKg, getErrorMessage } from '../utils/helpers';
 import { dayLabel } from '../utils/nepalDate';
@@ -165,7 +165,7 @@ const LoadsListScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1 },
   searchInput: { marginBottom: spacing.sm },
@@ -186,6 +186,6 @@ const styles = StyleSheet.create({
   meta: { ...type.small, color: colors.textMuted },
   budget: { ...type.bodyMedium, color: colors.primaryText },
   date: { ...type.small, fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
-});
+}));
 
 export default LoadsListScreen;

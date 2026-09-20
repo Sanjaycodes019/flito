@@ -1,4 +1,5 @@
 // Barrel export for the FLITO design system. Prefer:
 //   import { colors, spacing, radius, shadow, type, iconSize, motion, breakpoints, Icon } from '../../theme';
-export { colors, spacing, radius, shadow, type, iconSize, motion, breakpoints } from './tokens';
+export { colors, spacing, radius, shadow, type, iconSize, motion, breakpoints, themedStyles, themed, getScheme } from './tokens';
+export { ThemeProvider, useTheme } from './ThemeProvider';
 export { default as Icon } from './icons';

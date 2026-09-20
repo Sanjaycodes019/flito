@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import i18n from '../../i18n';
-import { colors } from '../../theme/tokens';
+import { colors, themedStyles } from '../../theme/tokens';
 import EmptyState from './EmptyState';
 
 // Catches render errors anywhere below it so one broken screen shows a
@@ -36,6 +36,6 @@ export default class ErrorBoundary extends React.Component {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, justifyContent: 'center', backgroundColor: colors.background },
-});
+}));

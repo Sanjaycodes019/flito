@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, Image } from 'react-native';
 import Icon from '../../theme/icons';
-import { colors } from '../../theme/tokens';
+import { colors, themedStyles } from '../../theme/tokens';
 
 const ROLE_ICON = {
   shipper: 'shipper',
@@ -29,9 +29,9 @@ const Avatar = ({ uri, role, size = 48, style, accessibilityLabel }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   image: { backgroundColor: colors.surfaceMuted },
   fallback: { backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
-});
+}));
 
 export default Avatar;

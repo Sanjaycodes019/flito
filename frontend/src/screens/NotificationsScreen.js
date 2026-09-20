@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl } from 'react-native';
+import { View, Text, FlatList, Pressable, RefreshControl } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
@@ -9,7 +9,7 @@ import useScreenLayout from '../hooks/useScreenLayout';
 import useNotifications, { refreshNotifications, markNotificationsRead } from '../services/notifications';
 import { routeForNotification } from '../services/pushNotifications';
 import Icon from '../theme/icons';
-import { colors, spacing, type, iconSize } from '../theme/tokens';
+import { colors, spacing, type, iconSize, themedStyles } from '../theme/tokens';
 import { formatDate } from '../utils/helpers';
 
 const ICON = { load: 'load', booking: 'truckDelivery', kyc: 'verified' };
@@ -68,7 +68,7 @@ const NotificationsScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   list: { gap: spacing.sm },
   markAll: { alignSelf: 'flex-end', paddingVertical: spacing.sm, marginBottom: spacing.xs },
   markAllText: { ...type.smallMedium, color: colors.primaryText },
@@ -81,6 +81,6 @@ const styles = StyleSheet.create({
   body: { ...type.small, color: colors.textSecondary },
   time: { ...type.small, color: colors.textMuted, marginTop: 2 },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.error, marginTop: 6 },
-});
+}));
 
 export default NotificationsScreen;

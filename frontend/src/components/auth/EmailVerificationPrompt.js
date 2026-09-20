@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // Shown on Home for any signed-in user whose email is not yet verified.
 // Unlike KYC (which only owners/drivers need, to make or accept offers),
@@ -36,7 +36,7 @@ const EmailVerificationPrompt = ({ email }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   card: { borderLeftWidth: 4, borderLeftColor: colors.warning },
   row: { flexDirection: 'row', marginBottom: spacing.md },
   iconWrap: {
@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
   textCol: { flex: 1 },
   title: { ...type.bodyMedium, color: colors.textPrimary },
   message: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs },
-});
+}));
 
 export default EmailVerificationPrompt;

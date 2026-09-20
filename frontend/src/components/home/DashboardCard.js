@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // The repeated shape of every role dashboard tile on HomeScreen: an icon,
 // a title (with an optional count), a description or a large stat value,
@@ -33,7 +33,7 @@ const DashboardCard = ({ icon, title, description, value, actionLabel, onAction,
   </Card>
 );
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   card: { flex: 1, marginVertical: 0 },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   iconWrap: {
@@ -49,6 +49,6 @@ const styles = StyleSheet.create({
   body: { flexGrow: 1 },
   description: { ...type.small, color: colors.textMuted, marginBottom: spacing.md },
   value: { ...type.display, color: colors.primaryText, marginVertical: spacing.sm },
-});
+}));
 
 export default DashboardCard;

@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import { StatusPill } from '../common/SettingsList';
 import VerifiedBadge from '../common/VerifiedBadge';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { bodyTypeLabel, formatCurrency, formatKg, truckFeatureLabel, truckTypeLabel } from '../../utils/helpers';
 import { TRUCK_FEATURES } from '../../utils/constants';
 
@@ -158,7 +158,7 @@ const TruckMatchCard = ({ match, best, canRequest, maxOpenRequests, sending, onR
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   fill: { flex: 1 },
   card: { flex: 1, marginVertical: 0, borderWidth: 1, borderColor: 'transparent' },
   cardBest: { borderColor: colors.accentText },
@@ -227,6 +227,6 @@ const styles = StyleSheet.create({
   statusWarning: { backgroundColor: colors.warningMuted },
   statusText: { ...type.smallMedium },
   limitNote: { ...type.small, color: colors.textMuted, marginTop: spacing.md },
-});
+}));
 
 export default TruckMatchCard;

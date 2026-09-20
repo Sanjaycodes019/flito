@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import PhotoStrip from '../common/PhotoStrip';
 import PhotoSourceButtons from '../common/PhotoSourceButtons';
-import { colors, spacing, type } from '../../theme/tokens';
+import { colors, spacing, type, themedStyles } from '../../theme/tokens';
 import { MAX_LOAD_PHOTOS } from '../../utils/constants';
 import { getErrorMessage } from '../../utils/helpers';
 import { notify, confirmAction } from '../../utils/alert';
@@ -75,10 +75,10 @@ const LoadPhotosSection = ({ load, canEdit, onChanged }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   section: { marginTop: spacing.md },
   title: { ...type.bodyMedium, color: colors.textPrimary },
   hint: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
-});
+}));
 
 export default LoadPhotosSection;

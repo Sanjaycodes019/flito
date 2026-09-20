@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import SelectField from './SelectField';
 import Button from './Button';
 import CalendarToggle from './CalendarToggle';
 import { useCalendar } from '../../services/calendarPreference';
 import { adToBs, bsToAd, daysInBsMonth, localizeDigits, BS_MAX_YEAR } from '../../utils/bsCalendar';
-import { colors, spacing, type } from '../../theme/tokens';
+import { colors, spacing, type, themedStyles } from '../../theme/tokens';
 
 const pad = (n) => String(n).padStart(2, '0');
 const EMPTY = { year: null, month: null, day: null };
@@ -121,7 +121,7 @@ const DateField = ({ label, value, onChange, years, required = false, error, hel
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { marginBottom: spacing.lg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 24, marginBottom: spacing.xs },
   label: { ...type.smallMedium, color: colors.textSecondary, flex: 1 },
@@ -134,6 +134,6 @@ const styles = StyleSheet.create({
   year: { flex: 1.2, minWidth: 0, marginBottom: 0 },
   helper: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
   error: { color: colors.errorText },
-});
+}));
 
 export default DateField;

@@ -5,6 +5,15 @@
     "nepali": "नेपाली",
     "labelWithCalendar": "भाषा र पात्रो"
   },
+  "theme": {
+    "label": "रूप",
+    "system": "स्वचालित",
+    "light": "उज्यालो",
+    "dark": "अँध्यारो",
+    "systemLong": "यन्त्रको रूप अनुसार",
+    "lightLong": "उज्यालो मोड",
+    "darkLong": "अँध्यारो मोड"
+  },
   "calendar": {
     "label": "पात्रो",
     "ad": "ई.सं.",

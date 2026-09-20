@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
+import { View, TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { webInputReset } from '../common/Input';
-import { colors, spacing, radius, type } from '../../theme/tokens';
+import { colors, spacing, radius, type, themedStyles } from '../../theme/tokens';
 
 // A six-box OTP field. Controlled: `value` is the digit string typed so
 // far, `onChange` receives the full updated string on every keystroke,
@@ -72,7 +72,7 @@ const OtpInput = ({ length = 6, value = '', onChange, error, editable = true, au
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   row: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center' },
   // Boxes share the row instead of a fixed 44px each: six fixed boxes plus
   // gaps (304px) overflowed the form on a 320px phone.
@@ -94,6 +94,6 @@ const styles = StyleSheet.create({
   boxFocused: { borderColor: colors.focusRing, backgroundColor: colors.surface },
   boxError: { borderColor: colors.error },
   boxDisabled: { backgroundColor: colors.surfaceMuted, color: colors.disabledText },
-});
+}));
 
 export default OtpInput;

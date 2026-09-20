@@ -6,6 +6,10 @@ import EditProfileScreen from '../screens/EditProfileScreen';
 import KycScreen from '../screens/KycScreen';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import AddressScreen from '../screens/AddressScreen';
+import SettingsScreen from '../screens/settings/SettingsScreen';
+import LanguageSettingsScreen from '../screens/settings/LanguageSettingsScreen';
+import AppearanceSettingsScreen from '../screens/settings/AppearanceSettingsScreen';
+import SecuritySettingsScreen from '../screens/settings/SecuritySettingsScreen';
 import { useSelector } from 'react-redux';
 import useBreakpoint from '../hooks/useBreakpoint';
 import { AdminProfile } from '../admin/navigation';
@@ -14,7 +18,7 @@ import stackScreenOptions from './stackScreenOptions';
 const Stack = createNativeStackNavigator();
 
 // Defined once so the screen keeps its identity between renders.
-const AdminProfileScreen = () => <AdminProfile ProfileScreen={ProfileScreen} />;
+const AdminProfileScreen = (props) => <AdminProfile ProfileScreen={ProfileScreen} {...props} />;
 
 // Profile is a stack so account screens (editing, identity verification) can
 // open from it with a back button, the same way Home's flows do.
@@ -30,6 +34,10 @@ const ProfileStackNavigator = () => {
       <Stack.Screen name="Kyc" component={KycScreen} options={{ title: t('navigation:profileStack.kyc') }} />
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ title: t('navigation:profileStack.verifyEmail') }} />
       <Stack.Screen name="Address" component={AddressScreen} options={{ title: t('navigation:profileStack.address') }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('navigation:profileStack.settings') }} />
+      <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} options={{ title: t('navigation:profileStack.languageSettings') }} />
+      <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} options={{ title: t('navigation:profileStack.appearanceSettings') }} />
+      <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} options={{ title: t('navigation:profileStack.securitySettings') }} />
     </Stack.Navigator>
   );
 };

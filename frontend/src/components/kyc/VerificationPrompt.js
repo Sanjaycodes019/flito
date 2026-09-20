@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 const STATUS_NOTE_KEY = {
   pending: 'kyc:verificationPrompt.notePending',
@@ -42,7 +42,7 @@ const VerificationPrompt = ({ kycStatus, message }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   card: { borderLeftWidth: 4, borderLeftColor: colors.warning },
   row: { flexDirection: 'row', marginBottom: spacing.md },
   iconWrap: {
@@ -58,6 +58,6 @@ const styles = StyleSheet.create({
   title: { ...type.bodyMedium, color: colors.textPrimary },
   message: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs },
   note: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
-});
+}));
 
 export default VerificationPrompt;

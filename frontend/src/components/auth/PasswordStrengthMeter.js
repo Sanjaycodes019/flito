@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, spacing, radius, type } from '../../theme/tokens';
+import { colors, spacing, radius, type, themedStyles } from '../../theme/tokens';
 
 // Mirrors the server's actual floor (8+ characters, a letter and a digit,
 // see backend/src/middleware/validators.js's isValidPassword) so a password
@@ -48,11 +48,11 @@ const PasswordStrengthMeter = ({ password }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { marginTop: -spacing.sm, marginBottom: spacing.md },
   track: { flexDirection: 'row', gap: 4, marginBottom: 4 },
   segment: { flex: 1, height: 4, borderRadius: radius.sm },
   label: { ...type.caption, textTransform: 'none', letterSpacing: 0 },
-});
+}));
 
 export default PasswordStrengthMeter;

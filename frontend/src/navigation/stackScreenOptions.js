@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { colors, spacing, type } from '../theme/tokens';
+import { View } from 'react-native';
+import { colors, spacing, type, themedStyles } from '../theme/tokens';
 import { BrandMark, ProfileButton } from '../components/navigation/DesktopNav';
 import NotificationBell from '../components/navigation/NotificationBell';
 import LanguageToggle from '../components/common/LanguageToggle';
@@ -55,8 +55,8 @@ const stackScreenOptions = ({ isDesktop, isPhone = false, isAdmin = false, activ
   };
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-});
+}));
 
 export default stackScreenOptions;

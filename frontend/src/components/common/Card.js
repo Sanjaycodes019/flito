@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Animated } from 'react-native';
-import { colors, spacing, radius, shadow, motion } from '../../theme/tokens';
+import { View, Pressable, Animated } from 'react-native';
+import { colors, spacing, radius, shadow, motion, themedStyles } from '../../theme/tokens';
 
 // A plain Card is a static surface. Passing `onPress` turns it into an
 // interactive card with hover/press/focus feedback, for list rows that
@@ -57,7 +57,7 @@ const InteractiveCard = ({ children, style, containerStyle, onPress, accessibili
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -72,6 +72,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.focusRing,
   },
-});
+}));
 
 export default Card;

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, shadow, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, shadow, type, iconSize, themedStyles } from '../../theme/tokens';
 
 const SIZE = 64;
 const STROKE = 7;
@@ -94,7 +94,7 @@ const ProfileChecklist = ({ steps }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   card: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: spacing.xl, ...shadow.level1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   headerText: { flex: 1 },
@@ -115,6 +115,6 @@ const styles = StyleSheet.create({
   mark_done: { backgroundColor: colors.success, borderColor: colors.success },
   mark_waiting: { backgroundColor: colors.warningMuted, borderColor: colors.warningText },
   mark_todo: { borderColor: colors.borderStrong },
-});
+}));
 
 export default ProfileChecklist;

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Image, ScrollView, Pressable, Text, Modal, StyleSheet, Platform } from 'react-native';
+import { View, Image, ScrollView, Pressable, Text, Modal, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // Cloudinary serves resized variants of the same image by URL, so a strip asks
 // for small square thumbnails instead of downloading full-size photos.
@@ -73,7 +73,7 @@ const PhotoStrip = ({ photos = [], onRemove, size = 88 }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   strip: { gap: spacing.sm, paddingVertical: spacing.sm },
   thumb: { borderRadius: radius.sm, backgroundColor: colors.surfaceMuted },
   remove: {
@@ -97,6 +97,6 @@ const styles = StyleSheet.create({
   full: { width: '100%', height: '80%' },
   closeButton: { position: 'absolute', top: spacing.xl, right: spacing.xl },
   closeHint: { color: colors.white, opacity: 0.7, marginTop: spacing.md, ...type.small },
-});
+}));
 
 export default PhotoStrip;

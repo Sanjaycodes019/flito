@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, type, iconSize, themedStyles } from '../../theme/tokens';
 import { getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
 import api from '../../services/api';
@@ -87,13 +87,13 @@ const LocationSharingToggle = ({ bookingId }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
   titleIcon: { marginRight: spacing.xs },
   title: { ...type.h3, color: colors.textPrimary },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, marginLeft: spacing.sm },
   hint: { ...type.small, color: colors.textMuted, marginBottom: spacing.sm },
   meta: { ...type.small, fontSize: 11, color: colors.textMuted, marginBottom: spacing.sm },
-});
+}));
 
 export default LocationSharingToggle;

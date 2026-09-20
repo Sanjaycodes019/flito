@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, Text, FlatList, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
 import Spinner from '../../components/common/Spinner';
 import EmptyState from '../../components/common/EmptyState';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
 import api from '../../services/api';
 import { notify } from '../../utils/alert';
@@ -81,7 +81,7 @@ const EarningsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1 },
   summaryCard: { alignItems: 'center', paddingVertical: spacing.xxl, marginBottom: spacing.sm },
@@ -103,6 +103,6 @@ const styles = StyleSheet.create({
   amount: { ...type.bodyMedium, color: colors.primaryText },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
   date: { ...type.small, color: colors.textMuted },
-});
+}));
 
 export default EarningsScreen;

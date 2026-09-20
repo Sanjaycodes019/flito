@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
@@ -8,7 +8,7 @@ import Input, { InputAction } from '../components/common/Input';
 import AuthLayout from '../components/auth/AuthLayout';
 import GoogleButton from '../components/auth/GoogleButton';
 import { useGoogleAuth, isGoogleConfigured } from '../hooks/useGoogleAuth';
-import { colors, spacing, type } from '../theme/tokens';
+import { colors, spacing, type, themedStyles } from '../theme/tokens';
 import { authService } from '../services/auth';
 import { isValidEmail, getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
@@ -157,7 +157,7 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   forgotButton: { alignSelf: 'flex-end', marginTop: -spacing.sm },
   adminLink: { alignSelf: 'center', marginTop: spacing.md },
   loginButton: { marginTop: spacing.sm },
@@ -166,6 +166,6 @@ const styles = StyleSheet.create({
   dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },
   switchRow: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.divider },
   switchPrompt: { ...type.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.xs },
-});
+}));
 
 export default LoginScreen;

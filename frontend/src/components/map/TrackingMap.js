@@ -1,10 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import MapCanvas from './MapCanvas';
 import { buildMapHtml } from './mapHtml';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, shadow, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, shadow, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // Read-only map: static pickup/dropoff pins plus a driver marker that moves
 // live as `driverLocation` changes, without reloading the page (so the user's
@@ -64,7 +64,7 @@ const TrackingMap = ({ pickup, dropoff, driverLocation, height = 260 }) => {
           accessibilityRole="button"
           accessibilityLabel={t('loads:trackingMap.fitMapAccessibilityLabel')}
         >
-          <Icon name="gps" size={iconSize.xs} color={colors.secondary} style={styles.recenterIcon} />
+          <Icon name="gps" size={iconSize.xs} color={colors.textPrimary} style={styles.recenterIcon} />
           <Text style={styles.recenterText}>{t('loads:trackingMap.fit')}</Text>
         </Pressable>
       )}
@@ -72,7 +72,7 @@ const TrackingMap = ({ pickup, dropoff, driverLocation, height = 260 }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surfaceMuted, marginVertical: spacing.sm },
   empty: { alignItems: 'center', justifyContent: 'center' },
   emptyIcon: { marginBottom: spacing.xs },
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     ...shadow.level2,
   },
   recenterIcon: { marginRight: 4 },
-  recenterText: { ...type.smallMedium, fontSize: 12, color: colors.secondary },
-});
+  recenterText: { ...type.smallMedium, fontSize: 12, color: colors.textPrimary },
+}));
 
 export default TrackingMap;

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
@@ -15,7 +15,7 @@ import TrackingMap from '../components/map/TrackingMap';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, formatStatus, getErrorMessage, truckTypeLabel } from '../utils/helpers';
 import api from '../services/api';
@@ -291,7 +291,7 @@ const Detail = ({ labelKey, label, value, verified = false, verifiedLabel }) => 
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xl },
   mainColumn: { flex: 3, minWidth: 0 },
@@ -319,6 +319,6 @@ const styles = StyleSheet.create({
   cancelButton: { marginTop: spacing.xs },
   chipRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   ratingChip: { flex: 1, marginVertical: 0 },
-});
+}));
 
 export default BookingDetailScreen;

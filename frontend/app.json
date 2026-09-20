@@ -6,7 +6,7 @@
     "scheme": "flito",
     "orientation": "portrait",
     "icon": "./assets/icon-full.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",

@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, spacing, type, iconSize } from '../../theme/tokens';
+import { View, Text } from 'react-native';
+import { colors, spacing, type, iconSize, themedStyles } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 import Button from './Button';
 
@@ -21,7 +21,7 @@ const EmptyState = ({ icon = 'empty', title, message, actionLabel, onAction, ton
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { alignItems: 'center', justifyContent: 'center', padding: spacing.xxxl },
   iconWrap: {
     width: 72,
@@ -36,6 +36,6 @@ const styles = StyleSheet.create({
   title: { ...type.h3, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.xs },
   message: { ...type.body, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.lg },
   action: { minWidth: 180 },
-});
+}));
 
 export default EmptyState;

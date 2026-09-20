@@ -28,7 +28,11 @@
     "editProfile": "प्रोफाइल सम्पादन गर्नुहोस्",
     "kyc": "पहिचान प्रमाणीकरण",
     "verifyEmail": "इमेल प्रमाणित गर्नुहोस्",
-    "address": "ठेगाना"
+    "address": "ठेगाना",
+    "settings": "सेटिङ",
+    "languageSettings": "भाषा र क्षेत्र",
+    "appearanceSettings": "रूप",
+    "securitySettings": "साइन-इन र सुरक्षा"
   },
   "menu": "मेनु"
 }

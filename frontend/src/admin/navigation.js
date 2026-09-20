@@ -27,9 +27,9 @@ export const AdminHome = () => (
 );
 
 // An admin's Profile, in the same console frame (sidebar on a laptop).
-export const AdminProfile = ({ ProfileScreen }) => (
+export const AdminProfile = ({ ProfileScreen, ...screenProps }) => (
   <AdminShell active="profile">
-    <ProfileScreen />
+    <ProfileScreen {...screenProps} />
   </AdminShell>
 );
 

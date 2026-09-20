@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
 import useNotifications from '../../services/notifications';
-import { colors, iconSize } from '../../theme/tokens';
+import { colors, iconSize, themedStyles } from '../../theme/tokens';
 
 // The header's notification bell, with the unread count (1, 2, 3 ... 99+) on
 // top. Opens the feed.
@@ -33,7 +33,7 @@ const NotificationBell = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   button: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   badge: {
     position: 'absolute',
@@ -50,6 +50,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: { fontSize: 10, lineHeight: 13, fontWeight: '700', color: colors.textOnDark },
-});
+}));
 
 export default NotificationBell;

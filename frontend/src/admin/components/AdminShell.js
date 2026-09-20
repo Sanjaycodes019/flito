@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { SidebarFrame, SidebarNavItem } from '../../components/navigation/Sidebar';
-import { colors } from '../../theme/tokens';
+import { colors, themedStyles } from '../../theme/tokens';
 import useBreakpoint from '../../hooks/useBreakpoint';
 import useAdminStats from '../useAdminStats';
 import { ADMIN_SECTIONS } from '../sections';
@@ -52,9 +52,9 @@ const AdminShell = ({ active, children }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   root: { flex: 1, flexDirection: 'row', backgroundColor: colors.background },
   main: { flex: 1, backgroundColor: colors.background },
-});
+}));
 
 export default AdminShell;

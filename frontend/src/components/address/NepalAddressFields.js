@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import SelectField from '../common/SelectField';
 import Input from '../common/Input';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import i18n from '../../i18n';
 import { localizedName, localizedCategory } from '../../utils/helpers';
 
@@ -236,7 +236,7 @@ export const DetectedLocationNotice = ({ detected, hint, style }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   row: { flexDirection: 'row', gap: spacing.lg },
   half: { flex: 1, minWidth: 0 },
 
@@ -250,6 +250,6 @@ const styles = StyleSheet.create({
   noticeHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xxs },
   noticeTitle: { ...type.bodyMedium },
   noticeText: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs },
-});
+}));
 
 export default NepalAddressFields;

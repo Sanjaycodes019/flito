@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Modal, StyleSheet, Platform } from 'react-native';
+import { View, Text, Modal, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 // Reusing the map's generic HTML-bridge host (WebView on native, iframe on
 // web). It just embeds a page and exchanges JSON messages, which is exactly
@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import MapCanvas from '../map/MapCanvas';
 import Button from '../common/Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { notify } from '../../utils/alert';
 import { buildSignaturePadHtml } from './signaturePadHtml';
 
@@ -80,7 +80,7 @@ const SignaturePad = ({ visible, onClose, onSave, saving }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   header: { padding: spacing.lg, paddingTop: spacing.xxxl, backgroundColor: colors.surface },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   headerTextCol: { flex: 1 },
@@ -90,6 +90,6 @@ const styles = StyleSheet.create({
   padContainer: { flex: 1, margin: spacing.lg, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
   actions: { flexDirection: 'row', gap: spacing.sm, padding: spacing.lg },
   actionButton: { flex: 1 },
-});
+}));
 
 export default SignaturePad;

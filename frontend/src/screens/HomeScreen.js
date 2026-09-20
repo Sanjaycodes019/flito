@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,7 @@ import VerifiedBadge from '../components/common/VerifiedBadge';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
 import EmailVerificationPrompt from '../components/auth/EmailVerificationPrompt';
 import Icon from '../theme/icons';
-import { colors, spacing, radius, shadow, type, iconSize } from '../theme/tokens';
+import { colors, spacing, radius, shadow, type, iconSize, themedStyles } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import useScreenLayout from '../hooks/useScreenLayout';
 import api from '../services/api';
@@ -286,7 +286,7 @@ const HomeScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
 
   // Greeting: a plain row on phones, a header card from tablet width up.
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   avatarWide: { marginRight: spacing.lg },
   headerText: { flex: 1, minWidth: 0 },
   greetingRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
-  greeting: { ...type.h1, color: colors.secondary },
+  greeting: { ...type.h1, color: colors.textPrimary },
   greetingWide: { ...type.display },
   roleChip: {
     backgroundColor: colors.primaryMuted,
@@ -341,6 +341,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statValue: { ...type.display, color: colors.textPrimary, marginTop: spacing.sm },
-});
+}));
 
 export default HomeScreen;

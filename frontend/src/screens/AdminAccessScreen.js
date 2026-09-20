@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
 import Button from '../components/common/Button';
 import Input, { InputAction } from '../components/common/Input';
 import AuthLayout from '../components/auth/AuthLayout';
-import { colors, spacing } from '../theme/tokens';
+import { colors, spacing, themedStyles } from '../theme/tokens';
 import { authService } from '../services/auth';
 import { isValidEmail, getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
@@ -123,9 +123,9 @@ const AdminAccessScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   submit: { marginTop: spacing.md },
   switchRow: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.divider },
-});
+}));
 
 export default AdminAccessScreen;

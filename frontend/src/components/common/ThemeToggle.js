@@ -1,30 +1,29 @@
 import React from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { CALENDARS, setCalendar, useCalendar } from '../../services/calendarPreference';
+import { THEME_PREFERENCES, setThemePreference, useThemePreference } from '../../services/themePreference';
 import { colors, spacing, radius, type, themedStyles } from '../../theme/tokens';
 
-// A small AD / BS segmented switch for choosing the calendar dates are shown
-// and picked in. The choice is global and remembered on the device, so
-// changing it in one place changes it everywhere.
-const CalendarToggle = ({ compact = false, style }) => {
+// A small System / Light / Dark segmented switch for the app's appearance.
+// The choice is global and remembered on the device.
+const ThemeToggle = ({ compact = false, style }) => {
   const { t } = useTranslation();
-  const current = useCalendar();
+  const current = useThemePreference();
 
   return (
-    <View style={[styles.track, style]} accessibilityRole="radiogroup" accessibilityLabel={t('common:calendar.label')}>
-      {CALENDARS.map((calendar) => {
-        const active = current === calendar;
+    <View style={[styles.track, style]} accessibilityRole="radiogroup" accessibilityLabel={t('common:theme.label')}>
+      {THEME_PREFERENCES.map((preference) => {
+        const active = current === preference;
         return (
           <Pressable
-            key={calendar}
-            onPress={() => setCalendar(calendar)}
+            key={preference}
+            onPress={() => setThemePreference(preference)}
             accessibilityRole="radio"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={t(`common:calendar.${calendar}Long`)}
+            accessibilityLabel={t(`common:theme.${preference}Long`)}
             style={({ pressed }) => [styles.segment, compact && styles.segmentCompact, active && styles.segmentActive, pressed && !active && styles.segmentPressed]}
           >
-            <Text style={[styles.text, compact && styles.textCompact, active && styles.textActive]}>{t(`common:calendar.${calendar}`)}</Text>
+            <Text style={[styles.text, compact && styles.textCompact, active && styles.textActive]}>{t(`common:theme.${preference}`)}</Text>
           </Pressable>
         );
       })}
@@ -43,4 +42,4 @@ const styles = themedStyles(() => ({
   textActive: { color: colors.textPrimary },
 }));
 
-export default CalendarToggle;
+export default ThemeToggle;

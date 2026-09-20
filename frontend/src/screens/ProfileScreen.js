@@ -1,56 +1,26 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import Constants from 'expo-constants';
-import { logout, setUser } from '../redux/slices/authSlice';
+import { setUser } from '../redux/slices/authSlice';
 import Avatar from '../components/common/Avatar';
 import ProfileHero from '../components/profile/ProfileHero';
 import ProfileChecklist from '../components/profile/ProfileChecklist';
 import Modal from '../components/common/Modal';
 import ActionList from '../components/common/ActionList';
-import LanguageToggle from '../components/common/LanguageToggle';
-import CalendarToggle from '../components/common/CalendarToggle';
 import { SettingsSection, SettingsRow } from '../components/common/SettingsList';
-import { colors, spacing, type } from '../theme/tokens';
+import { colors, spacing, type, themedStyles } from '../theme/tokens';
 import useScreenLayout from '../hooks/useScreenLayout';
 import api from '../services/api';
 import { authService } from '../services/auth';
-import socketService from '../services/socket';
 import { pickImages, takePhoto, uploadFiles } from '../services/uploads';
 import { ROLES, MAX_AVATAR_BYTES } from '../utils/constants';
 import { getErrorMessage } from '../utils/helpers';
 import { confirmAction, notify } from '../utils/alert';
 
-const APP_VERSION = Constants?.expoConfig?.version;
-
-// From this window width the hero sits beside the settings.
+// From this window width the hero sits beside the details.
 const TWO_COLUMNS_FROM = 900;
-// A single column this wide lays the hero's person and actions side by side.
-const HORIZONTAL_HERO_FROM = 600;
-
-// A settings row the LanguageToggle sits in, matching SettingsRow's own
-// layout (it isn't reused directly since its `value` slot only takes text).
-const LanguageRow = ({ first }) => {
-  const { t } = useTranslation();
-  return (
-    <View style={[styles.languageRow, !first && styles.languageRowDivider]}>
-      <Text style={styles.languageRowLabel}>{t('common:language.label')}</Text>
-      <LanguageToggle />
-    </View>
-  );
-};
-
-const CalendarRow = () => {
-  const { t } = useTranslation();
-  return (
-    <View style={[styles.languageRow, styles.languageRowDivider]}>
-      <Text style={styles.languageRowLabel}>{t('common:calendar.label')}</Text>
-      <CalendarToggle />
-    </View>
-  );
-};
 
 const ProfileScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -74,20 +44,6 @@ const ProfileScreen = ({ navigation }) => {
   );
 
   const goEdit = () => navigation.navigate('EditProfile');
-
-  const handleLogout = () => {
-    confirmAction({
-      title: t('profile:logout.title'),
-      message: t('profile:logout.message'),
-      confirmLabel: t('profile:logout.confirmLabel'),
-      destructive: true,
-      onConfirm: async () => {
-        await authService.logout();
-        socketService.disconnect();
-        dispatch(logout());
-      },
-    });
-  };
 
   const handleChangePhoto = async (source) => {
     setPhotoSheet(false);
@@ -147,10 +103,6 @@ const ProfileScreen = ({ navigation }) => {
     value: t(`profile:kyc.${kycStatusKey}.value`),
     pill: { label: t(`profile:kyc.${kycStatusKey}.pill`), tone: { not_submitted: 'muted', pending: 'warning', approved: 'success', rejected: 'error' }[kycStatusKey] },
   };
-  const signInMethods = [user?.hasPassword && t('profile:rows.signInEmailPassword'), user?.hasGoogle && t('profile:rows.signInGoogle')]
-    .filter(Boolean)
-    .join(t('profile:rows.signInJoiner')) || t('profile:rows.signInEmailOnly');
-
   const strengthSteps = [
     { key: 'photo', done: hasPhoto, label: t('profile:strength.steps.photo'), onPress: () => setPhotoSheet(true) },
     user?.email && {
@@ -178,16 +130,16 @@ const ProfileScreen = ({ navigation }) => {
       busy={photoBusy}
       onPhoto={() => setPhotoSheet(true)}
       onEdit={goEdit}
-      horizontal={!twoColumns && layout.width >= HORIZONTAL_HERO_FROM}
+      onSettings={() => navigation.navigate('Settings')}
     />
   );
   const checklist = <ProfileChecklist steps={strengthSteps} />;
 
-  const settings = (
+  const details = (
     <>
       <SettingsSection
-        title={t('profile:sections.personalInfo.title')}
-        description={t('profile:sections.personalInfo.description')}
+        title={t('profile:sections.about.title')}
+        description={t('profile:sections.about.description')}
         actionLabel={t('profile:sections.personalInfo.edit')}
         onAction={goEdit}
       >
@@ -220,17 +172,6 @@ const ProfileScreen = ({ navigation }) => {
         ) : null}
       </SettingsSection>
 
-      <SettingsSection title={t('profile:sections.signIn.title')}>
-        <SettingsRow icon="lock" label={t('profile:rows.signInMethod')} value={signInMethods} />
-        <SettingsRow icon="logout" label={t('profile:rows.logOut')} destructive onPress={handleLogout} accessibilityLabel={t('profile:rows.logOutLabel')} />
-      </SettingsSection>
-
-      <SettingsSection title={t('common:language.labelWithCalendar')}>
-        <LanguageRow />
-        <CalendarRow />
-      </SettingsSection>
-
-      {!!APP_VERSION && <Text style={styles.version}>{t('profile:version', { version: APP_VERSION })}</Text>}
     </>
   );
 
@@ -239,13 +180,13 @@ const ProfileScreen = ({ navigation }) => {
       {twoColumns ? (
         <View style={styles.columns}>
           <View style={styles.sideColumn}>{hero}{checklist}</View>
-          <View style={styles.mainColumn}>{settings}</View>
+          <View style={styles.mainColumn}>{details}</View>
         </View>
       ) : (
         <>
           {hero}
           <View style={styles.stackedChecklist}>{checklist}</View>
-          <View style={styles.stackedSettings}>{settings}</View>
+          <View style={styles.stackedDetails}>{details}</View>
         </>
       )}
 
@@ -273,32 +214,18 @@ const ProfileScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xxl },
   sideColumn: { width: 380, gap: spacing.lg },
   mainColumn: { flex: 1, minWidth: 0, paddingTop: spacing.sm },
   stackedChecklist: { marginTop: spacing.lg },
-  stackedSettings: { marginTop: spacing.xl },
-
-  version: { ...type.small, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: -spacing.sm },
-
-  languageRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    minHeight: 64,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  languageRowDivider: { borderTopWidth: 1, borderTopColor: colors.divider },
-  languageRowLabel: { ...type.bodyMedium, color: colors.textPrimary },
+  stackedDetails: { marginTop: spacing.xl },
 
   // Profile photo dialog
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   sheetHint: { ...type.small, color: colors.textSecondary, flex: 1 },
   sheetNote: { ...type.small, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
-});
+}));
 
 export default ProfileScreen;

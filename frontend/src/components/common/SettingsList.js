@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Card from './Card';
 import Button from './Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles, themed } from '../../theme/tokens';
 
 // The building blocks of an account page, in the pattern account settings use
 // across Google, LinkedIn and Uber: a titled group (with an optional action
 // such as "Edit") holding rows of label, value, status and a chevron when the
 // row opens something.
 
-const PILL_TONES = {
+const PILL_TONES = themed(() => ({
   success: { background: colors.successMuted, text: colors.successText },
   warning: { background: colors.warningMuted, text: colors.warningText },
   error: { background: colors.errorMuted, text: colors.errorText },
   info: { background: colors.infoMuted, text: colors.infoText },
   muted: { background: colors.surfaceMuted, text: colors.textMuted },
-};
+}));
 
 export const StatusPill = ({ label, tone = 'muted', icon }) => {
   const palette = PILL_TONES[tone] || PILL_TONES.muted;
@@ -112,7 +112,7 @@ export const SettingsRow = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   section: { marginBottom: spacing.xl },
   sectionHeader: {
     flexDirection: 'row',
@@ -165,4 +165,4 @@ const styles = StyleSheet.create({
     maxWidth: 150,
   },
   pillText: { ...type.caption, fontSize: 11, textTransform: 'none', letterSpacing: 0 },
-});
+}));

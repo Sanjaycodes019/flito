@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
@@ -7,7 +7,7 @@ import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Spinner from '../components/common/Spinner';
 import Icon from '../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
@@ -196,7 +196,7 @@ const EditProfileScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   cardWide: { padding: spacing.xxl },
   fieldRow: { flexDirection: 'row', gap: spacing.lg },
@@ -225,6 +225,6 @@ const styles = StyleSheet.create({
   verifiedPillText: { ...type.caption, fontSize: 10 },
   readOnlyRow: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.md },
   readOnly: { ...type.small, color: colors.textMuted, textTransform: 'capitalize' },
-});
+}));
 
 export default EditProfileScreen;

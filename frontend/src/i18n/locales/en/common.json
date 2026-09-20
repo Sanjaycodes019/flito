@@ -5,6 +5,15 @@
     "nepali": "नेपाली",
     "labelWithCalendar": "Language & calendar"
   },
+  "theme": {
+    "label": "Appearance",
+    "system": "Auto",
+    "light": "Light",
+    "dark": "Dark",
+    "systemLong": "Match device appearance",
+    "lightLong": "Light mode",
+    "darkLong": "Dark mode"
+  },
   "calendar": {
     "label": "Calendar",
     "ad": "AD",

@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, Text, FlatList, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage, truckTypeLabel } from '../../utils/helpers';
 import { isTurnOf, openingSide, standingOffer } from '../../utils/negotiation';
 import { notify } from '../../utils/alert';
@@ -121,7 +121,7 @@ const MyQuotesScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1 },
   card: { marginVertical: spacing.xs },
@@ -144,6 +144,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   actionNeeded: { ...type.small, color: colors.warningText, fontWeight: '600', flex: 1 },
-});
+}));
 
 export default MyQuotesScreen;

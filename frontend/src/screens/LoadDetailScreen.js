@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
@@ -11,7 +11,7 @@ import EmptyState from '../components/common/EmptyState';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import Icon from '../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, formatKg, formatTrip, getErrorMessage, truckTypeLabel } from '../utils/helpers';
 import { dayLabel } from '../utils/nepalDate';
@@ -589,7 +589,7 @@ const QuoteForm = ({ load, navigation, onSubmitted }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xl },
   mainColumn: { flex: 3, minWidth: 0 },
@@ -673,6 +673,6 @@ const styles = StyleSheet.create({
   truckChoiceTitle: { ...type.bodyMedium, color: colors.textPrimary },
   truckChoiceMuted: { color: colors.textMuted },
   truckChoiceHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
-});
+}));
 
 export default LoadDetailScreen;

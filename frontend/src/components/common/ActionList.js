@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // A short menu of choices inside a dialog, one full-width row each (icon,
 // label, optional detail line), in the style of the account menus in Google
@@ -50,7 +50,7 @@ const ActionList = ({ actions, dense = false, style }) => (
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   list: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -84,6 +84,6 @@ const styles = StyleSheet.create({
   labelDense: { ...type.body, fontWeight: '500' },
   labelDestructive: { color: colors.errorText },
   description: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
-});
+}));
 
 export default ActionList;

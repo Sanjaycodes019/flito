@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Avatar from '../common/Avatar';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 const LOGO = require('../../../assets/icon.png');
 
@@ -96,7 +96,7 @@ export const TopNavLinks = ({ activeTab }) => (
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginLeft: spacing.md, marginRight: spacing.lg },
   logo: { width: 32, height: 32, borderRadius: radius.md },
   wordmark: { ...type.h3, fontWeight: '800', color: colors.primary, letterSpacing: 1 },
@@ -113,4 +113,4 @@ const styles = StyleSheet.create({
   linkActive: { backgroundColor: colors.primaryMuted },
   linkText: { ...type.smallMedium, color: colors.textSecondary },
   linkTextActive: { color: colors.primaryText },
-});
+}));

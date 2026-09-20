@@ -14,9 +14,10 @@
 // brand color (secondary "Deep Asphalt" or dark "Midnight Cabin"), so nothing
 // outside the palette is introduced.
 
+import { StyleSheet } from 'react-native';
 import { FLITO_COLORS } from '../utils/colors';
 
-export const colors = {
+const lightColors = {
   // Surfaces
   background: FLITO_COLORS.background,
   surface: FLITO_COLORS.bgLight,
@@ -65,6 +66,7 @@ export const colors = {
   // true brand amber.
   primaryText: '#995F00',
   secondary: FLITO_COLORS.secondary,
+  secondaryPressed: '#141922',
   accent: FLITO_COLORS.accent,
   accentMuted: 'rgba(0, 210, 162, 0.14)',
   // FLITO_COLORS.accent (teal) as text/icon on a light surface, or white
@@ -102,6 +104,106 @@ export const colors = {
   white: '#FFFFFF',
   disabledBg: '#E1E4E8',
   disabledText: '#A6ACB2',
+};
+
+// Dark palette: the same roles on Midnight Cabin surfaces. Text tones that
+// are darkened for contrast on light surfaces are lightened here, and every
+// "Text" tone keeps at least 4.5:1 on the dark surface. `secondary` is only a
+// fill in dark mode (buttons, avatars); text that used it reads textPrimary.
+const darkColors = {
+  background: '#12161A',
+  surface: '#1E242B',
+  surfaceMuted: '#2A323B',
+  surfaceDark: '#0B0E11',
+  overlay: 'rgba(0, 0, 0, 0.65)',
+
+  textPrimary: '#F4F6F8',
+  textSecondary: 'rgba(244, 246, 248, 0.72)',
+  textMuted: '#9AA8AA',
+  textOnPrimary: '#1E242B',
+  textOnDark: '#FFFFFF',
+  textInverse: '#F4F6F8',
+  textInverseMuted: 'rgba(244, 246, 248, 0.72)',
+  textLink: '#5DB6F0',
+
+  border: 'rgba(244, 246, 248, 0.16)',
+  borderStrong: 'rgba(244, 246, 248, 0.32)',
+  divider: 'rgba(244, 246, 248, 0.09)',
+
+  primary: FLITO_COLORS.primary,
+  primaryPressed: '#E08F00',
+  primaryMuted: 'rgba(255, 159, 0, 0.18)',
+  primaryText: '#FFB733',
+  secondary: '#3A4552',
+  secondaryPressed: '#4A5666',
+  accent: FLITO_COLORS.accent,
+  accentMuted: 'rgba(0, 210, 162, 0.18)',
+  accentText: '#2FE0B5',
+  focusRing: '#2FE0B5',
+
+  success: FLITO_COLORS.success,
+  successMuted: 'rgba(39, 174, 96, 0.2)',
+  successText: '#5AD98C',
+  warning: FLITO_COLORS.warning,
+  warningMuted: 'rgba(243, 156, 18, 0.2)',
+  warningText: '#F5B83D',
+  error: FLITO_COLORS.error,
+  errorMuted: 'rgba(231, 76, 60, 0.2)',
+  errorText: '#FF8A7D',
+  errorStrong: '#C22818',
+  errorStrongPressed: '#9B2013',
+  info: FLITO_COLORS.info,
+  infoMuted: 'rgba(52, 152, 219, 0.2)',
+  infoText: '#5DB6F0',
+
+  white: '#FFFFFF',
+  disabledBg: '#2A323B',
+  disabledText: '#6B767F',
+};
+
+export const palettes = { light: lightColors, dark: darkColors };
+
+// `colors` is one shared object whose values are swapped in place when the
+// scheme changes (see applyScheme), so every `import { colors }` keeps working.
+// Screens re-read it on render; the app remounts on a scheme change (see
+// theme/ThemeProvider) so nothing keeps a stale value.
+export const colors = { ...lightColors };
+
+let scheme = 'light';
+let version = 0;
+
+export const getScheme = () => scheme;
+
+// Returns true when the scheme actually changed.
+export const applyScheme = (next) => {
+  if (!palettes[next] || next === scheme) return false;
+  scheme = next;
+  version += 1;
+  Object.assign(colors, palettes[next]);
+  return true;
+};
+
+// Drop-in for StyleSheet.create for styles that use `colors`. The factory
+// runs on first use after each scheme change, so the styles always match the
+// active palette. Read styles at render time (styles.card), never cache them.
+const lazyByScheme = (build) => (factory) => {
+  let cached = null;
+  let cachedVersion = -1;
+  const current = () => {
+    if (cachedVersion !== version || !cached) {
+      cached = build(factory());
+      cachedVersion = version;
+    }
+    return cached;
+  };
+  return new Proxy({}, {
+    get: (_, key) => current()[key],
+    has: (_, key) => key in current(),
+    ownKeys: () => Reflect.ownKeys(current()),
+    getOwnPropertyDescriptor: (_, key) => (key in current()
+      ? { enumerable: true, configurable: true, value: current()[key] }
+      : undefined),
+  });
 };
 
 // 4px base spacing scale. Every padding/margin/gap in the app should be one
@@ -195,4 +297,10 @@ export const breakpoints = {
   desktop: 1024,
 };
 
-export default { colors, spacing, radius, shadow, type, iconSize, motion, breakpoints };
+export const themedStyles = lazyByScheme((styles) => StyleSheet.create(styles));
+
+// Same laziness for plain lookup tables built from `colors` (status tones,
+// button variants). Index it at render time, like `themedStyles`.
+export const themed = lazyByScheme((table) => table);
+
+export default { colors, palettes, spacing, radius, shadow, type, iconSize, motion, breakpoints };

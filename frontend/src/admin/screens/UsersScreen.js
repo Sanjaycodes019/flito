@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { Text } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
-import { colors, type } from '../../theme/tokens';
+import { colors, type, themedStyles } from '../../theme/tokens';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 import { notify, confirmAction } from '../../utils/alert';
 import api from '../../services/api';
@@ -97,10 +97,10 @@ const UserCard = ({ user, list }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   rating: { ...type.small, color: colors.textMuted },
   action: { flexGrow: 1, flexBasis: 120 },
-});
+}));
 
 const UsersScreen = () => (
   <ResourceScreen

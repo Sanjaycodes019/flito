@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Button from '../components/common/Button';
@@ -8,7 +8,7 @@ import AuthLayout from '../components/auth/AuthLayout';
 import OtpInput from '../components/auth/OtpInput';
 import ResendCode from '../components/auth/ResendCode';
 import PasswordStrengthMeter, { passwordScore } from '../components/auth/PasswordStrengthMeter';
-import { colors, spacing } from '../theme/tokens';
+import { colors, spacing, themedStyles } from '../theme/tokens';
 import { authService } from '../services/auth';
 import { getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
@@ -116,11 +116,11 @@ const ResetPasswordScreen = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   emailText: { fontWeight: '700', color: colors.textPrimary },
   otpWrap: { marginBottom: spacing.sm, marginTop: spacing.xs },
   passwordInput: { marginTop: spacing.lg },
   submit: { marginTop: spacing.sm },
-});
+}));
 
 export default ResetPasswordScreen;

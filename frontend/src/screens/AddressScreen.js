@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
@@ -14,7 +14,7 @@ import NepalAddressFields, {
   missingPlaceFields,
 } from '../components/address/NepalAddressFields';
 import Icon from '../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../theme/tokens';
 import useScreenLayout from '../hooks/useScreenLayout';
 import useCurrentPlace from '../hooks/useCurrentPlace';
 import api from '../services/api';
@@ -149,7 +149,7 @@ const AddressScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
 
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
@@ -167,6 +167,6 @@ const styles = StyleSheet.create({
 
   formWide: { padding: spacing.xxl },
   saveWide: { alignSelf: 'flex-end', minWidth: 220 },
-});
+}));
 
 export default AddressScreen;

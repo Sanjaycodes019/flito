@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Pressable, Text, View, StyleSheet, ActivityIndicator, Animated } from 'react-native';
-import { colors, spacing, radius, type as textType, iconSize, motion } from '../../theme/tokens';
+import { Pressable, Text, View, ActivityIndicator, Animated } from 'react-native';
+import { colors, spacing, radius, type as textType, iconSize, motion, themedStyles, themed } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
 // Five variants covering every emphasis level the app needs:
@@ -8,7 +8,7 @@ import Icon from '../../theme/icons';
 // tertiary (outlined, lower emphasis; "outline" is kept as an alias while
 // screens are migrated), ghost (no border or fill, lowest emphasis),
 // destructive (a dangerous or irreversible action: cancel, remove, reject).
-const VARIANTS = {
+const VARIANTS = themed(() => ({
   primary: {
     background: colors.primary,
     backgroundActive: colors.primaryPressed,
@@ -17,7 +17,7 @@ const VARIANTS = {
   },
   secondary: {
     background: colors.secondary,
-    backgroundActive: '#141922',
+    backgroundActive: colors.secondaryPressed,
     text: colors.textOnDark,
     border: 'transparent',
   },
@@ -39,8 +39,13 @@ const VARIANTS = {
     text: colors.textOnDark,
     border: 'transparent',
   },
-};
-VARIANTS.outline = VARIANTS.tertiary; // legacy alias, resolved to the same style
+  outline: { // legacy alias of tertiary
+    background: 'transparent',
+    backgroundActive: colors.primaryMuted,
+    text: colors.primaryText,
+    border: colors.primaryText,
+  },
+}));
 
 const SIZES = {
   md: { height: 48, paddingHorizontal: spacing.xl, fontSize: textType.bodyMedium.fontSize, icon: iconSize.md, gap: spacing.sm },
@@ -123,7 +128,7 @@ const Button = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   button: {
     borderRadius: radius.md,
     alignItems: 'center',
@@ -140,6 +145,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.focusRing,
   },
-});
+}));
 
 export default Button;

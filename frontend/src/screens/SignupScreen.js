@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice';
@@ -12,7 +12,7 @@ import PasswordStrengthMeter, { passwordScore } from '../components/auth/Passwor
 import { useGoogleAuth, isGoogleConfigured } from '../hooks/useGoogleAuth';
 import useBreakpoint from '../hooks/useBreakpoint';
 import Icon from '../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../theme/tokens';
 import { authService } from '../services/auth';
 import { ROLES } from '../utils/constants';
 import { isValidEmail, isValidPhone, getErrorMessage } from '../utils/helpers';
@@ -375,7 +375,7 @@ const SignupScreen = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   sectionLabel: { ...type.smallMedium, color: colors.textSecondary, marginBottom: spacing.sm },
   roleRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   roleColumn: { flexDirection: 'column' },
@@ -428,6 +428,6 @@ const styles = StyleSheet.create({
   dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },
   switchRow: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.divider },
   switchPrompt: { ...type.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.xs },
-});
+}));
 
 export default SignupScreen;

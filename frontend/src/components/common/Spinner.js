@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { colors } from '../../theme/tokens';
+import { View, ActivityIndicator } from 'react-native';
+import { colors, themedStyles } from '../../theme/tokens';
 
 const Spinner = ({ size = 'large', color = colors.primary, style }) => (
   <View style={[styles.container, style]}>
@@ -8,12 +8,12 @@ const Spinner = ({ size = 'large', color = colors.primary, style }) => (
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));
 
 export default Spinner;

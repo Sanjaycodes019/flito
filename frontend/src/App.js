@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
-import { StatusBar } from 'expo-status-bar';
 import { store } from './redux/store';
 import { loginSuccess, setHydrated } from './redux/slices/authSlice';
 import { authService } from './services/auth';
@@ -10,6 +9,8 @@ import AlertHost from './components/common/AlertHost';
 import CameraCaptureHost from './components/common/CameraCaptureHost';
 import { initI18n } from './i18n';
 import { loadCalendarPreference } from './services/calendarPreference';
+import { loadThemePreference } from './services/themePreference';
+import { ThemeProvider } from './theme/ThemeProvider';
 import Spinner from './components/common/Spinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
@@ -51,7 +52,7 @@ export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
 
   useEffect(() => {
-    initI18n().then(loadCalendarPreference).then(() => setI18nReady(true));
+    initI18n().then(loadCalendarPreference).then(loadThemePreference).then(() => setI18nReady(true));
   }, []);
 
   if (!i18nReady) {
@@ -59,15 +60,16 @@ export default function App() {
   }
 
   return (
-    <Provider store={store}>
-      <Bootstrap>
-        <StatusBar style="dark" />
-        <ErrorBoundary>
-          <RootNavigator />
-        </ErrorBoundary>
-        <AlertHost />
-        <CameraCaptureHost />
-      </Bootstrap>
-    </Provider>
+    <ThemeProvider>
+      <Provider store={store}>
+        <Bootstrap>
+          <ErrorBoundary>
+            <RootNavigator />
+          </ErrorBoundary>
+          <AlertHost />
+          <CameraCaptureHost />
+        </Bootstrap>
+      </Provider>
+    </ThemeProvider>
   );
 }

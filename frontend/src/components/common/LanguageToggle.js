@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Pressable, Text, StyleSheet } from 'react-native';
+import { View, Pressable, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage, SUPPORTED_LANGUAGES } from '../../i18n';
-import { colors, spacing, radius, type } from '../../theme/tokens';
+import { colors, spacing, radius, type, themedStyles } from '../../theme/tokens';
 
 // Endonyms: a language's own name is never translated into the other one.
 const LABELS = { en: 'EN', ne: 'ने' };
@@ -42,7 +42,7 @@ const LanguageToggle = ({ compact = false, style }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   track: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceMuted,
@@ -64,6 +64,6 @@ const styles = StyleSheet.create({
   segmentText: { ...type.bodyMedium, color: colors.textMuted },
   segmentTextCompact: { ...type.small },
   segmentTextActive: { color: colors.textPrimary },
-});
+}));
 
 export default LanguageToggle;

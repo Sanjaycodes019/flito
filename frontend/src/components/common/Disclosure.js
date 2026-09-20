@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // A row that opens to show more, so the optional parts of a form stay out of
 // the way until someone wants them. Pass `open` and `onToggle` to control it,
@@ -55,7 +55,7 @@ const Disclosure = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   box: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surface },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56 },
   headerBordered: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.surface },
@@ -81,6 +81,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.divider,
   },
-});
+}));
 
 export default Disclosure;

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, Pressable, ScrollView, Platform } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Button from '../../components/common/Button';
@@ -15,7 +15,7 @@ import { StatusPill } from '../../components/common/SettingsList';
 import RouteStop, { emptyStop } from '../../components/loads/RouteStop';
 import { isPlaceComplete, missingPlaceFields, shortPlaceName } from '../../components/address/NepalAddressFields';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { MAX_LOAD_PHOTOS, MAX_LOAD_WEIGHT_KG, PICKUP_DAYS_SHOWN } from '../../utils/constants';
 import { formatKg, getErrorMessage, isValidPhone } from '../../utils/helpers';
 import { dayLabel, describeDay, upcomingDays } from '../../utils/nepalDate';
@@ -377,7 +377,7 @@ const CreateLoadScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   intro: { ...type.body, color: colors.textMuted, marginBottom: spacing.xs },
 
@@ -455,6 +455,6 @@ const styles = StyleSheet.create({
   stillNeededText: { ...type.small, color: colors.errorText, flex: 1 },
   postButton: { marginTop: spacing.lg },
   footnote: { ...type.small, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xs },
-});
+}));
 
 export default CreateLoadScreen;

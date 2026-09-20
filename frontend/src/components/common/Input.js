@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Platform } from 'react-native';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { View, Text, TextInput, Pressable, Platform } from 'react-native';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
 // On web the native <input> draws the browser's own focus outline inside the
@@ -105,7 +105,7 @@ export const InputAction = ({ icon, onPress, accessibilityLabel }) => (
   </Pressable>
 );
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { marginBottom: spacing.lg },
   label: { ...type.smallMedium, color: colors.textSecondary, marginBottom: spacing.xs },
   required: { color: colors.errorText },
@@ -134,6 +134,6 @@ const styles = StyleSheet.create({
   helperIcon: { marginRight: 4 },
   helperText: { ...type.small, color: colors.textMuted },
   errorText: { color: colors.errorText },
-});
+}));
 
 export default Input;

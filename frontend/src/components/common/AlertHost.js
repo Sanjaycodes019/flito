@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import Button from './Button';
-import { colors, spacing, type } from '../../theme/tokens';
+import { colors, spacing, type, themedStyles } from '../../theme/tokens';
 
 // Bridges the imperative notify()/confirmAction() calls in utils/alert.js
 // (used throughout the app, called from outside any component) to this
@@ -68,10 +68,10 @@ const AlertHost = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   message: { ...type.body, color: colors.textSecondary },
   actions: { flexDirection: 'row', gap: spacing.sm },
   actionButton: { minWidth: 96 },
-});
+}));
 
 export default AlertHost;

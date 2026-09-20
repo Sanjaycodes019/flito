@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal as RNModal, View, Text, Pressable, StyleSheet, Platform, ScrollView, useWindowDimensions } from 'react-native';
+import { Modal as RNModal, View, Text, Pressable, Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, spacing, radius, shadow, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, shadow, type, iconSize, themedStyles } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
 // react-native-web always renders a ScrollView as an overflow:scroll div, so
@@ -129,7 +129,7 @@ const Modal = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   backdrop: {
     flex: 1,
     backgroundColor: colors.overlay,
@@ -181,6 +181,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   footerSm: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
-});
+}));
 
 export default Modal;

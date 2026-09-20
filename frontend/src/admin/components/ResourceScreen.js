@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Spinner from '../../components/common/Spinner';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import useScreenLayout from '../../hooks/useScreenLayout';
 import useAdminList from '../useAdminList';
 import useAdminStats, { refreshAdminStats } from '../useAdminStats';
@@ -128,7 +128,7 @@ const ResourceScreen = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
   iconTile: { width: 48, height: 48, borderRadius: radius.lg, backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center' },
@@ -141,6 +141,6 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -spacing.sm },
   dimmed: { opacity: 0.55 },
   cell: { paddingHorizontal: spacing.sm, paddingBottom: spacing.md },
-});
+}));
 
 export default ResourceScreen;

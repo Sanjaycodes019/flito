@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, Image, ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, Text, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
-import LanguageToggle from '../common/LanguageToggle';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import useBreakpoint from '../../hooks/useBreakpoint';
 
 const LOGO = require('../../../assets/icon.png');
@@ -14,9 +13,9 @@ const LOGO = require('../../../assets/icon.png');
 // It stays, since it is how a mouse user sees the page scrolls, but thin and
 // in the app's own border tone instead of the heavy default. Passed as a
 // plain object: these are CSS properties react-native-web forwards as-is.
-const webScrollbar = Platform.OS === 'web'
+const getWebScrollbar = () => (Platform.OS === 'web'
   ? { scrollbarWidth: 'thin', scrollbarColor: `${colors.borderStrong} transparent` }
-  : null;
+  : null);
 
 const getFeatures = (t) => [
   { icon: 'load', text: t('auth:layout.featureLoadQuotes') },
@@ -69,7 +68,7 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
 
   const formColumn = (
     <ScrollView
-      style={[styles.scroll, webScrollbar]}
+      style={[styles.scroll, getWebScrollbar()]}
       contentContainerStyle={[styles.scrollContent, isPhone ? styles.scrollPhone : styles.scrollWide]}
       keyboardShouldPersistTaps="handled"
     >
@@ -93,7 +92,6 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <LanguageToggle compact style={styles.languageToggle} />
       {isDesktop ? (
         <View style={styles.split}>
           <BrandPanel />
@@ -104,14 +102,8 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
-  languageToggle: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    zIndex: 1,
-  },
 
   // Desktop split
   split: { flex: 1, flexDirection: 'row' },
@@ -151,11 +143,11 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', marginBottom: spacing.lg },
   headerWide: { marginBottom: spacing.xl },
   logo: { width: 56, height: 56, borderRadius: radius.lg, marginBottom: spacing.md },
-  title: { ...type.h1, color: colors.secondary, textAlign: 'center' },
+  title: { ...type.h1, color: colors.textPrimary, textAlign: 'center' },
   titleWide: { fontSize: 28, lineHeight: 36 },
   subtitle: { ...type.body, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xs },
   card: { marginVertical: 0 },
   cardWide: { padding: spacing.xxl },
-});
+}));
 
 export default AuthLayout;

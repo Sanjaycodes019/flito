@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Card from '../../components/common/Card';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 const initialsOf = (name) => {
   const letters = (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase());
@@ -61,7 +61,7 @@ export const ActionRow = ({ children }) => <View style={styles.actions}>{childre
 
 export const DocumentGrid = ({ children }) => <View style={styles.documents}>{children}</View>;
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   card: { padding: spacing.lg, flex: 1 },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   headerText: { flex: 1, minWidth: 0 },
@@ -81,6 +81,6 @@ const styles = StyleSheet.create({
   footer: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.divider },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   documents: { marginTop: spacing.xs },
-});
+}));
 
 export default AdminCard;

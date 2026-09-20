@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
@@ -11,7 +11,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import TruckMatchCard from '../../components/loads/TruckMatchCard';
 import OfferPriceModal from '../../components/loads/OfferPriceModal';
 import Icon from '../../theme/icons';
-import { colors, spacing, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, type, iconSize, themedStyles } from '../../theme/tokens';
 import useScreenLayout from '../../hooks/useScreenLayout';
 import api from '../../services/api';
 import socketService from '../../services/socket';
@@ -222,7 +222,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
 
   summaryWide: { padding: spacing.xxl },
@@ -243,6 +243,6 @@ const styles = StyleSheet.create({
   listHeaderWide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' },
   listTitle: { ...type.h3, color: colors.textPrimary },
   sortRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-});
+}));
 
 export default TruckMatchesScreen;

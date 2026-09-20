@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -16,7 +16,7 @@ import VerifiedBadge from '../../components/common/VerifiedBadge';
 import PhotoSourceButtons from '../../components/common/PhotoSourceButtons';
 import DocumentTile from '../../components/kyc/DocumentTile';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import {
   BODY_TYPES,
   FLEET_TRUCK_TYPES,
@@ -1009,7 +1009,7 @@ const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSet
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.md, marginBottom: spacing.sm },
   headerText: { flex: 1, minWidth: 0 },
@@ -1131,6 +1131,6 @@ const styles = StyleSheet.create({
   assign: { marginTop: spacing.sm },
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   actionButton: { flex: 1 },
-});
+}));
 
 export default ManageFleet;

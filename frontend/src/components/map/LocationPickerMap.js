@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
 import MapCanvas from './MapCanvas';
 import Button from '../common/Button';
 import { buildMapHtml } from './mapHtml';
-import { colors, spacing, radius, type } from '../../theme/tokens';
+import { colors, spacing, radius, type, themedStyles } from '../../theme/tokens';
 
 const samePoint = (a, b) => (!a && !b) || (a && b && a.lat === b.lat && a.lng === b.lng);
 
@@ -84,11 +84,11 @@ const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = t
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surfaceMuted, marginTop: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm, marginBottom: spacing.sm },
   hint: { flex: 1, ...type.small, color: colors.textMuted, marginRight: spacing.sm },
   locateButton: { minWidth: 140 },
-});
+}));
 
 export default LocationPickerMap;

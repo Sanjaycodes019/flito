@@ -65,6 +65,10 @@
     },
     "signIn": {
       "title": "Sign-in and Security"
+    },
+    "about": {
+      "title": "About",
+      "description": "Details people see on your profile"
     }
   },
   "rows": {
@@ -148,6 +152,49 @@
   },
   "hero": {
     "edit": "Edit profile",
-    "photo": "Photo"
+    "photo": "Photo",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "viewProfile": "View your profile",
+    "sections": {
+      "account": "Account",
+      "preferences": "Preferences",
+      "security": "Security",
+      "about": "About"
+    },
+    "rows": {
+      "personalInfo": "Personal information",
+      "address": "Address",
+      "identity": "Identity verification",
+      "languageRegion": "Language & region",
+      "appearance": "Appearance",
+      "notifications": "Notifications",
+      "signIn": "Sign-in & security",
+      "version": "App version"
+    },
+    "language": {
+      "title": "Language",
+      "hint": "Choose the language the app is shown in.",
+      "calendarTitle": "Calendar",
+      "calendarHint": "Dates are always saved the same way. This only changes how they are shown and picked."
+    },
+    "appearance": {
+      "title": "Theme",
+      "hint": "Choose how FLITO looks on this device.",
+      "system": "Match device",
+      "systemHint": "Follows your phone or browser setting",
+      "light": "Light",
+      "lightHint": "Bright background",
+      "dark": "Dark",
+      "darkHint": "Easier on the eyes at night"
+    },
+    "security": {
+      "methodsTitle": "How you sign in",
+      "emailTitle": "Email",
+      "emailHint": "Your email is used for sign-in, receipts and account recovery.",
+      "sessionTitle": "This device"
+    }
   }
 }

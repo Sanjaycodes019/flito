@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Pressable, Text, View, StyleSheet, ActivityIndicator, Animated } from 'react-native';
+import { Pressable, Text, View, ActivityIndicator, Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import GoogleIcon from './GoogleIcon';
-import { colors, spacing, radius, type, motion } from '../../theme/tokens';
+import { colors, spacing, radius, type, motion, themedStyles } from '../../theme/tokens';
 
 // Google's own button guidelines call for a neutral white/light surface
 // with a thin border and dark neutral text, not one of the app's brand
@@ -53,7 +53,7 @@ const GoogleButton = ({ title, onPress, loading = false, disabled = false }) => 
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   button: {
     height: 48,
     borderRadius: radius.md,
@@ -69,6 +69,6 @@ const styles = StyleSheet.create({
   focusRing: { borderWidth: 2, borderColor: colors.focusRing },
   content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   text: { ...type.bodyMedium, color: colors.textPrimary },
-});
+}));
 
 export default GoogleButton;

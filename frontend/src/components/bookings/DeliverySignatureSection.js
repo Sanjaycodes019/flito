@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import SignaturePad from '../signature/SignaturePad';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
 import { assetFromDataUrl, uploadFiles } from '../../services/uploads';
@@ -63,7 +63,7 @@ const DeliverySignatureSection = ({ booking, canUpload, onChanged }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
   titleIcon: { marginRight: spacing.xs },
   title: { ...type.h3, color: colors.textPrimary },
@@ -71,6 +71,6 @@ const styles = StyleSheet.create({
   preview: { alignItems: 'center', marginVertical: spacing.sm },
   signatureImage: { width: '100%', height: 120, backgroundColor: colors.white, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.divider },
   meta: { ...type.small, fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
-});
+}));
 
 export default DeliverySignatureSection;

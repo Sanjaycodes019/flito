@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, spacing, radius, type } from '../../theme/tokens';
+import { colors, spacing, radius, type, themedStyles, themed } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
 // Each status maps to a tinted background plus a darkened "Text" tone for
@@ -9,7 +9,7 @@ import Icon from '../../theme/icons';
 // (colors.success, .info, ...) are too light to use as small text or a thin
 // border on their own tint and fail WCAG AA there; the paired *Text tokens
 // are the same hue, just dark enough to read at 11px.
-const STATUS_STYLE = {
+const STATUS_STYLE = themed(() => ({
   open: { tint: colors.infoMuted, text: colors.infoText, icon: 'info' },
   quoted: { tint: colors.warningMuted, text: colors.warningText, icon: 'quote' },
   negotiating: { tint: colors.warningMuted, text: colors.warningText, icon: 'counterOffer' },
@@ -30,7 +30,7 @@ const STATUS_STYLE = {
   banned: { tint: colors.errorMuted, text: colors.errorText, icon: 'error' },
   maintenance: { tint: colors.warningMuted, text: colors.warningText, icon: 'warning' },
   inactive: { tint: colors.surfaceMuted, text: colors.textMuted, icon: 'info' },
-};
+}));
 
 // Label text falls back to the raw status string (never guessed per-status
 // copy) when there's no translation for it, so a new backend status still
@@ -49,7 +49,7 @@ const StatusBadge = ({ status, showIcon = true }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
-});
+}));
 
 export default StatusBadge;

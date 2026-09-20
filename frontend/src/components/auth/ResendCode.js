@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, spacing, type } from '../../theme/tokens';
+import { colors, spacing, type, themedStyles } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
 const formatClock = (totalSeconds) => {
@@ -49,11 +49,11 @@ const ResendCode = ({ sentAt, cooldownSeconds = RESEND_COOLDOWN_SECONDS, onResen
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
   icon: { marginRight: 6 },
   muted: { ...type.small, color: colors.textMuted },
   link: { ...type.smallMedium, color: colors.textLink },
-});
+}));
 
 export default ResendCode;

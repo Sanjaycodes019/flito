@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, Text, FlatList, RefreshControl } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Card from '../components/common/Card';
@@ -8,7 +8,7 @@ import Spinner from '../components/common/Spinner';
 import EmptyState from '../components/common/EmptyState';
 import useScreenLayout from '../hooks/useScreenLayout';
 import Icon from '../theme/icons';
-import { colors, spacing, type, iconSize } from '../theme/tokens';
+import { colors, spacing, type, iconSize, themedStyles } from '../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
 import api from '../services/api';
 import { fetchBookingsStart, fetchBookingsSuccess, fetchBookingsError } from '../redux/slices/bookingSlice';
@@ -93,7 +93,7 @@ const BookingsListScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1 },
   card: { marginVertical: spacing.xs },
@@ -109,6 +109,6 @@ const styles = StyleSheet.create({
   route: { ...type.small, color: colors.textMuted },
   amount: { ...type.bodyMedium, color: colors.primaryText },
   date: { ...type.small, color: colors.textMuted },
-});
+}));
 
 export default BookingsListScreen;

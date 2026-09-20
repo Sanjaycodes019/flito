@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import Input from './Input';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // Searching ignores case, spaces and punctuation, so "budhanil" finds
 // "Budhanilkhantha".
@@ -150,7 +150,7 @@ const SelectField = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { marginBottom: spacing.lg },
   label: { ...type.smallMedium, color: colors.textSecondary, marginBottom: spacing.xs },
   required: { color: colors.errorText },
@@ -194,6 +194,6 @@ const styles = StyleSheet.create({
   optionLabelSelected: { ...type.bodyMedium, color: colors.primaryText },
   optionDescription: { ...type.small, color: colors.textMuted, marginTop: 1 },
   empty: { ...type.body, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.lg },
-});
+}));
 
 export default SelectField;

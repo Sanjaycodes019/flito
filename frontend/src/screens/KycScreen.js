@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,7 @@ import PhotoSourceButtons from '../components/common/PhotoSourceButtons';
 import { StatusPill } from '../components/common/SettingsList';
 import DocumentTile from '../components/kyc/DocumentTile';
 import Icon from '../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles, themed } from '../theme/tokens';
 import { KYC_ID_TYPE_OPTIONS, MAX_DOCUMENT_BYTES } from '../utils/constants';
 import { formatDate, getErrorMessage, kycDocumentLabel, kycIdTypeLabel } from '../utils/helpers';
 import { notify, confirmAction } from '../utils/alert';
@@ -23,12 +23,12 @@ import { setUser } from '../redux/slices/authSlice';
 const IDENTITY_REQUIREMENT = 'identity';
 
 // Icon and accent color per status; the title and body come from translations.
-const STATUS_META = {
+const STATUS_META = themed(() => ({
   not_submitted: { color: colors.infoText, icon: 'unverified' },
   pending: { color: colors.warningText, icon: 'pending' },
   approved: { color: colors.successText, icon: 'verified' },
   rejected: { color: colors.errorText, icon: 'unverified' },
-};
+}));
 
 const ID_OPTION = Object.fromEntries(KYC_ID_TYPE_OPTIONS.map((option) => [option.value, option]));
 
@@ -392,7 +392,7 @@ const KycScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
 
   banner: { borderLeftWidth: 4 },
@@ -466,6 +466,6 @@ const styles = StyleSheet.create({
   },
   submit: { marginTop: spacing.sm },
   hint: { textAlign: 'center', ...type.small, color: colors.textMuted, marginBottom: spacing.lg },
-});
+}));
 
 export default KycScreen;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Keyboard, Platform } from 'react-native';
+import { View, Text, Pressable, Keyboard, Platform } from 'react-native';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../theme/icons';
 import Button from '../components/common/Button';
 import { SidebarFrame, SidebarNavItem } from '../components/navigation/Sidebar';
-import { colors, spacing, radius, shadow, iconSize } from '../theme/tokens';
+import { colors, spacing, radius, shadow, iconSize, themedStyles } from '../theme/tokens';
 import useBreakpoint from '../hooks/useBreakpoint';
 import useAdminStats from '../admin/useAdminStats';
 import { ADMIN_SECTIONS } from '../admin/sections';
@@ -155,7 +155,7 @@ const AppTabBar = ({ state, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   bar: { flexDirection: 'row' },
   barSurface: {
     position: 'absolute',
@@ -198,6 +198,6 @@ const styles = StyleSheet.create({
 
   // Laptop: pinned to the left edge, full height.
   sidebarWrap: { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 10, flexDirection: 'row' },
-});
+}));
 
 export default AppTabBar;

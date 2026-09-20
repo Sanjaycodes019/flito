@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Input from '../common/Input';
-import { colors, spacing, type } from '../../theme/tokens';
+import { colors, spacing, type, themedStyles } from '../../theme/tokens';
 import { formatCurrency, truckTypeLabel } from '../../utils/helpers';
 
 const MIN_PRICE = 100;
@@ -68,9 +68,9 @@ const OfferPriceModal = ({ visible, match, sending, onClose, onSend }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   truck: { ...type.bodyMedium, color: colors.textPrimary },
   context: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs, marginBottom: spacing.lg },
-});
+}));
 
 export default OfferPriceModal;

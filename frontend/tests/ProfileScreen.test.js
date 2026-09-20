@@ -58,15 +58,13 @@ describe('profile page', () => {
     expect(navigation.navigate).toHaveBeenCalledWith('EditProfile');
   });
 
-  it('logs out from Sign-in and Security after confirming', async () => {
-    const { authService } = require('../src/services/auth');
-    const { findByLabelText, store } = renderProfile(fakeUser('owner'));
+  it('opens Settings from the profile header', async () => {
+    const navigation = fakeNavigation();
+    const { findByText } = renderProfile(fakeUser('owner'), navigation);
 
-    fireEvent.press(await findByLabelText('Log out'));
+    fireEvent.press(await findByText('Settings'));
 
-    expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({ destructive: true }));
-    await waitFor(() => expect(authService.logout).toHaveBeenCalled());
-    await waitFor(() => expect(store.getState().auth.token).toBeNull());
+    expect(navigation.navigate).toHaveBeenCalledWith('Settings');
   });
 
   it('shows profile strength and opens the next missing step', async () => {

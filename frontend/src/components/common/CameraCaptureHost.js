@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import Button from './Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // Laptop browsers ignore a file input's camera hint and simply open a file
 // chooser, so "Take Photo" there opens this window instead. It follows the
@@ -290,7 +290,7 @@ const CameraCaptureHost = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   frame: {
     width: '100%',
     aspectRatio: 4 / 3,
@@ -360,6 +360,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   roundButtonPressed: { backgroundColor: colors.border },
-});
+}));
 
 export default CameraCaptureHost;

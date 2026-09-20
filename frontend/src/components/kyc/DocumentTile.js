@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, Image, Pressable, Linking, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 
 // A private document behind a short-lived link: images preview inline, PDFs
 // show a badge. Tapping opens the full file.
@@ -29,7 +29,7 @@ const DocumentTile = ({ doc, label, size = 72 }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles(() => ({
   tile: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xs },
   thumb: { borderRadius: radius.sm, backgroundColor: colors.surfaceMuted },
   badge: {
@@ -41,6 +41,6 @@ const styles = StyleSheet.create({
   badgeText: { color: colors.textOnDark, fontWeight: '700', fontSize: 11, marginTop: 2 },
   labelRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   label: { flex: 1, ...type.small, color: colors.textLink },
-});
+}));
 
 export default DocumentTile;
