@@ -6,8 +6,10 @@
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
+// The app opens in Nepali until a language is picked. Every test asserts
+// English text, so the stored language choice reads back as English.
 jest.mock('expo-secure-store', () => ({
-  getItemAsync: jest.fn().mockResolvedValue(null),
+  getItemAsync: jest.fn((key) => Promise.resolve(key === 'language' ? 'en' : null)),
   setItemAsync: jest.fn().mockResolvedValue(undefined),
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
@@ -49,13 +51,6 @@ jest.mock('expo-notifications', () => ({
 
 jest.mock('expo-device', () => ({ isDevice: false }));
 jest.mock('expo-constants', () => ({ expoConfig: { extra: {} } }));
-
-// Fixes the app's language to English for tests regardless of the host
-// machine's locale, matching every test's English text assertions. See
-// jest.setupAfterEnv.js for where i18next itself is initialized.
-jest.mock('expo-localization', () => ({
-  getLocales: () => [{ languageCode: 'en' }],
-}));
 
 jest.mock('expo-auth-session', () => ({
   makeRedirectUri: jest.fn(() => 'flito://redirect'),
@@ -106,7 +101,7 @@ jest.mock('./src/services/socket', () => ({
 // what these tests check (initial load behavior, not re-focus behavior).
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
-  useFocusEffect: (callback) => require('react').useEffect(callback, []), // eslint-disable-line react-hooks/exhaustive-deps
+  useFocusEffect: (callback) => require('react').useEffect(callback, []),  
   // Components that call useNavigation() directly (e.g. VerificationPrompt)
   // need this even in tests that don't care where it goes.
   useNavigation: () => ({ navigate: jest.fn() }),

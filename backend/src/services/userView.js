@@ -18,6 +18,9 @@ const publicUser = (user) => ({
   // Never the raw googleId, just whether one is linked, so the frontend can
   // grey out "change email" for a Google-managed address.
   hasGoogle: Boolean(user.googleId),
+  // Whether the account can log in with phone + PIN. Only meaningful when
+  // the PIN hash was selected; never the hash itself.
+  hasPin: Boolean(user.pin),
   companyName: user.companyName,
   // With province, district and local-level names filled in, or null until
   // the user has added a complete address.

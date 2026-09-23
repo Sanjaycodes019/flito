@@ -9,13 +9,14 @@ import AuthLayout from '../components/auth/AuthLayout';
 import GoogleButton from '../components/auth/GoogleButton';
 import GoogleIcon from '../components/auth/GoogleIcon';
 import PasswordStrengthMeter, { passwordScore } from '../components/auth/PasswordStrengthMeter';
+import OtpInput from '../components/auth/OtpInput';
 import { useGoogleAuth, isGoogleConfigured } from '../hooks/useGoogleAuth';
 import useBreakpoint from '../hooks/useBreakpoint';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../theme/tokens';
 import { authService } from '../services/auth';
 import { ROLES } from '../utils/constants';
-import { isValidEmail, isValidPhone, getErrorMessage } from '../utils/helpers';
+import { isValidEmail, isValidPhone, getErrorMessage, pinProblemKey, toNepalPhone } from '../utils/helpers';
 import { notify } from '../utils/alert';
 
 const getRoleOptions = (t) => [
@@ -77,8 +78,9 @@ const TermsCheckbox = ({ checked, onToggle }) => {
   );
 };
 
-// Two ways in:
-// - A normal visit: email/password sign up, or "Sign up with Google".
+// Three ways in:
+// - A normal visit: phone number + 4-digit PIN (the default, since most users
+//   have no email), email/password, or "Sign up with Google".
 // - Arriving from the login page's Google button when no FLITO account
 //   exists yet. The Google token is already verified, so the screen only
 //   asks for a role and finishes the sign up with it (no second popup).
@@ -107,7 +109,40 @@ const SignupScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  // 'phone' (number + PIN) or 'email' (email + password).
+  const [mode, setMode] = useState('phone');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [phoneTried, setPhoneTried] = useState(false);
   const dispatch = useDispatch();
+
+  const fullPhone = toNepalPhone(phone);
+  const pinKey = pinProblemKey(pin);
+  // What still stands between a phone sign up and the account, first problem first.
+  const phoneFormProblem = (() => {
+    if (!firstName.trim()) return t('auth:signup.nameRequiredError');
+    if (!isValidPhone(fullPhone)) return t('auth:phoneSignup.phoneError');
+    if (pinKey) return t(`auth:pinRules.${pinKey}`);
+    if (pin !== confirmPin) return t('auth:pinRules.mismatch');
+    if (!agreed) return t('auth:phoneSignup.agreeFirst');
+    return null;
+  })();
+
+  const handlePhoneSignup = async () => {
+    setPhoneTried(true);
+    if (phoneFormProblem) return;
+    setLoading(true);
+    dispatch(loginStart());
+    try {
+      dispatch(loginSuccess(await authService.signupPhone({
+        role, firstName: firstName.trim(), lastName: lastName.trim(), phone: fullPhone, pin,
+      })));
+    } catch (error) {
+      dispatch(loginError(getErrorMessage(error)));
+      notify(t('auth:signup.couldNotSignUpTitle'), getErrorMessage(error));
+      setLoading(false);
+    }
+  };
 
   const nameError = nameTouched && !firstName.trim() ? t('auth:signup.nameRequiredError') : null;
   const emailError = emailTouched && !isValidEmail(email) ? t('auth:shared.invalidEmail') : null;
@@ -256,7 +291,67 @@ const SignupScreen = ({ navigation, route }) => {
             loading={googleLoading}
             disabled={!agreed}
           />
-          <Button title={t('auth:signup.useEmailInstead')} variant="ghost" onPress={() => setPendingGoogle(null)} />
+          <Button title={t('auth:signup.useEmailInstead')} variant="ghost" onPress={() => { setPendingGoogle(null); setMode('email'); }} />
+        </>
+      ) : mode === 'phone' ? (
+        <>
+          {rolePicker}
+
+          <View style={isPhone ? null : styles.fieldRow}>
+            <Input
+              label={t('auth:signup.firstNameLabel')}
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder={t('auth:signup.firstNamePlaceholder')}
+              autoComplete="given-name"
+              icon="person"
+              required
+              containerStyle={isPhone ? undefined : styles.fieldHalf}
+            />
+            <Input
+              label={t('auth:signup.lastNameLabel')}
+              value={lastName}
+              onChangeText={setLastName}
+              placeholder={t('auth:signup.lastNamePlaceholder')}
+              autoComplete="family-name"
+              icon="person"
+              containerStyle={isPhone ? undefined : styles.fieldHalf}
+            />
+          </View>
+
+          <Input
+            label={t('auth:phoneSignup.phoneLabel')}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="98XXXXXXXX"
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            icon="phone"
+            helperText={t('auth:phoneSignup.phoneHelp')}
+            required
+          />
+
+          <Text style={styles.sectionLabel}>{t('auth:phoneSignup.pinLabel')}</Text>
+          <OtpInput length={4} value={pin} onChange={setPin} autoFocus={false} />
+          <Text style={styles.pinHint}>{t('auth:phoneSignup.pinHint')}</Text>
+          <Text style={styles.sectionLabel}>{t('auth:phoneSignup.confirmPinLabel')}</Text>
+          <OtpInput length={4} value={confirmPin} onChange={setConfirmPin} autoFocus={false} />
+
+          <View style={styles.pinGap} />
+          <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
+
+          {/* Never greyed out: a tap on an unfinished form says what is missing. */}
+          <Button title={t('auth:shared.signUp')} icon="checkmark" size="lg" onPress={handlePhoneSignup} loading={loading} />
+          {phoneTried && phoneFormProblem ? <Text style={styles.problem}>{phoneFormProblem}</Text> : null}
+
+          <Button title={t('auth:phoneSignup.useEmail')} variant="ghost" size="sm" onPress={() => setMode('email')} style={styles.modeSwitch} />
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t('auth:shared.or')}</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          <GoogleButton title={t('auth:signup.googleButtonTitle')} onPress={startGoogleSignup} loading={googleLoading} />
         </>
       ) : (
         <>
@@ -350,6 +445,7 @@ const SignupScreen = ({ navigation, route }) => {
           {started && missing.length > 0 && (
             <Text style={styles.missingHint}>{t('auth:signup.missingHint', { items: missing.join(', ') })}</Text>
           )}
+          <Button title={t('auth:phoneSignup.usePhone')} variant="ghost" size="sm" onPress={() => setMode('phone')} style={styles.modeSwitch} />
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -422,6 +518,10 @@ const styles = themedStyles(() => ({
   termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.lg },
   termsText: { ...type.small, color: colors.textSecondary, flex: 1, paddingTop: 2 },
   termsStrong: { fontWeight: '600', color: colors.textPrimary },
+  pinHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.md },
+  pinGap: { height: spacing.lg },
+  problem: { ...type.small, color: colors.errorText, textAlign: 'center', marginTop: spacing.sm },
+  modeSwitch: { alignSelf: 'center', marginTop: spacing.sm },
   missingHint: { ...type.small, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },

@@ -4,6 +4,7 @@ const {
   TRUCK_TYPES, ALL_TRUCK_TYPES, BODY_TYPES, FUEL_TYPES, TRUCK_MAKES, SERVICE_AREAS, INSURANCE_TYPES, TRUCK_FEATURES,
 } = require('../config/truckTypes');
 const { fail: respond } = require('../utils/respond');
+const { isValidPin, isGuessablePin } = require('../services/pin');
 
 const PHONE_REGEX = /^\+977\d{10}$/;
 const EMAIL_AUTH_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -48,6 +49,65 @@ const validateEmailLogin = (req, res, next) => {
   if (!isValidEmail(email) || !password) {
     return respond(res, 400, 'VALIDATION_LOGIN_REQUIRED', 'Email and password are required');
   }
+  next();
+};
+
+const validatePinLogin = (req, res, next) => {
+  const { phone, pin } = req.body;
+  if (!isValidPhone(phone) || !isValidPin(pin)) {
+    return respond(res, 400, 'VALIDATION_PIN_LOGIN_REQUIRED', 'Phone number and 4-digit PIN are required');
+  }
+  next();
+};
+
+// A PIN someone picks for themselves: 4 digits, and not one anyone would try first.
+const pinProblem = (res, pin) => {
+  if (!isValidPin(pin)) return respond(res, 400, 'VALIDATION_PIN_FORMAT', 'PIN must be 4 digits');
+  if (isGuessablePin(pin)) return respond(res, 400, 'VALIDATION_PIN_TOO_EASY', 'That PIN is too easy to guess. Choose a different one.');
+  return null;
+};
+
+// Sign up with a phone number and a PIN, no email or password.
+const validatePhoneSignup = (req, res, next) => {
+  const { role, phone, pin } = req.body;
+  const firstName = typeof req.body.firstName === 'string' ? req.body.firstName.trim() : '';
+  const lastName = typeof req.body.lastName === 'string' ? req.body.lastName.trim() : '';
+  if (!['shipper', 'owner', 'driver'].includes(role)) {
+    return respond(res, 400, 'VALIDATION_INVALID_ROLE', 'Role must be shipper, owner, or driver');
+  }
+  if (!firstName || firstName.length > 50 || lastName.length > 50) {
+    return respond(res, 400, 'VALIDATION_FIRST_NAME_REQUIRED', 'First name is required');
+  }
+  if (!isValidPhone(phone)) {
+    return respond(res, 400, 'VALIDATION_INVALID_PHONE', 'Enter a valid +977 phone number');
+  }
+  if (pinProblem(res, pin)) return undefined;
+  req.body = { role, firstName, lastName, phone, pin };
+  next();
+};
+
+// Setting or changing your own PIN while logged in.
+const validateSetPin = (req, res, next) => {
+  const { pin, currentPin } = req.body;
+  if (currentPin !== undefined && !isValidPin(currentPin)) {
+    return respond(res, 400, 'VALIDATION_PIN_FORMAT', 'PIN must be 4 digits');
+  }
+  if (pinProblem(res, pin)) return undefined;
+  next();
+};
+
+// An owner adding a driver to their fleet: a name and a phone number, nothing else.
+const validateAddDriver = (req, res, next) => {
+  const firstName = typeof req.body.firstName === 'string' ? req.body.firstName.trim() : '';
+  const lastName = typeof req.body.lastName === 'string' ? req.body.lastName.trim() : '';
+  const { phone } = req.body;
+  if (!firstName || firstName.length > 50 || lastName.length > 50) {
+    return respond(res, 400, 'VALIDATION_DRIVER_NAME', "Enter the driver's name");
+  }
+  if (!isValidPhone(phone)) {
+    return respond(res, 400, 'VALIDATION_DRIVER_PHONE', 'Enter a valid +977 phone number');
+  }
+  req.body = { firstName, lastName, phone };
   next();
 };
 
@@ -511,6 +571,10 @@ module.exports = {
   isValidPassword,
   validateEmailSignup,
   validateEmailLogin,
+  validatePinLogin,
+  validatePhoneSignup,
+  validateSetPin,
+  validateAddDriver,
   validateAdminLogin,
   validateAdminSignup,
   validateGoogleAuth,

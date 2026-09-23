@@ -50,7 +50,9 @@ const linking = {
   config: {
     screens: {
       // Signed out (AuthNavigator)
+      ChooseLanguage: 'language',
       Login: 'login',
+      PinLogin: 'driver-login',
       Signup: {
         path: 'signup',
         stringify: { googleIdToken: () => undefined, googleProfile: () => undefined },

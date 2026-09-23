@@ -20,7 +20,8 @@
     "title": "KYC Queue ({{count}})",
     "emptyTitle": "All caught up",
     "emptyMessage": "No submissions waiting for review.",
-    "identity": "Identity: {{list}}"
+    "identity": "Identity: {{list}}",
+    "addedBy": "Added by truck owner {{name}} {{phone}}, no address needed"
   },
   "truckQueue": {
     "title": "Truck Verification Queue ({{count}})",
@@ -81,6 +82,14 @@
       "title": "Reactivate this user?",
       "message": "{{name}} will be able to use FLITO again.",
       "confirm": "Reactivate"
+    },
+    "resetPin": {
+      "button": "Reset PIN",
+      "title": "Make a new login PIN?",
+      "message": "Only do this after checking the caller really is {{name}} ({{phone}}). Their old PIN will stop working.",
+      "confirm": "Make new PIN",
+      "doneTitle": "New PIN",
+      "doneMessage": "Tell the user their new PIN: {{pin}}. They log in with {{phone}}."
     }
   },
   "loadsList": {

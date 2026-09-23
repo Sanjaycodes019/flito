@@ -87,7 +87,12 @@
     "logOut": "Log Out",
     "logOutLabel": "Log out",
     "notVerified": "Not verified",
-    "verified": "Verified"
+    "verified": "Verified",
+    "signInPhonePin": "Phone and PIN",
+    "setPin": "Set a login PIN",
+    "changePin": "Change login PIN",
+    "pinSet": "You can log in with your phone number",
+    "pinHint": "Log in with your phone number instead of email"
   },
   "logout": {
     "title": "Log out",
@@ -196,5 +201,18 @@
       "emailHint": "Your email is used for sign-in, receipts and account recovery.",
       "sessionTitle": "This device"
     }
+  },
+  "pin": {
+    "intro": "Your PIN logs you in with {{phone}}. Choose 4 numbers you will remember.",
+    "currentLabel": "Current PIN",
+    "newLabel": "New PIN",
+    "confirmLabel": "Type the new PIN again",
+    "enterCurrent": "Enter your current PIN",
+    "save": "Save PIN",
+    "savedTitle": "PIN saved",
+    "savedMessage": "You can now log in with {{phone}} and your PIN.",
+    "couldNotSaveTitle": "Could not save the PIN",
+    "needsPhone": "Add your mobile number first. You log in with your number and PIN.",
+    "addPhone": "Add Mobile Number"
   }
 }

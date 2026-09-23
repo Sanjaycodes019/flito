@@ -61,15 +61,45 @@ const UserCard = ({ user, list }) => {
     },
   });
 
+  // For someone who called support having forgotten their PIN. The new PIN
+  // is shown once, for the admin to read out after checking who is calling.
+  const resetPin = () => confirmAction({
+    title: t('admin:userActions.resetPin.title'),
+    message: t('admin:userActions.resetPin.message', { name: displayName(user) || t('admin:usersList.unnamed'), phone: user.phone }),
+    confirmLabel: t('admin:userActions.resetPin.confirm'),
+    onConfirm: async () => {
+      setBusy(true);
+      try {
+        const { data } = await api.post(`/admin/users/${user._id}/reset-pin`);
+        notify(t('admin:userActions.resetPin.doneTitle'), t('admin:userActions.resetPin.doneMessage', { pin: data.pin, phone: user.phone }));
+      } catch (error) {
+        notify(t('admin:common.error'), getErrorMessage(error));
+      }
+      setBusy(false);
+    },
+  });
+  const canResetPin = Boolean(user.phone) && user.role !== 'admin';
+
   return (
     <AdminCard
       person={name}
       title={name}
       subtitle={[t(`admin:roles.${user.role}`, user.role), user.companyName].filter(Boolean).join(' · ')}
       right={<StatusBadge status={user.status} />}
-      footer={actions ? (
+      footer={actions || canResetPin ? (
         <ActionRow>
-          {actions.map((item) => (
+          {canResetPin && (
+            <Button
+              title={t('admin:userActions.resetPin.button')}
+              icon="lock"
+              variant="tertiary"
+              size="sm"
+              style={styles.action}
+              loading={busy}
+              onPress={resetPin}
+            />
+          )}
+          {(actions || []).map((item) => (
             <Button
               key={item.action}
               title={t(`admin:userActions.${item.action}.button`)}

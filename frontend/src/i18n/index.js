@@ -1,6 +1,5 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import * as Localization from 'expo-localization';
 import { storage } from '../services/storage';
 
 import commonEn from './locales/en/common.json';
@@ -29,7 +28,12 @@ import notificationsNe from './locales/ne/notifications.json';
 
 export const LANGUAGE_STORAGE_KEY = 'language';
 export const SUPPORTED_LANGUAGES = ['en', 'ne'];
+// Fills in any string missing from the chosen language.
 export const DEFAULT_LANGUAGE = 'en';
+// What the app shows before anyone has picked a language. Most FLITO users
+// read Nepali more easily, and most phones in Nepal are set to English, so
+// the device setting is no guide.
+export const FIRST_RUN_LANGUAGE = 'ne';
 
 const NAMESPACES = [
   'common', 'navigation', 'auth', 'home', 'loads',
@@ -65,21 +69,18 @@ const resources = {
   },
 };
 
-// Nobody has picked a language yet: guess Nepali only if the device itself
-// is set to it, otherwise default to English.
-const detectDeviceLanguage = () => {
-  try {
-    const locales = Localization.getLocales();
-    return locales?.[0]?.languageCode === 'ne' ? 'ne' : DEFAULT_LANGUAGE;
-  } catch (error) {
-    return DEFAULT_LANGUAGE;
-  }
-};
+// False until someone picks a language on this device. The auth screens
+// open on the language choice while it is false.
+let languageChosen = false;
+export const isLanguageChosen = () => languageChosen;
 
 const resolveInitialLanguage = async () => {
   const stored = await storage.getItem(LANGUAGE_STORAGE_KEY);
-  if (SUPPORTED_LANGUAGES.includes(stored)) return stored;
-  return detectDeviceLanguage();
+  if (SUPPORTED_LANGUAGES.includes(stored)) {
+    languageChosen = true;
+    return stored;
+  }
+  return FIRST_RUN_LANGUAGE;
 };
 
 let readyPromise = null;
@@ -108,6 +109,7 @@ export const changeLanguage = async (lng) => {
   if (!SUPPORTED_LANGUAGES.includes(lng)) return;
   await i18n.changeLanguage(lng);
   await storage.setItem(LANGUAGE_STORAGE_KEY, lng);
+  languageChosen = true;
 };
 
 export default i18n;

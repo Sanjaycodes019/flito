@@ -10,6 +10,7 @@ import SettingsScreen from '../screens/settings/SettingsScreen';
 import LanguageSettingsScreen from '../screens/settings/LanguageSettingsScreen';
 import AppearanceSettingsScreen from '../screens/settings/AppearanceSettingsScreen';
 import SecuritySettingsScreen from '../screens/settings/SecuritySettingsScreen';
+import SetPinScreen from '../screens/settings/SetPinScreen';
 import { useSelector } from 'react-redux';
 import useBreakpoint from '../hooks/useBreakpoint';
 import { AdminProfile } from '../admin/navigation';
@@ -38,6 +39,7 @@ const ProfileStackNavigator = () => {
       <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} options={{ title: t('navigation:profileStack.languageSettings') }} />
       <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} options={{ title: t('navigation:profileStack.appearanceSettings') }} />
       <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} options={{ title: t('navigation:profileStack.securitySettings') }} />
+      <Stack.Screen name="SetPin" component={SetPinScreen} options={{ title: t('navigation:profileStack.setPin') }} />
     </Stack.Navigator>
   );
 };

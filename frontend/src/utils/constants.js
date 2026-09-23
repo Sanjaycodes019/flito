@@ -129,3 +129,7 @@ export const KYC_ID_TYPE_OPTIONS = [
 ];
 
 export const KYC_ID_TYPE_LABELS = Object.fromEntries(KYC_ID_TYPE_OPTIONS.map((o) => [o.value, o.label]));
+
+// FLITO's support phone number, shown as a Call button where people get
+// stuck (a forgotten PIN). Blank hides the button.
+export const SUPPORT_PHONE = process.env.EXPO_PUBLIC_SUPPORT_PHONE || '';

@@ -7,6 +7,25 @@ import {
 } from './constants';
 
 export const isValidPhone = (phone) => PHONE_REGEX.test(phone);
+
+// Why a PIN someone picked can't be used, as a key under auth:pinRules, or
+// null when it is fine. Mirrors the server: 4 digits, not all one digit and
+// not a run like 1234 or 9876.
+export const pinProblemKey = (pin) => {
+  if (!/^\d{4}$/.test(pin || '')) return 'fourDigits';
+  if (/^(\d)\1{3}$/.test(pin) || '0123456789'.includes(pin) || '9876543210'.includes(pin)) return 'tooEasy';
+  return null;
+};
+
+// What people actually type for a Nepal mobile number (98XXXXXXXX, with or
+// without spaces, dashes or the 977 country code) as the +977 form the
+// server stores. Anything else comes back as typed, to fail isValidPhone.
+export const toNepalPhone = (text) => {
+  const digits = String(text || '').replace(/\D/g, '');
+  if (digits.length === 10) return `+977${digits}`;
+  if (digits.length === 13 && digits.startsWith('977')) return `+${digits}`;
+  return String(text || '').trim();
+};
 export const isValidEmail = (email) => typeof email === 'string' && EMAIL_REGEX.test(email);
 
 export const formatCurrency = (amount) =>

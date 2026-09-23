@@ -24,8 +24,8 @@ const TREE = {
 
 const NEXT_YEAR = Number(nepalDay().slice(0, 4)) + 1;
 
-const renderFleet = (trucks = []) => {
-  api.get.mockResolvedValue({ data: { trucks } });
+const renderFleet = (trucks = [], drivers = []) => {
+  api.get.mockImplementation((url) => Promise.resolve({ data: url === '/users/me/drivers' ? { drivers } : { trucks } }));
   return renderWithProviders(<ManageFleet />, { user: fakeUser('owner') });
 };
 
@@ -114,7 +114,7 @@ describe('my fleet', () => {
       insurance: { type: 'third-party', company: 'Shikhar Insurance', policyNumber: null, validUntil: `${NEXT_YEAR}-03-15` },
       emissionTestValidUntil: null,
     }));
-    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(api.get.mock.calls.filter(([url]) => url === '/trucks')).toHaveLength(2));
   });
 
   it("won't move past a truck without its capacity", async () => {
@@ -262,5 +262,61 @@ describe('my fleet', () => {
     expect(screen.getByText('Insurance: ends in 10 days')).toBeTruthy();
     expect(screen.getByText('Bluebook tax: expired')).toBeTruthy();
     expect(screen.getByText('No rate: shippers make offers')).toBeTruthy();
+  });
+});
+
+describe('my drivers', () => {
+  const { confirmAction } = require('../src/utils/alert');
+
+  it('adds a driver with a name and phone, then shows the PIN to tell them', async () => {
+    api.post.mockResolvedValueOnce({
+      data: { driver: { _id: 'd1', firstName: 'Hari', lastName: 'Tamang', phone: '+9779812345678', kycStatus: 'not_submitted', hasLicense: false }, pin: '4827' },
+    });
+    const screen = renderFleet();
+
+    fireEvent.press(await screen.findByText('Add Driver'));
+    fireEvent.changeText(screen.getByLabelText('First name'), 'Hari');
+    fireEvent.changeText(screen.getByLabelText('Last name'), 'Tamang');
+    fireEvent.changeText(screen.getByLabelText("Driver's mobile number"), '981-234-5678');
+    fireEvent.press(screen.getAllByText('Add Driver').pop());
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/users/me/drivers', { firstName: 'Hari', lastName: 'Tamang', phone: '+9779812345678' }));
+    expect(await screen.findByLabelText('PIN 4 8 2 7')).toBeTruthy();
+    expect(screen.getByText("Hari's login PIN")).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Done, I told the driver'));
+    expect(screen.queryByLabelText('PIN 4 8 2 7')).toBeNull();
+    expect(screen.getByText('Needs license photo')).toBeTruthy();
+  });
+
+  it("won't add a driver without a valid mobile number", async () => {
+    const screen = renderFleet();
+
+    fireEvent.press(await screen.findByText('Add Driver'));
+    fireEvent.changeText(screen.getByLabelText('First name'), 'Hari');
+    fireEvent.changeText(screen.getByLabelText("Driver's mobile number"), '12345');
+    fireEvent.press(screen.getAllByText('Add Driver').pop());
+
+    expect(await screen.findByText('Enter a 10-digit mobile number')).toBeTruthy();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it('shows where each driver stands, and makes a new PIN on request', async () => {
+    api.post.mockResolvedValueOnce({ data: { pin: '3916' } });
+    const screen = renderFleet([], [
+      { _id: 'd1', firstName: 'Hari', phone: '+9779812345678', kycStatus: 'approved', hasLicense: true },
+      { _id: 'd2', firstName: 'Ram', phone: '+9779812345679', kycStatus: 'pending', hasLicense: true },
+      { _id: 'd3', firstName: 'Shyam', phone: '+9779812345670', kycStatus: 'rejected', kycRejectionReason: 'Blurry', hasLicense: true },
+    ]);
+
+    expect(await screen.findByText('Ready to drive')).toBeTruthy();
+    expect(screen.getByText('Being checked')).toBeTruthy();
+    expect(screen.getByText('Photo rejected')).toBeTruthy();
+    expect(screen.getByText('Reason: Blurry')).toBeTruthy();
+
+    fireEvent.press(screen.getAllByText('New PIN')[0]);
+    expect(confirmAction).toHaveBeenCalled();
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/users/me/drivers/d1/pin'));
+    expect(await screen.findByLabelText('PIN 3 9 1 6')).toBeTruthy();
   });
 });

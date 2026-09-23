@@ -87,5 +87,34 @@
     "save": "Save Signature",
     "nothingSignedTitle": "Nothing signed",
     "nothingSignedMessage": "Draw a signature before saving"
+  },
+  "contacts": {
+    "title": "Call",
+    "pickupContact": "Pickup contact",
+    "dropoffContact": "Drop-off contact",
+    "call": "Call",
+    "callAccessibilityLabel": "Call {{name}}",
+    "noPhone": "No phone number added",
+    "couldNotCallTitle": "Could not call",
+    "couldNotCallMessage": "Please dial {{phone}} yourself."
+  },
+  "confirm": {
+    "pickedUpTitle": "Goods loaded on the truck?",
+    "pickedUpMessage": "Tap Yes only after all the goods are on the truck.",
+    "pickedUpConfirm": "Yes, loaded",
+    "deliveredTitle": "Goods delivered?",
+    "deliveredMessage": "Tap Yes only after all the goods are handed over. This finishes the job.",
+    "deliveredConfirm": "Yes, delivered",
+    "cancelTitle": "Cancel this booking?",
+    "cancelMessage": "The truck will not come. This cannot be undone.",
+    "cancelConfirm": "Yes, cancel"
+  },
+  "assign": {
+    "confirmTitle": "Put {{name}} on this job?",
+    "confirmMessage": "The driver and shipper will be told.",
+    "confirmLabel": "Yes, assign",
+    "pickAccessibilityLabel": "Assign {{name}}",
+    "notReady": "{{name}}: license still being checked by FLITO",
+    "otherDriver": "Another driver's phone number:"
   }
 }

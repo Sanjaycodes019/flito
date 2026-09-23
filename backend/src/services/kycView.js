@@ -62,6 +62,12 @@ const reviewView = (user) => ({
   role: user.role,
   companyName: user.companyName,
   submittedAt: user.kycSubmittedAt,
+  // The owner who added this driver, who vouches for them in place of an
+  // address, when the driver was added from a fleet.
+  addedBy: user.addedBy?.firstName ? {
+    name: user.addedBy.companyName || [user.addedBy.firstName, user.addedBy.lastName].filter(Boolean).join(' '),
+    phone: user.addedBy.phone,
+  } : undefined,
   // The identity documents that are complete in this submission.
   identityDocuments: completedIdTypes(user),
   requiredDocuments: requiredDocumentsFor(user),

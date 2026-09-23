@@ -13,7 +13,11 @@ const SecuritySettingsScreen = ({ navigation }) => {
   const layout = useScreenLayout('narrow');
   const handleLogout = useLogout();
 
-  const methods = [user?.hasPassword && t('profile:rows.signInEmailPassword'), user?.hasGoogle && t('profile:rows.signInGoogle')]
+  const methods = [
+    user?.hasPin && t('profile:rows.signInPhonePin'),
+    user?.hasPassword && t('profile:rows.signInEmailPassword'),
+    user?.hasGoogle && t('profile:rows.signInGoogle'),
+  ]
     .filter(Boolean)
     .join(t('profile:rows.signInJoiner')) || t('profile:rows.signInEmailOnly');
 
@@ -21,6 +25,12 @@ const SecuritySettingsScreen = ({ navigation }) => {
     <ScrollView style={styles.container} contentContainerStyle={layout.contentStyle}>
       <SettingsSection title={t('profile:settings.security.methodsTitle')}>
         <SettingsRow icon="lock" label={t('profile:rows.signInMethod')} value={methods} />
+        <SettingsRow
+          icon="phone"
+          label={user?.hasPin ? t('profile:rows.changePin') : t('profile:rows.setPin')}
+          value={user?.hasPin ? t('profile:rows.pinSet') : t('profile:rows.pinHint')}
+          onPress={() => navigation.navigate('SetPin')}
+        />
       </SettingsSection>
 
       {user?.email ? (

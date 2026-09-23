@@ -87,5 +87,34 @@
     "save": "हस्ताक्षर सेभ गर्नुहोस्",
     "nothingSignedTitle": "केही हस्ताक्षर गरिएको छैन",
     "nothingSignedMessage": "सेभ गर्नु अघि हस्ताक्षर कोर्नुहोस्"
+  },
+  "contacts": {
+    "title": "फोन गर्नुहोस्",
+    "pickupContact": "उठान स्थानको सम्पर्क",
+    "dropoffContact": "डिलिभरी स्थानको सम्पर्क",
+    "call": "फोन",
+    "callAccessibilityLabel": "{{name}} लाई फोन गर्नुहोस्",
+    "noPhone": "फोन नम्बर राखिएको छैन",
+    "couldNotCallTitle": "फोन गर्न सकिएन",
+    "couldNotCallMessage": "कृपया {{phone}} मा आफैं फोन गर्नुहोस्।"
+  },
+  "confirm": {
+    "pickedUpTitle": "सामान ट्रकमा लोड भयो?",
+    "pickedUpMessage": "सबै सामान ट्रकमा चढेपछि मात्र 'हो' थिच्नुहोस्।",
+    "pickedUpConfirm": "हो, लोड भयो",
+    "deliveredTitle": "सामान पुर्‍याइयो?",
+    "deliveredMessage": "सबै सामान बुझाएपछि मात्र 'हो' थिच्नुहोस्। यसले काम सकिन्छ।",
+    "deliveredConfirm": "हो, पुर्‍याइयो",
+    "cancelTitle": "यो बुकिङ रद्द गर्ने?",
+    "cancelMessage": "ट्रक आउँदैन। यो फिर्ता गर्न सकिँदैन।",
+    "cancelConfirm": "हो, रद्द गर्नुहोस्"
+  },
+  "assign": {
+    "confirmTitle": "{{name}} लाई यो काममा राख्ने?",
+    "confirmMessage": "चालक र शिपरलाई खबर गरिनेछ।",
+    "confirmLabel": "हो, राख्नुहोस्",
+    "pickAccessibilityLabel": "{{name}} लाई तोक्नुहोस्",
+    "notReady": "{{name}}: FLITO ले लाइसेन्स जाँच गर्दैछ",
+    "otherDriver": "अर्को चालकको फोन नम्बर:"
   }
 }

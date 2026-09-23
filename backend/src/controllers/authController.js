@@ -7,6 +7,7 @@ const { publicUser } = require('../services/userView');
 const { fail } = require('../utils/respond');
 const adminGate = require('../services/adminGate');
 const { languageOf } = require('../utils/language');
+const { pinLockedMinutes, recordWrongPin, clearWrongPins } = require('../services/pin');
 
 const signToken = (user) =>
   jwt.sign(
@@ -60,6 +61,28 @@ exports.signup = async (req, res, next) => {
   }
 };
 
+// Sign up with a phone number and a 4-digit PIN, for the many users with no
+// email. Body is already checked and trimmed by validatePhoneSignup. Without
+// SMS the number itself isn't confirmed; admin verification (KYC) is what
+// ties an account to a real person.
+exports.signupPhone = async (req, res, next) => {
+  try {
+    const { role, firstName, lastName, phone, pin } = req.body;
+
+    if (await User.exists({ phone })) {
+      return fail(res, 409, 'AUTH_PHONE_IN_USE', 'That phone number is already linked to another account');
+    }
+
+    const user = await User.create({ role, firstName, lastName: lastName || undefined, phone, pin });
+    res.status(201).json({ success: true, token: signToken(user), user: publicUser(user) });
+  } catch (error) {
+    if (error.code === 11000) {
+      return fail(res, 409, 'AUTH_PHONE_IN_USE', 'That phone number is already linked to another account');
+    }
+    next(error);
+  }
+};
+
 exports.login = async (req, res, next) => {
   try {
     const { email: rawEmail, password } = req.body;
@@ -69,13 +92,53 @@ exports.login = async (req, res, next) => {
     // one is true should never be distinguishable to the caller.
     const invalid = () => fail(res, 401, 'AUTH_INVALID_CREDENTIALS', 'Incorrect email or password');
 
-    const user = await User.findOne({ email: emailAddr }).select('+password +googleId');
+    const user = await User.findOne({ email: emailAddr }).select('+password +googleId +pin');
     if (!user || !(await user.comparePassword(password))) {
       return invalid();
     }
     if (user.status !== 'active') {
       return fail(res, 403, 'AUTH_ACCOUNT_STATUS', `Account is ${user.status}`, { status: user.status });
     }
+
+    res.json({ success: true, token: signToken(user), user: publicUser(user) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Phone + PIN: for anyone who signed up by phone, set a PIN in Settings,
+// or is a driver an owner added from their fleet.
+exports.pinLogin = async (req, res, next) => {
+  try {
+    const { phone, pin } = req.body;
+    const invalid = () => fail(res, 401, 'AUTH_INVALID_PIN', 'Incorrect phone number or PIN');
+
+    const user = await User.findOne({ phone }).select('+pin +pinFailedAttempts +pinLockedUntil +password +googleId');
+    if (!user || !user.pin) return invalid();
+
+    const minutes = pinLockedMinutes(user);
+    if (minutes) {
+      // A driver an owner added gets a new PIN from that owner; anyone else
+      // from FLITO support.
+      const askOwner = Boolean(user.addedBy);
+      return fail(
+        res,
+        429,
+        'AUTH_PIN_LOCKED',
+        `Too many wrong PINs. Try again in ${minutes} minutes, or ask ${askOwner ? 'your truck owner' : 'FLITO support'} for a new PIN.`,
+        { minutes, askOwner },
+      );
+    }
+
+    if (!(await user.comparePin(pin))) {
+      await recordWrongPin(user);
+      return invalid();
+    }
+
+    if (user.status !== 'active') {
+      return fail(res, 403, 'AUTH_ACCOUNT_STATUS', `Account is ${user.status}`, { status: user.status });
+    }
+    await clearWrongPins(user);
 
     res.json({ success: true, token: signToken(user), user: publicUser(user) });
   } catch (error) {
@@ -97,14 +160,14 @@ exports.googleAuth = async (req, res, next) => {
     const profile = await verifyGoogleIdToken(idToken);
 
     let created = false;
-    let user = await User.findOne({ googleId: profile.googleId }).select('+password +googleId');
+    let user = await User.findOne({ googleId: profile.googleId }).select('+password +googleId +pin');
 
     if (!user) {
       // Google verified this email, so linking it to an existing
       // email/password account (rather than erroring as a duplicate) is
       // safe and is what a user expects when they signed up one way and
       // later taps "Continue with Google" with the same address.
-      user = await User.findOne({ email: profile.email }).select('+password +googleId');
+      user = await User.findOne({ email: profile.email }).select('+password +googleId +pin');
       if (user) {
         user.googleId = profile.googleId;
         if (profile.emailVerified) user.emailVerified = true;
@@ -265,7 +328,7 @@ exports.resetPassword = async (req, res, next) => {
 
 exports.me = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.userId).select('+password +googleId');
+    const user = await User.findById(req.user.userId).select('+password +googleId +pin');
     if (!user) return fail(res, 404, 'AUTH_USER_NOT_FOUND', 'User not found');
     res.json({ success: true, user: publicUser(user) });
   } catch (error) {

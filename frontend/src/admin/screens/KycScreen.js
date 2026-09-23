@@ -42,6 +42,9 @@ const KycCard = ({ user, list }) => {
     >
       <Fact icon="email">{user.email}</Fact>
       <Fact icon="phone">{user.phone}</Fact>
+      <Fact icon="owner">
+        {user.addedBy ? t('admin:kycQueue.addedBy', { name: user.addedBy.name, phone: user.addedBy.phone || '' }) : null}
+      </Fact>
       <Fact icon="idCard">
         {user.identityDocuments?.length
           ? t('admin:kycQueue.identity', { list: user.identityDocuments.map((idType) => kycIdTypeLabel(idType, t)).join(', ') })

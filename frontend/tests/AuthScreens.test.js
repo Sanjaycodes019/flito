@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import LoginScreen from '../src/screens/LoginScreen';
 import SignupScreen from '../src/screens/SignupScreen';
 import ForgotPasswordScreen from '../src/screens/ForgotPasswordScreen';
@@ -11,6 +11,7 @@ jest.mock('../src/services/auth', () => ({
   authService: {
     login: jest.fn(),
     signup: jest.fn(),
+    signupPhone: jest.fn(),
     googleAuth: jest.fn(),
     forgotPassword: jest.fn(),
     resetPassword: jest.fn(),
@@ -122,6 +123,7 @@ describe('SignupScreen', () => {
     authService.signup.mockResolvedValue({ token: 'tok', user: fakeUser('owner') });
     const navigation = fakeNavigation();
     const { findAllByText, findByPlaceholderText, findByRole } = renderWithProviders(<SignupScreen navigation={navigation} />);
+    fireEvent.press(await screen.findByText('Sign up with email instead'));
 
     fireEvent.press((await findAllByText('Truck Owner'))[0]);
     fireEvent.changeText(await findByPlaceholderText('Ram'), 'Bikash');
@@ -147,6 +149,7 @@ describe('SignupScreen', () => {
   it('blocks submit when the passwords do not match', async () => {
     const navigation = fakeNavigation();
     const { findByText, findAllByText, findByPlaceholderText } = renderWithProviders(<SignupScreen navigation={navigation} />);
+    fireEvent.press(await screen.findByText('Sign up with email instead'));
 
     fireEvent.changeText(await findByPlaceholderText('Ram'), 'Bikash');
     fireEvent.changeText(await findByPlaceholderText('you@example.com'), 'bikash@example.com');
@@ -162,6 +165,7 @@ describe('SignupScreen', () => {
   it('keeps Sign Up blocked until the Terms are agreed, and says what is missing', async () => {
     const navigation = fakeNavigation();
     const { findByText, findAllByText, findByPlaceholderText } = renderWithProviders(<SignupScreen navigation={navigation} />);
+    fireEvent.press(await screen.findByText('Sign up with email instead'));
 
     fireEvent.changeText(await findByPlaceholderText('Ram'), 'Bikash');
     fireEvent.changeText(await findByPlaceholderText('you@example.com'), 'bikash@example.com');
@@ -235,6 +239,52 @@ describe('SignupScreen', () => {
 
     fireEvent.press(await findByText('Use Email Instead'));
     expect(await findByPlaceholderText('At least 8 characters')).toBeTruthy();
+  });
+});
+
+describe('SignupScreen with a phone number and PIN', () => {
+  const fillPhoneForm = async ({ pin = '5824', confirmPin = pin } = {}) => {
+    fireEvent.changeText(await screen.findByPlaceholderText('Ram'), 'Bikash');
+    fireEvent.changeText(screen.getByLabelText('Mobile number'), '9812345678');
+    const boxes = screen.getAllByLabelText('Digit 1 of 4');
+    fireEvent.changeText(boxes[0], pin);
+    fireEvent.changeText(boxes[1], confirmPin);
+    fireEvent.press(screen.getByRole('checkbox'));
+  };
+  const pressSignUp = () => {
+    const buttons = screen.getAllByText('Sign Up');
+    fireEvent.press(buttons[buttons.length - 1]);
+  };
+
+  it('is the first way offered, and creates the account with no email', async () => {
+    authService.signupPhone.mockResolvedValue({ token: 'tok', user: fakeUser('owner') });
+    renderWithProviders(<SignupScreen navigation={fakeNavigation()} />);
+
+    fireEvent.press((await screen.findAllByText('Truck Owner'))[0]);
+    await fillPhoneForm();
+    pressSignUp();
+
+    await waitFor(() => expect(authService.signupPhone).toHaveBeenCalledWith({
+      role: 'owner', firstName: 'Bikash', lastName: '', phone: '+9779812345678', pin: '5824',
+    }));
+  });
+
+  it('says why a PIN like 1234 is refused', async () => {
+    renderWithProviders(<SignupScreen navigation={fakeNavigation()} />);
+    await fillPhoneForm({ pin: '1234' });
+    pressSignUp();
+
+    expect(await screen.findByText('That PIN is too easy to guess (like 1111 or 1234). Choose another.')).toBeTruthy();
+    expect(authService.signupPhone).not.toHaveBeenCalled();
+  });
+
+  it('says so when the two PINs differ', async () => {
+    renderWithProviders(<SignupScreen navigation={fakeNavigation()} />);
+    await fillPhoneForm({ pin: '5824', confirmPin: '5825' });
+    pressSignUp();
+
+    expect(await screen.findByText('The two PINs are not the same')).toBeTruthy();
+    expect(authService.signupPhone).not.toHaveBeenCalled();
   });
 });
 

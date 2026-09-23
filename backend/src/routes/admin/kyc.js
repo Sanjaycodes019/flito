@@ -13,7 +13,7 @@ const listByStatus = (defaultStatus) => async (req, res, next) => {
     const status = REVIEW_STATUSES.includes(req.query.status) ? req.query.status : defaultStatus;
     const filter = allOf({ kycStatus: status }, searchClause(req.query, ['firstName', 'lastName', 'email', 'phone', 'companyName']));
     const [users, total] = await Promise.all([
-      User.find(filter).sort({ kycSubmittedAt: -1 }).skip(skip).limit(limit),
+      User.find(filter).populate('addedBy', 'firstName lastName companyName phone').sort({ kycSubmittedAt: -1 }).skip(skip).limit(limit),
       User.countDocuments(filter),
     ]);
     res.json({ success: true, users: users.map(reviewView), pagination: paginationMeta(page, limit, total) });
@@ -56,6 +56,13 @@ router.patch('/:userId', async (req, res, next) => {
     await sendPushToUser(user._id, user.kycStatus === 'approved'
       ? { title: 'Identity verified', body: 'Your identity verification was approved', data: { type: 'kyc' } }
       : { title: 'Verification needs changes', body: user.kycRejectionReason, data: { type: 'kyc' } });
+    // A driver an owner added is managed by that owner, who is the one to act.
+    if (user.addedBy) {
+      const name = user.firstName;
+      await sendPushToUser(user.addedBy, user.kycStatus === 'approved'
+        ? { title: 'Driver ready', body: `${name}'s license was approved. ${name} can now drive your bookings.`, data: { type: 'fleetDriver' } }
+        : { title: 'Driver license photo rejected', body: `${name}: ${user.kycRejectionReason}`, data: { type: 'fleetDriver' } });
+    }
 
     res.json({
       success: true,

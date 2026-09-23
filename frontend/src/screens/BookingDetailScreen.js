@@ -11,6 +11,7 @@ import EmptyState from '../components/common/EmptyState';
 import DeliveryProofSection from '../components/bookings/DeliveryProofSection';
 import DeliverySignatureSection from '../components/bookings/DeliverySignatureSection';
 import LocationSharingToggle from '../components/bookings/LocationSharingToggle';
+import CallContactsCard from '../components/bookings/CallContactsCard';
 import TrackingMap from '../components/map/TrackingMap';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import useScreenLayout from '../hooks/useScreenLayout';
@@ -20,7 +21,7 @@ import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, formatStatus, getErrorMessage, truckTypeLabel } from '../utils/helpers';
 import api from '../services/api';
 import socketService from '../services/socket';
-import { notify } from '../utils/alert';
+import { confirmAction, notify } from '../utils/alert';
 
 const DETAIL_ICON = {
   pickup: 'pickup',
@@ -44,6 +45,8 @@ const BookingDetailScreen = ({ route }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [driverPhone, setDriverPhone] = useState('');
+  // The owner's own drivers (added from the Fleet page), to pick from.
+  const [myDrivers, setMyDrivers] = useState([]);
   const [rating, setRating] = useState('5');
   const [review, setReview] = useState('');
   // One readable column below desktop; the booking and its actions side by side above.
@@ -70,6 +73,14 @@ const BookingDetailScreen = ({ route }) => {
       setLoading(false);
     })();
   }, [fetchBooking]);
+
+  const needsDriver = isOwner && !booking?.driverId && booking?.status !== 'cancelled';
+  useEffect(() => {
+    if (!needsDriver) return;
+    api.get('/users/me/drivers')
+      .then(({ data }) => setMyDrivers(data.drivers || []))
+      .catch(() => setMyDrivers([]));
+  }, [needsDriver]);
 
   // The driver's marker moves from socket pings without a full refetch; a
   // refresh (pull-to-refresh, or fetchBooking after an action) still carries
@@ -101,6 +112,16 @@ const BookingDetailScreen = ({ route }) => {
     setBusy(false);
   };
 
+  const assignMyDriver = (driver) => confirmAction({
+    title: t('bookings:assign.confirmTitle', { name: driver.firstName }),
+    message: t('bookings:assign.confirmMessage'),
+    confirmLabel: t('bookings:assign.confirmLabel'),
+    onConfirm: () => runAction(async () => {
+      await api.patch(`/bookings/${bookingId}/assign-driver`, { driverId: driver._id });
+      notify(t('bookings:detail.driverAssignedTitle'), t('bookings:detail.driverAssignedMessage', { name: driver.firstName }));
+    }),
+  });
+
   const handleAssignDriver = () => runAction(async () => {
     if (!driverPhone) {
       notify(t('bookings:detail.missingPhoneTitle'), t('bookings:detail.missingPhoneMessage'));
@@ -119,15 +140,35 @@ const BookingDetailScreen = ({ route }) => {
     notify(t('bookings:detail.driverAssignedTitle'), t('bookings:detail.driverAssignedMessage', { name: lookup.driver.firstName }));
   });
 
-  const handlePickupStatus = (pickupStatus) => runAction(() =>
+  // Steps that cannot be taken back ask first, so a stray tap does not
+  // move the job on or cancel it.
+  const confirmThen = (key, action, destructive = false) => confirmAction({
+    title: t(`bookings:confirm.${key}Title`),
+    message: t(`bookings:confirm.${key}Message`),
+    confirmLabel: t(`bookings:confirm.${key}Confirm`),
+    destructive,
+    onConfirm: action,
+  });
+
+  const sendPickupStatus = (pickupStatus) => runAction(() =>
     api.patch(`/bookings/${bookingId}/status`, { pickupStatus, status: pickupStatus === 'picked_up' ? 'in_transit' : undefined })
   );
+  const handlePickupStatus = (pickupStatus) => (pickupStatus === 'picked_up'
+    ? confirmThen('pickedUp', () => sendPickupStatus(pickupStatus))
+    : sendPickupStatus(pickupStatus));
 
-  const handleDropoffStatus = (dropoffStatus) => runAction(() =>
+  const sendDropoffStatus = (dropoffStatus) => runAction(() =>
     api.patch(`/bookings/${bookingId}/status`, { dropoffStatus, status: dropoffStatus === 'delivered' ? 'completed' : undefined })
   );
+  const handleDropoffStatus = (dropoffStatus) => (dropoffStatus === 'delivered'
+    ? confirmThen('delivered', () => sendDropoffStatus(dropoffStatus))
+    : sendDropoffStatus(dropoffStatus));
 
-  const handleCancel = () => runAction(() => api.patch(`/bookings/${bookingId}/status`, { status: 'cancelled' }));
+  const handleCancel = () => confirmThen(
+    'cancel',
+    () => runAction(() => api.patch(`/bookings/${bookingId}/status`, { status: 'cancelled' })),
+    true
+  );
 
   const handleRate = () => runAction(async () => {
     await api.post(`/bookings/${bookingId}/rate`, { rating: Number(rating), review });
@@ -153,6 +194,7 @@ const BookingDetailScreen = ({ route }) => {
     >
       <View style={twoColumns ? styles.columns : null}>
         <View style={twoColumns ? styles.mainColumn : null}>
+          <CallContactsCard booking={booking} myId={user?._id} />
           <Card>
             <View style={styles.row}>
               <Text style={styles.title}>{booking.loadId?.goodsType || t('bookings:detail.loadFallback')}</Text>
@@ -205,9 +247,26 @@ const BookingDetailScreen = ({ route }) => {
             <LocationSharingToggle bookingId={bookingId} />
           )}
 
-          {isOwner && !booking.driverId && booking.status !== 'cancelled' && (
+          {needsDriver && (
             <Card>
               <SectionTitle icon="driver" title={t('bookings:detail.assignDriverTitle')} />
+              {myDrivers.map((driver) => (driver.kycStatus === 'approved' ? (
+                <Button
+                  key={driver._id}
+                  title={`${driver.firstName} ${driver.lastName || ''}`.trim()}
+                  icon="driver"
+                  size="lg"
+                  variant="tertiary"
+                  onPress={() => assignMyDriver(driver)}
+                  loading={busy}
+                  accessibilityLabel={t('bookings:assign.pickAccessibilityLabel', { name: driver.firstName })}
+                />
+              ) : (
+                <Text key={driver._id} style={styles.waitingDriver}>
+                  {t('bookings:assign.notReady', { name: driver.firstName })}
+                </Text>
+              )))}
+              {myDrivers.length > 0 && <Text style={styles.otherDriverLabel}>{t('bookings:assign.otherDriver')}</Text>}
               <Input
                 value={driverPhone}
                 onChangeText={setDriverPhone}
@@ -317,6 +376,8 @@ const styles = themedStyles(() => ({
   actionsRow: { flexDirection: 'row', gap: spacing.sm },
   actionButton: { flex: 1 },
   cancelButton: { marginTop: spacing.xs },
+  waitingDriver: { ...type.small, color: colors.textMuted, paddingVertical: spacing.sm },
+  otherDriverLabel: { ...type.smallMedium, color: colors.textSecondary, marginTop: spacing.md, marginBottom: spacing.xs },
   chipRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   ratingChip: { flex: 1, marginVertical: 0 },
 }));

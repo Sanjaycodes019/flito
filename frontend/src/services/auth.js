@@ -19,6 +19,19 @@ export const authService = {
     return storeToken(response.data);
   },
 
+  // Sign up with a phone number and a 4-digit PIN, no email needed.
+  signupPhone: async ({ role, firstName, lastName, phone, pin }) => {
+    const response = await api.post('/auth/signup-phone', { role, firstName, lastName, phone, pin });
+    return storeToken(response.data);
+  },
+
+  // Anyone with a PIN (phone signups, a PIN set in Settings, drivers an
+  // owner added): phone number + 4-digit PIN.
+  pinLogin: async (phone, pin) => {
+    const response = await api.post('/auth/pin-login', { phone, pin });
+    return storeToken(response.data);
+  },
+
   adminLogin: async (email, password, accessKey) => {
     const response = await api.post('/auth/admin/login', { email, password, accessKey });
     return storeToken(response.data);

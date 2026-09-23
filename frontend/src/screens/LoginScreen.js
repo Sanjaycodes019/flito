@@ -73,6 +73,16 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <AuthLayout title={t('auth:shared.logIn')} subtitle={t('auth:login.subtitle')}>
+      {/* Many users have no email, so the phone way in comes first. */}
+      <Button
+        title={t('auth:login.driverButton')}
+        icon="phone"
+        variant="tertiary"
+        size="sm"
+        onPress={() => navigation.navigate('PinLogin')}
+        style={styles.driverButton}
+      />
+
       <Input
         label={t('auth:shared.emailLabel')}
         value={email}
@@ -158,6 +168,7 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = themedStyles(() => ({
+  driverButton: { alignSelf: 'center', marginTop: 0, marginBottom: spacing.md },
   forgotButton: { alignSelf: 'flex-end', marginTop: -spacing.sm },
   adminLink: { alignSelf: 'center', marginTop: spacing.md },
   loginButton: { marginTop: spacing.sm },

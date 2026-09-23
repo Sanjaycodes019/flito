@@ -34,6 +34,15 @@ const userSchema = new mongoose.Schema(
       sparse: true,
       select: false,
     },
+    // A 4-digit login PIN, set only on a driver an owner added from their
+    // fleet (see controllers/fleetDriversController). Such a driver logs in
+    // with phone + PIN instead of email + password. Wrong guesses are
+    // counted and lock PIN login for a while (see authController.pinLogin).
+    pin: { type: String, select: false },
+    pinFailedAttempts: { type: Number, select: false },
+    pinLockedUntil: { type: Date, select: false },
+    // The owner who added this driver, if one did.
+    addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
     emailVerified: {
       type: Boolean,
       default: false,
@@ -139,13 +148,14 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving (only if a password is set)
+// Hash a password or PIN before saving, whenever one is set or changed.
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password') || !this.password) return next();
-
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    for (const field of ['password', 'pin']) {
+      if (this.isModified(field) && this[field]) {
+        this[field] = await bcrypt.hash(this[field], await bcrypt.genSalt(10));
+      }
+    }
     next();
   } catch (error) {
     next(error);
@@ -156,6 +166,11 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.comparePassword = async function (enteredPassword) {
   if (!this.password) return false;
   return bcrypt.compare(enteredPassword, this.password);
+};
+
+userSchema.methods.comparePin = async function (enteredPin) {
+  if (!this.pin) return false;
+  return bcrypt.compare(enteredPin, this.pin);
 };
 
 module.exports = mongoose.model('User', userSchema);

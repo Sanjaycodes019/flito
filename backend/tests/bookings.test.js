@@ -49,6 +49,25 @@ describe('booking access', () => {
     expect(res.status).toBe(403);
   });
 
+  it('shows each party the others\' phone numbers so they can call', async () => {
+    const { shipper, driver, driverPhone, booking } = await setupBooking();
+
+    const seen = (await as(shipper.token).get(`/api/bookings/${booking._id}`).expect(200)).body.booking;
+    expect(seen.driverId.phone).toBe(driverPhone);
+    const seenByDriver = (await as(driver.token).get(`/api/bookings/${booking._id}`).expect(200)).body.booking;
+    expect(seenByDriver.shipperId.phone).toMatch(/^\+977/);
+  });
+
+  it('hides phone numbers once a booking is cancelled', async () => {
+    const { shipper, booking } = await setupBooking();
+    await as(shipper.token).patch(`/api/bookings/${booking._id}/status`)
+      .send({ status: 'cancelled' }).expect(200);
+
+    const seen = (await as(shipper.token).get(`/api/bookings/${booking._id}`).expect(200)).body.booking;
+    expect(seen.driverId.phone).toBeUndefined();
+    expect(seen.ownerId.phone).toBeUndefined();
+  });
+
   it('scopes the bookings list to the requesting user', async () => {
     const { shipper } = await setupBooking();
     const otherShipper = await signUp({ phone: uniquePhone(), role: 'shipper' });

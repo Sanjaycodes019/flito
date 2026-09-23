@@ -9,6 +9,7 @@ const { isAddressComplete } = require('../services/nepalLocations');
 const { issueCode } = require('../services/verification');
 const { fail } = require('../utils/respond');
 const { languageOf } = require('../utils/language');
+const { pinLockedMinutes, recordWrongPin } = require('../services/pin');
 const {
   EDITABLE_KYC_STATUSES,
   NAME_LOCKED_KYC_STATUSES,
@@ -45,7 +46,7 @@ exports.lookupDriver = async (req, res, next) => {
 // Body is already whitelisted and normalized by validateProfileUpdate.
 exports.updateProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.userId).select('+password +googleId');
+    const user = await User.findById(req.user.userId).select('+password +googleId +pin');
     if (!user) return fail(res, 404, 'USERS_NOT_FOUND', 'User not found');
 
     const { firstName, lastName, email, phone, companyName, address } = req.body;
@@ -106,6 +107,39 @@ exports.updateProfile = async (req, res, next) => {
       const field = Object.keys(error.keyValue || {})[0] || 'field';
       return fail(res, 409, 'USERS_FIELD_IN_USE', `That ${field} is already in use`, { field });
     }
+    next(error);
+  }
+};
+
+// Sets a login PIN, or changes one. Changing needs the current PIN, so a
+// phone left logged in can't be used to take over the PIN. The account needs
+// a phone number, since that is what the PIN logs in with.
+exports.setPin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId).select('+pin +pinFailedAttempts +pinLockedUntil +password +googleId');
+    if (!user) return fail(res, 404, 'USERS_NOT_FOUND', 'User not found');
+    if (!user.phone) {
+      return fail(res, 400, 'USERS_PIN_NEEDS_PHONE', 'Add your phone number first. You log in with it and your PIN.');
+    }
+    if (user.pin) {
+      // Guesses at the current PIN count toward the same lock as logging in.
+      const minutes = pinLockedMinutes(user);
+      if (minutes) {
+        return fail(res, 429, 'AUTH_PIN_LOCKED', `Too many wrong PINs. Try again in ${minutes} minutes.`, { minutes, askOwner: Boolean(user.addedBy) });
+      }
+      if (!(await user.comparePin(req.body.currentPin || ''))) {
+        await recordWrongPin(user);
+        return fail(res, 400, 'USERS_WRONG_CURRENT_PIN', 'Your current PIN is not correct');
+      }
+    }
+
+    user.pin = req.body.pin;
+    user.pinFailedAttempts = undefined;
+    user.pinLockedUntil = undefined;
+    await user.save();
+
+    res.json({ success: true, user: publicUser(user) });
+  } catch (error) {
     next(error);
   }
 };
@@ -188,7 +222,7 @@ exports.requireStorage = (req, res, next) => {
 };
 
 // With the fields publicUser needs to report hasPassword / hasGoogle.
-const loadOwnUser = (userId) => User.findById(userId).select('+password +googleId');
+const loadOwnUser = (userId) => User.findById(userId).select('+password +googleId +pin');
 
 exports.uploadAvatar = async (req, res, next) => {
   try {

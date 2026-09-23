@@ -8,11 +8,23 @@ const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 
 const TRUCK_FIELDS = 'registrationNumber truckType capacity makeModel verificationStatus';
 
-// A booking as its parties see it, with who and what is verified.
-const bookingView = (booking) => withVerification(booking, {
-  people: ['shipperId', 'ownerId', 'driverId'],
-  trucks: ['truckId'],
-});
+// The people on a booking can phone each other, so their numbers are
+// included here (and only here: loads and quotes never show them).
+const BOOKING_PARTY_FIELDS = `${PARTY_FIELDS} phone`;
+const PEOPLE = ['shipperId', 'ownerId', 'driverId'];
+
+// A booking as its parties see it, with who and what is verified. Numbers
+// are dropped once a booking is cancelled, since there is no job left to
+// call about.
+const bookingView = (booking) => {
+  const view = withVerification(booking, { people: PEOPLE, trucks: ['truckId'] });
+  if (view.status === 'cancelled') {
+    PEOPLE.forEach((path) => {
+      if (view[path] && typeof view[path] === 'object') delete view[path].phone;
+    });
+  }
+  return view;
+};
 const { requiresVerification } = require('../services/kycPolicy');
 const { busyDaysOf } = require('../services/tripSchedule');
 const { sendPushToUser, sendPushToUsers } = require('../services/push');
@@ -35,9 +47,9 @@ exports.listMyBookings = async (req, res, next) => {
 
     const bookings = await Booking.find(filter)
       .populate('loadId')
-      .populate('shipperId', PARTY_FIELDS)
-      .populate('ownerId', PARTY_FIELDS)
-      .populate('driverId', PARTY_FIELDS)
+      .populate('shipperId', BOOKING_PARTY_FIELDS)
+      .populate('ownerId', BOOKING_PARTY_FIELDS)
+      .populate('driverId', BOOKING_PARTY_FIELDS)
       .populate('truckId', TRUCK_FIELDS)
       .sort({ createdAt: -1 });
 
@@ -51,9 +63,9 @@ exports.getBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id)
       .populate('loadId')
-      .populate('shipperId', PARTY_FIELDS)
-      .populate('ownerId', PARTY_FIELDS)
-      .populate('driverId', PARTY_FIELDS)
+      .populate('shipperId', BOOKING_PARTY_FIELDS)
+      .populate('ownerId', BOOKING_PARTY_FIELDS)
+      .populate('driverId', BOOKING_PARTY_FIELDS)
       .populate('truckId', TRUCK_FIELDS);
 
     if (!booking) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');

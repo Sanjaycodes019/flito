@@ -350,5 +350,53 @@
     "yourQuote": "Your quote",
     "shipperWantsYourTruck": "A shipper wants your truck. Accept, counter or decline.",
     "shipperCountered": "The shipper countered. Your response is needed."
+  },
+  "drivers": {
+    "heading_one": "{{count}} driver",
+    "heading_other": "{{count}} drivers",
+    "headerHint": "Add your drivers here. They log in with their phone number and a PIN, no email needed.",
+    "addButton": "Add Driver",
+    "empty": "No drivers yet. Tap Add Driver to add one.",
+    "call": "Call",
+    "state": {
+      "ready": "Ready to drive",
+      "checking": "Being checked",
+      "rejected": "Photo rejected",
+      "needsLicense": "Needs license photo"
+    },
+    "form": {
+      "title": "Add a driver",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "phone": "Driver's mobile number",
+      "phoneHelp": "The driver will log in with this number",
+      "nameError": "Enter the driver's name",
+      "phoneError": "Enter a 10-digit mobile number",
+      "save": "Add Driver",
+      "couldNotAddTitle": "Could not add driver"
+    },
+    "pin": {
+      "title": "{{name}}'s login PIN",
+      "accessibilityLabel": "PIN {{pin}}",
+      "help": "Tell this PIN to the driver. They log in with {{phone}} and this PIN. Next, take a photo of their driving license below.",
+      "done": "Done, I told the driver"
+    },
+    "license": {
+      "addNote": "Take a photo of the driver's license. FLITO checks it before the driver can take bookings.",
+      "retakeNote": "Take a new, clear photo of the license.",
+      "takePhoto": "Photo of License",
+      "checkingNote": "FLITO is checking the license. You will be told when the driver is ready.",
+      "rejectedReason": "Reason: {{reason}}",
+      "couldNotOpenTitle": "Could not open the camera",
+      "uploadFailedTitle": "Could not send the photo",
+      "sentTitle": "Photo sent",
+      "sentMessage": "FLITO will check {{name}}'s license and tell you when they are ready to drive."
+    },
+    "newPin": {
+      "button": "New PIN",
+      "title": "Make a new PIN for {{name}}?",
+      "message": "The old PIN will stop working. Use this if the driver forgot their PIN.",
+      "confirm": "Make new PIN"
+    }
   }
 }

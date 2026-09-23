@@ -177,3 +177,93 @@ describe("owner assigning a driver", () => {
     expect(api.patch).not.toHaveBeenCalled();
   });
 });
+
+describe('asking before steps that cannot be undone', () => {
+  const { confirmAction } = require('../src/utils/alert');
+
+  it('asks before cancelling, and does nothing if the shipper backs out', async () => {
+    confirmAction.mockImplementationOnce(() => {}); // the shipper taps "Cancel" in the dialog
+    const { findByText } = renderAs(fakeUser('shipper', { _id: 'shipper-id' }), baseBooking({ status: 'confirmed' }));
+
+    fireEvent.press(await findByText('Cancel Booking'));
+
+    expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({ title: 'Cancel this booking?', destructive: true }));
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it('asks before marking delivered, but not before "arrived"', async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    const { findByText } = renderAs(fakeUser('driver', { _id: 'driver-id' }), baseBooking({
+      status: 'in_transit', pickupStatus: 'picked_up', dropoffStatus: 'pending',
+    }));
+
+    fireEvent.press(await findByText('Arrived at Dropoff'));
+    await waitFor(() => expect(api.patch).toHaveBeenCalled());
+    expect(confirmAction).not.toHaveBeenCalled();
+
+    fireEvent.press(await findByText('Delivered'));
+    expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({ title: 'Goods delivered?' }));
+  });
+});
+
+describe('calling the other people on the job', () => {
+  const { Linking } = require('react-native');
+
+  const withPhones = (overrides = {}) => baseBooking({
+    shipperId: { _id: 'shipper-id', firstName: 'Ram', lastName: 'Shrestha', phone: '+9779800000001' },
+    ownerId: { _id: 'owner-id', firstName: 'Bikash', lastName: 'Thapa', phone: '+9779800000002' },
+    driverId: { _id: 'driver-id', firstName: 'Hari', lastName: 'Tamang', phone: '+9779800000003' },
+    ...overrides,
+  });
+
+  it('gives the shipper a Call button for the owner and driver, not themselves', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const { findByLabelText, queryByLabelText } = renderAs(fakeUser('shipper', { _id: 'shipper-id' }), withPhones());
+
+    fireEvent.press(await findByLabelText('Call Hari Tamang'));
+    expect(openURL).toHaveBeenCalledWith('tel:+9779800000003');
+    expect(await findByLabelText('Call Bikash Thapa')).toBeTruthy();
+    expect(queryByLabelText('Call Ram Shrestha')).toBeNull();
+  });
+
+  it('says so when a person has no phone number', async () => {
+    const { findByText } = renderAs(fakeUser('driver', { _id: 'driver-id' }), withPhones({
+      ownerId: { _id: 'owner-id', firstName: 'Bikash', lastName: 'Thapa' },
+    }));
+
+    expect(await findByText('No phone number added')).toBeTruthy();
+  });
+
+  it('shows no Call buttons on a cancelled booking', async () => {
+    const { findByText, queryByLabelText } = renderAs(fakeUser('shipper', { _id: 'shipper-id' }), withPhones({ status: 'cancelled' }));
+
+    await findByText('Cement bags');
+    expect(queryByLabelText('Call Hari Tamang')).toBeNull();
+  });
+});
+
+describe("owner picking one of their own drivers", () => {
+  const owner = fakeUser('owner', { _id: 'owner-id' });
+  const myDrivers = () => Promise.resolve({ data: { drivers: [
+    { _id: 'd1', firstName: 'Sita', lastName: 'Rai', kycStatus: 'approved' },
+    { _id: 'd2', firstName: 'Gopal', kycStatus: 'pending' },
+  ] } });
+
+  it('assigns an approved driver with one tap and a confirmation', async () => {
+    api.patch.mockResolvedValue({ data: {} });
+    const { findByLabelText } = renderAs(owner, baseBooking({ driverId: undefined }), { '/users/me/drivers': myDrivers });
+
+    fireEvent.press(await findByLabelText('Assign Sita'));
+
+    const { confirmAction } = require('../src/utils/alert');
+    expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({ title: 'Put Sita on this job?' }));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith(`/bookings/${BOOKING_ID}/assign-driver`, { driverId: 'd1' }));
+  });
+
+  it('shows a driver still being checked, without letting them be picked', async () => {
+    const { findByText, queryByLabelText } = renderAs(owner, baseBooking({ driverId: undefined }), { '/users/me/drivers': myDrivers });
+
+    expect(await findByText('Gopal: license still being checked by FLITO')).toBeTruthy();
+    expect(queryByLabelText('Assign Gopal')).toBeNull();
+  });
+});

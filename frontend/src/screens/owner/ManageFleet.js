@@ -16,6 +16,7 @@ import NepalAddressFields, { emptyPlace } from '../../components/address/NepalAd
 import VerifiedBadge from '../../components/common/VerifiedBadge';
 import PhotoSourceButtons from '../../components/common/PhotoSourceButtons';
 import DocumentTile from '../../components/kyc/DocumentTile';
+import MyDriversSection from '../../components/fleet/MyDriversSection';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import {
@@ -97,6 +98,8 @@ const ManageFleet = () => {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  // Bumped on pull-to-refresh so the drivers list reloads with the trucks.
+  const [refreshKey, setRefreshKey] = useState(0);
   const layout = useScreenLayout('narrow');
   const wide = !layout.isPhone;
 
@@ -129,6 +132,7 @@ const ManageFleet = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setRefreshKey((key) => key + 1);
     await load();
     setRefreshing(false);
   };
@@ -205,6 +209,8 @@ const ManageFleet = () => {
           onDelete={() => handleDelete(truck)}
         />
       )))}
+
+      <MyDriversSection refreshKey={refreshKey} />
     </ScrollView>
   );
 };

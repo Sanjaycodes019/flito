@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const User = require('../../models/User');
 const { fail } = require('../../utils/respond');
+const { newPin } = require('../../services/pin');
 const { paginationParams, paginationMeta, searchClause, enumFilter, allOf } = require('./helpers');
 
 const FIELDS = 'firstName lastName email phone role status kycStatus companyName rating totalRatings createdAt';
@@ -45,6 +46,28 @@ router.patch('/:userId/status', async (req, res, next) => {
     const user = await User.findByIdAndUpdate(req.params.userId, { status }, { new: true }).select(FIELDS);
     if (!user) return fail(res, 404, 'ADMIN_USER_NOT_FOUND', 'User not found');
     res.json({ success: true, user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// For someone who forgot their PIN and called FLITO support: makes a new one
+// for the admin to read out, once they have checked who is calling. The old
+// PIN stops working and any lock is lifted.
+router.post('/:userId/reset-pin', async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return fail(res, 404, 'ADMIN_USER_NOT_FOUND', 'User not found');
+    if (user.role === 'admin') return fail(res, 400, 'ADMIN_PIN_NOT_FOR_ADMINS', 'Admins log in with email and password only');
+    if (!user.phone) return fail(res, 400, 'ADMIN_PIN_NEEDS_PHONE', 'This user has no phone number to log in with');
+
+    const pin = newPin();
+    user.pin = pin;
+    user.pinFailedAttempts = undefined;
+    user.pinLockedUntil = undefined;
+    await user.save();
+
+    res.json({ success: true, pin });
   } catch (error) {
     next(error);
   }

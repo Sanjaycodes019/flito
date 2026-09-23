@@ -7,6 +7,8 @@ const authMiddleware = require('../middleware/auth');
 const {
   validateEmailSignup,
   validateEmailLogin,
+  validatePinLogin,
+  validatePhoneSignup,
   validateAdminLogin,
   validateAdminSignup,
   validateGoogleAuth,
@@ -35,6 +37,8 @@ const authLimiter = rateLimit({
 // of even opening the app for the rest of the window.
 router.post('/signup', authLimiter, validateEmailSignup, authController.signup);
 router.post('/login', authLimiter, validateEmailLogin, authController.login);
+router.post('/signup-phone', authLimiter, validatePhoneSignup, authController.signupPhone);
+router.post('/pin-login', authLimiter, validatePinLogin, authController.pinLogin);
 // Stricter than the public limit: these are the accounts worth guessing at.
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

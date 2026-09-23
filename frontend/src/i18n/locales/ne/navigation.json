@@ -32,7 +32,8 @@
     "settings": "सेटिङ",
     "languageSettings": "भाषा र क्षेत्र",
     "appearanceSettings": "रूप",
-    "securitySettings": "साइन-इन र सुरक्षा"
+    "securitySettings": "साइन-इन र सुरक्षा",
+    "setPin": "लग इन PIN"
   },
   "menu": "मेनु"
 }

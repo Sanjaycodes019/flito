@@ -32,7 +32,8 @@
     "settings": "Settings",
     "languageSettings": "Language & Region",
     "appearanceSettings": "Appearance",
-    "securitySettings": "Sign-in & Security"
+    "securitySettings": "Sign-in & Security",
+    "setPin": "Login PIN"
   },
   "menu": "Menu"
 }
