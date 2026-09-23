@@ -41,50 +41,51 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-describe("driver's job-status actions", () => {
+describe("driver's one-button job", () => {
   const driver = fakeUser('driver', { _id: 'driver-id' });
+  const steps = [
+    { state: { status: 'confirmed', pickupStatus: 'pending', dropoffStatus: 'pending' }, button: 'I reached the pickup', sends: { pickupStatus: 'arrived' } },
+    { state: { status: 'confirmed', pickupStatus: 'arrived', dropoffStatus: 'pending' }, button: 'Goods are loaded', sends: { pickupStatus: 'picked_up', status: 'in_transit' } },
+    { state: { status: 'in_transit', pickupStatus: 'picked_up', dropoffStatus: 'pending' }, button: 'I reached the drop-off', sends: { dropoffStatus: 'arrived' } },
+    { state: { status: 'in_transit', pickupStatus: 'picked_up', dropoffStatus: 'arrived' }, button: 'Goods delivered', sends: { dropoffStatus: 'delivered', status: 'completed' } },
+  ];
 
-  it('offers pickup actions before pickup, and reports picked up correctly', async () => {
+  it.each(steps)('shows only the next step ($button) and sends it', async ({ state, button, sends }) => {
     api.patch.mockResolvedValue({ data: {} });
-    const { findByText, queryByText } = renderAs(driver, baseBooking({ status: 'confirmed', pickupStatus: 'pending' }));
+    const { findByText, queryByText } = renderAs(driver, baseBooking(state));
 
-    expect(await findByText('Arrived at Pickup')).toBeTruthy();
-    expect(await findByText('Picked Up')).toBeTruthy();
-    expect(queryByText('Arrived at Dropoff')).toBeNull();
-    expect(queryByText('Share My Location')).toBeNull(); // not in_transit yet
+    fireEvent.press(await findByText(button));
+    steps.filter((other) => other.button !== button).forEach((other) => expect(queryByText(other.button)).toBeNull());
 
-    fireEvent.press(await findByText('Picked Up'));
-
-    await waitFor(() => expect(api.patch).toHaveBeenCalledWith(
-      `/bookings/${BOOKING_ID}/status`,
-      { pickupStatus: 'picked_up', status: 'in_transit' },
-    ));
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith(`/bookings/${BOOKING_ID}/status`, sends));
   });
 
-  it('offers dropoff actions once picked up, and shares location while in transit', async () => {
-    api.patch.mockResolvedValue({ data: {} });
-    const { findByText, queryByText } = renderAs(driver, baseBooking({
-      status: 'in_transit', pickupStatus: 'picked_up', dropoffStatus: 'pending',
+  it('says where to go and offers directions to that stop', async () => {
+    const { Linking } = require('react-native');
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const { findByText } = renderAs(driver, baseBooking({
+      loadId: {
+        goodsType: 'Cement bags',
+        pickupLocation: { address: 'Kathmandu', coordinates: { lat: 27.7, lng: 85.3 } },
+        dropoffLocation: { address: 'Pokhara' },
+      },
     }));
 
-    expect(await findByText('Arrived at Dropoff')).toBeTruthy();
-    expect(await findByText('Delivered')).toBeTruthy();
-    expect(queryByText('Arrived at Pickup')).toBeNull();
-    expect(await findByText('Share My Location')).toBeTruthy();
-
-    fireEvent.press(await findByText('Delivered'));
-
-    await waitFor(() => expect(api.patch).toHaveBeenCalledWith(
-      `/bookings/${BOOKING_ID}/status`,
-      { dropoffStatus: 'delivered', status: 'completed' },
-    ));
+    expect(await findByText('Go to the pickup')).toBeTruthy();
+    fireEvent.press(await findByText('Directions'));
+    expect(openURL).toHaveBeenCalledWith('https://www.google.com/maps/dir/?api=1&destination=27.7%2C85.3');
   });
 
-  it('hides the job-status card once completed or cancelled', async () => {
+  it('shares location while in transit', async () => {
+    const { findByText } = renderAs(driver, baseBooking({ status: 'in_transit', pickupStatus: 'picked_up' }));
+    expect(await findByText('Share My Location')).toBeTruthy();
+  });
+
+  it('hides the job card once completed', async () => {
     const { findByText, queryByText } = renderAs(driver, baseBooking({ status: 'completed', pickupStatus: 'picked_up', dropoffStatus: 'delivered' }));
 
-    await findByText('Cement bags'); // wait for load
-    expect(queryByText('Update Job Status')).toBeNull();
+    await findByText('Cement bags');
+    expect(queryByText('Your next step')).toBeNull();
     expect(queryByText('Share My Location')).toBeNull();
   });
 });
@@ -193,15 +194,17 @@ describe('asking before steps that cannot be undone', () => {
 
   it('asks before marking delivered, but not before "arrived"', async () => {
     api.patch.mockResolvedValue({ data: {} });
-    const { findByText } = renderAs(fakeUser('driver', { _id: 'driver-id' }), baseBooking({
+    const arriving = renderAs(fakeUser('driver', { _id: 'driver-id' }), baseBooking({
       status: 'in_transit', pickupStatus: 'picked_up', dropoffStatus: 'pending',
     }));
-
-    fireEvent.press(await findByText('Arrived at Dropoff'));
+    fireEvent.press(await arriving.findByText('I reached the drop-off'));
     await waitFor(() => expect(api.patch).toHaveBeenCalled());
     expect(confirmAction).not.toHaveBeenCalled();
 
-    fireEvent.press(await findByText('Delivered'));
+    const delivering = renderAs(fakeUser('driver', { _id: 'driver-id' }), baseBooking({
+      status: 'in_transit', pickupStatus: 'picked_up', dropoffStatus: 'arrived',
+    }));
+    fireEvent.press(await delivering.findByText('Goods delivered'));
     expect(confirmAction).toHaveBeenCalledWith(expect.objectContaining({ title: 'Goods delivered?' }));
   });
 });

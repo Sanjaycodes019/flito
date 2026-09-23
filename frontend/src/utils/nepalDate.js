@@ -39,11 +39,12 @@ export const formatDayKey = (day, { calendar = getCalendar(), withYear = true } 
   return parts.join(' ');
 };
 
-// { name: 'Today' | 'Tomorrow' | 'Thu', date: '17 Sep' or '1 Ashwin' }
+// { name: 'Today' | 'Tomorrow' | 'Thu', date: '17 Sep' or '1 Ashwin' }, the
+// name in the app's language (आज, भोलि, बिही...).
 export const describeDay = (day, today = nepalDay()) => {
   const date = new Date(`${day}T00:00:00Z`);
-  const name = day === today ? 'Today' : day === addDays(today, 1) ? 'Tomorrow' : WEEKDAYS[date.getUTCDay()];
-  return { name, date: formatDayKey(day, { withYear: false }) };
+  const key = day === today ? 'today' : day === addDays(today, 1) ? 'tomorrow' : WEEKDAYS[date.getUTCDay()].toLowerCase();
+  return { name: i18n.t(`common:days.${key}`), date: formatDayKey(day, { withYear: false }) };
 };
 
 // "Today, 15 Sep", "Tomorrow, 16 Sep" or "Thu, 17 Sep".

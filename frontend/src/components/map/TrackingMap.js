@@ -90,7 +90,7 @@ const styles = themedStyles(() => ({
     ...shadow.level2,
   },
   recenterIcon: { marginRight: 4 },
-  recenterText: { ...type.smallMedium, fontSize: 12, color: colors.textPrimary },
+  recenterText: { ...type.smallMedium, fontSize: 14, color: colors.textPrimary },
 }));
 
 export default TrackingMap;

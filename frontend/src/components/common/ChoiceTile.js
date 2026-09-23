@@ -42,7 +42,7 @@ const styles = themedStyles(() => ({
   },
   tileSelected: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
   tilePressed: { opacity: 0.8 },
-  label: { ...type.bodyMedium, fontSize: 14, lineHeight: 20, color: colors.textPrimary, textAlign: 'center' },
+  label: { ...type.bodyMedium, fontSize: 16, lineHeight: 22, color: colors.textPrimary, textAlign: 'center' },
   labelSelected: { color: colors.primaryText },
 }));
 

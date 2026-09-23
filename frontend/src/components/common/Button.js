@@ -49,7 +49,7 @@ const VARIANTS = themed(() => ({
 
 const SIZES = {
   // Large: for the main step buttons of a guided flow. 56px is easy to hit with a thumb.
-  lg: { height: 56, paddingHorizontal: spacing.xxl, fontSize: 17, icon: 24, gap: spacing.sm },
+  lg: { height: 56, paddingHorizontal: spacing.xxl, fontSize: 18, icon: 24, gap: spacing.sm },
   md: { height: 48, paddingHorizontal: spacing.xl, fontSize: textType.bodyMedium.fontSize, icon: iconSize.md, gap: spacing.sm },
   // 40px plus the 8px hitSlop below reaches the 44-48px minimum touch target
   // recommended on both iOS and Android, even though the drawn chip looks
@@ -101,7 +101,10 @@ const Button = ({
         style={[
           styles.button,
           {
-            height: s.height,
+            // A minimum, not a fixed height: a long label in a narrow button
+            // (two side by side on a phone, or a long Nepali phrase) wraps to
+            // a second line and the button grows, instead of spilling out.
+            minHeight: s.height,
             paddingHorizontal: s.paddingHorizontal,
             backgroundColor,
             borderColor,
@@ -117,7 +120,7 @@ const Button = ({
             {icon && iconPosition === 'left' && (
               <Icon name={icon} size={s.icon} color={textColor} style={styles.iconLeft} />
             )}
-            <Text style={[styles.text, { color: textColor, fontSize: s.fontSize }]} numberOfLines={1}>
+            <Text style={[styles.text, { color: textColor, fontSize: s.fontSize }]} numberOfLines={2}>
               {title}
             </Text>
             {icon && iconPosition === 'right' && (
@@ -136,11 +139,12 @@ const styles = themedStyles(() => ({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: spacing.xs,
+    paddingVertical: spacing.xs,
   },
-  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  text: { fontWeight: '600' },
-  iconLeft: { marginRight: spacing.sm },
-  iconRight: { marginLeft: spacing.sm },
+  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexShrink: 1, maxWidth: '100%' },
+  text: { fontWeight: '600', flexShrink: 1, textAlign: 'center' },
+  iconLeft: { marginRight: spacing.sm, flexShrink: 0 },
+  iconRight: { marginLeft: spacing.sm, flexShrink: 0 },
   // Keyboard-focus indicator. React Native has no native outline, so a
   // visible ring is drawn with a second border in the brand accent color.
   focusRing: {

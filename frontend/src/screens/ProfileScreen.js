@@ -225,7 +225,7 @@ const styles = themedStyles(() => ({
   // Profile photo dialog
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   sheetHint: { ...type.small, color: colors.textSecondary, flex: 1 },
-  sheetNote: { ...type.small, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
+  sheetNote: { ...type.caption, fontWeight: '400', color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
 }));
 
 export default ProfileScreen;

@@ -33,11 +33,6 @@
     "driverNotVerifiedMessage": "{{name}} ले अझै पहिचान प्रमाणीकरण पूरा गर्नुभएको छैन, त्यसैले उहाँलाई यो बुकिङमा तोक्न सकिँदैन।",
     "driverAssignedTitle": "चालक तोकियो",
     "driverAssignedMessage": "{{name}} लाई यो बुकिङमा तोकिएको छ",
-    "updateJobStatusTitle": "काम स्थिति अपडेट गर्नुहोस्",
-    "arrivedAtPickup": "उठान स्थानमा पुगियो",
-    "pickedUp": "उठाइयो",
-    "arrivedAtDropoff": "डिलिभरी स्थानमा पुगियो",
-    "delivered": "डिलिभर भयो",
     "cancelBooking": "बुकिङ रद्द गर्नुहोस्",
     "rate": "{{party}} रेट गर्नुहोस्",
     "theOwner": "मालिकलाई",
@@ -116,5 +111,29 @@
     "pickAccessibilityLabel": "{{name}} लाई तोक्नुहोस्",
     "notReady": "{{name}}: FLITO ले लाइसेन्स जाँच गर्दैछ",
     "otherDriver": "अर्को चालकको फोन नम्बर:"
+  },
+  "driverJob": {
+    "nextStep": "तपाईंको अर्को काम",
+    "goToPickup": "सामान उठाउने ठाउँमा जानुहोस्",
+    "goToDropoff": "सामान पुर्‍याउने ठाउँमा लैजानुहोस्",
+    "directions": "बाटो हेर्नुहोस्",
+    "steps": {
+      "arrivedPickup": {
+        "label": "उठाउने ठाउँमा पुग्ने",
+        "button": "म उठाउने ठाउँमा पुगें"
+      },
+      "loaded": {
+        "label": "सामान लोड गर्ने",
+        "button": "सामान लोड भयो"
+      },
+      "arrivedDropoff": {
+        "label": "पुर्‍याउने ठाउँमा पुग्ने",
+        "button": "म पुर्‍याउने ठाउँमा पुगें"
+      },
+      "delivered": {
+        "label": "सामान बुझाउने",
+        "button": "सामान बुझाइयो"
+      }
+    }
   }
 }

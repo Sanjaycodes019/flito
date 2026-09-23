@@ -93,7 +93,7 @@ const styles = themedStyles(() => ({
   title: { ...type.h3, color: colors.textPrimary },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, marginLeft: spacing.sm },
   hint: { ...type.small, color: colors.textMuted, marginBottom: spacing.sm },
-  meta: { ...type.small, fontSize: 11, color: colors.textMuted, marginBottom: spacing.sm },
+  meta: { ...type.caption, fontWeight: '400', color: colors.textMuted, marginBottom: spacing.sm },
 }));
 
 export default LocationSharingToggle;

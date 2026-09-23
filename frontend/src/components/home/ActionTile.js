@@ -7,7 +7,7 @@ import { colors, spacing, radius, shadow, type, themedStyles } from '../../theme
 // a picture, a two-word name, and (optionally) a number that says how much is
 // waiting. No paragraphs to read. `primary` is the main job of the role and
 // spans the full row.
-const ActionTile = ({ icon, title, badge, value, primary = false, onPress, accessibilityLabel }) => {
+const ActionTile = ({ icon, title, badge, value, detail, primary = false, onPress, accessibilityLabel }) => {
   const [hovered, setHovered] = useState(false);
   const hasBadge = badge != null && badge !== 0 && badge !== '0';
   const ink = primary ? colors.textOnPrimary : colors.textPrimary;
@@ -31,6 +31,7 @@ const ActionTile = ({ icon, title, badge, value, primary = false, onPress, acces
       <View style={styles.text}>
         <Text style={[styles.title, { color: ink }]} numberOfLines={2}>{title}</Text>
         {value != null && <Text style={[styles.value, { color: ink }]}>{value}</Text>}
+        {!!detail && <Text style={[styles.detail, { color: ink }]} numberOfLines={2}>{detail}</Text>}
       </View>
       {hasBadge && (
         <View style={[styles.badge, primary && styles.badgePrimary]}>
@@ -69,6 +70,7 @@ const styles = themedStyles(() => ({
   text: { flex: 1, minWidth: 0 },
   title: { ...type.h3 },
   value: { ...type.h2, marginTop: 2 },
+  detail: { ...type.body, marginTop: 2 },
 
   badge: {
     minWidth: 26,

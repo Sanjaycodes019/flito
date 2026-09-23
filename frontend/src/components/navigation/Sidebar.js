@@ -218,7 +218,7 @@ const styles = themedStyles(() => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontSize: 11, fontWeight: '700', color: colors.textOnDark },
+  badgeText: { fontSize: 12, fontWeight: '700', color: colors.textOnDark },
 
   account: { backgroundColor: colors.surfaceMuted, borderRadius: radius.lg, padding: spacing.md, gap: spacing.md },
   accountHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -245,7 +245,7 @@ const styles = themedStyles(() => ({
     borderRadius: radius.pill,
     backgroundColor: colors.primaryMuted,
   },
-  roleTagText: { ...type.caption, fontSize: 10, color: colors.primaryText, textTransform: 'uppercase', letterSpacing: 0.5 },
+  roleTagText: { ...type.caption, fontSize: 12, color: colors.primaryText, textTransform: 'uppercase', letterSpacing: 0.5 },
   tiles: { flexDirection: 'row', gap: spacing.xs },
   tile: {
     flex: 1,
@@ -262,5 +262,5 @@ const styles = themedStyles(() => ({
   tileHovered: { borderColor: colors.border, backgroundColor: colors.surface },
   tileHoveredDanger: { backgroundColor: colors.errorMuted, borderColor: colors.errorMuted },
   tileActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primaryText },
-  tileLabel: { fontSize: 11, fontWeight: '600' },
+  tileLabel: { fontSize: 13, fontWeight: '600' },
 }));

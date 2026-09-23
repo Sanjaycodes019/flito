@@ -64,7 +64,7 @@ const CallContactsCard = ({ booking, myId }) => {
           <Icon name={contact.icon} size={iconSize.lg} color={colors.textMuted} />
           <View style={styles.who}>
             <Text style={styles.role}>{contact.role}</Text>
-            {!!contact.name && <Text style={styles.name} numberOfLines={1}>{contact.name}</Text>}
+            {!!contact.name && <Text style={styles.name} numberOfLines={2}>{contact.name}</Text>}
             {!contact.phone && <Text style={styles.noPhone}>{t('bookings:contacts.noPhone')}</Text>}
           </View>
           {!!contact.phone && (
@@ -98,7 +98,7 @@ const styles = themedStyles(() => ({
   role: { ...type.small, color: colors.textMuted },
   name: { ...type.bodyLarge, fontWeight: '600', color: colors.textPrimary },
   noPhone: { ...type.small, color: colors.textMuted, fontStyle: 'italic' },
-  callButton: { marginVertical: 0, paddingHorizontal: spacing.lg },
+  callButton: { marginVertical: 0, paddingHorizontal: spacing.md },
 }));
 
 export default CallContactsCard;

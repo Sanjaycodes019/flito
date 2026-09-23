@@ -33,11 +33,6 @@
     "driverNotVerifiedMessage": "{{name}} hasn't completed identity verification yet, so they can't be assigned to a booking.",
     "driverAssignedTitle": "Driver assigned",
     "driverAssignedMessage": "{{name}} has been assigned to this booking",
-    "updateJobStatusTitle": "Update Job Status",
-    "arrivedAtPickup": "Arrived at Pickup",
-    "pickedUp": "Picked Up",
-    "arrivedAtDropoff": "Arrived at Dropoff",
-    "delivered": "Delivered",
     "cancelBooking": "Cancel Booking",
     "rate": "Rate {{party}}",
     "theOwner": "the Owner",
@@ -116,5 +111,29 @@
     "pickAccessibilityLabel": "Assign {{name}}",
     "notReady": "{{name}}: license still being checked by FLITO",
     "otherDriver": "Another driver's phone number:"
+  },
+  "driverJob": {
+    "nextStep": "Your next step",
+    "goToPickup": "Go to the pickup",
+    "goToDropoff": "Take the goods to the drop-off",
+    "directions": "Directions",
+    "steps": {
+      "arrivedPickup": {
+        "label": "Reach the pickup",
+        "button": "I reached the pickup"
+      },
+      "loaded": {
+        "label": "Load the goods",
+        "button": "Goods are loaded"
+      },
+      "arrivedDropoff": {
+        "label": "Reach the drop-off",
+        "button": "I reached the drop-off"
+      },
+      "delivered": {
+        "label": "Hand over the goods",
+        "button": "Goods delivered"
+      }
+    }
   }
 }

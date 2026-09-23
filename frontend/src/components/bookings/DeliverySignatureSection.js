@@ -70,7 +70,7 @@ const styles = themedStyles(() => ({
   hint: { ...type.small, color: colors.textMuted, marginVertical: spacing.sm },
   preview: { alignItems: 'center', marginVertical: spacing.sm },
   signatureImage: { width: '100%', height: 120, backgroundColor: colors.white, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.divider },
-  meta: { ...type.small, fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
+  meta: { ...type.caption, fontWeight: '400', color: colors.textMuted, marginTop: spacing.xs },
 }));
 
 export default DeliverySignatureSection;

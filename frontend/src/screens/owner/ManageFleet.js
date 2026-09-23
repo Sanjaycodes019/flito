@@ -1130,7 +1130,7 @@ const styles = themedStyles(() => ({
   optionTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.xs },
   optionLabel: { ...type.smallMedium, color: colors.textPrimary, flexShrink: 1 },
   optionLabelSelected: { color: colors.primaryText },
-  optionDescription: { ...type.small, fontSize: 12, color: colors.textMuted, marginTop: spacing.xxs },
+  optionDescription: { ...type.caption, fontWeight: '400', color: colors.textMuted, marginTop: spacing.xxs },
   optionExamples: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs, fontStyle: 'italic' },
 
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -spacing.xs },
@@ -1217,8 +1217,10 @@ const styles = themedStyles(() => ({
   },
   tipText: { ...type.small, color: colors.infoText, flex: 1 },
   assign: { marginTop: spacing.sm },
-  actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  actionButton: { flex: 1 },
+  // Two buttons side by side when both fit (tablet and up); on a phone each
+  // gets its own full-width row, so a long Nepali label stays readable.
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, marginTop: spacing.sm },
+  actionButton: { flexGrow: 1, flexBasis: 160 },
 }));
 
 export default ManageFleet;

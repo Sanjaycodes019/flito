@@ -445,7 +445,7 @@ const styles = themedStyles(() => ({
   },
   dayChipHovered: { borderColor: colors.borderStrong },
   dayChipSelected: { borderColor: colors.primaryText, backgroundColor: colors.primaryMuted },
-  dayName: { ...type.bodyMedium, fontSize: 14, lineHeight: 20, color: colors.textPrimary },
+  dayName: { ...type.bodyMedium, fontSize: 16, lineHeight: 22, color: colors.textPrimary },
   dayDate: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
   dayTextSelected: { color: colors.primaryText },
 

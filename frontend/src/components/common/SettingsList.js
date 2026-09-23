@@ -164,5 +164,5 @@ const styles = themedStyles(() => ({
     paddingVertical: 3,
     maxWidth: 150,
   },
-  pillText: { ...type.caption, fontSize: 11, textTransform: 'none', letterSpacing: 0 },
+  pillText: { ...type.caption, textTransform: 'none', letterSpacing: 0 },
 }));

@@ -179,7 +179,7 @@ const styles = themedStyles(() => ({
     ...shadow.level2,
   },
   ctaLabel: { color: colors.primaryText },
-  label: { fontSize: 10.5, fontWeight: '600', color: colors.textMuted, maxWidth: '100%' },
+  label: { fontSize: 12, fontWeight: '600', color: colors.textMuted, maxWidth: '100%' },
   labelActive: { color: colors.primaryText },
   badge: {
     position: 'absolute',
@@ -193,7 +193,7 @@ const styles = themedStyles(() => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontSize: 10, fontWeight: '700', color: colors.textOnDark },
+  badgeText: { fontSize: 11, fontWeight: '700', color: colors.textOnDark },
 
   // Laptop: pinned to the left edge, full height.
   sidebarWrap: { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 10, flexDirection: 'row' },

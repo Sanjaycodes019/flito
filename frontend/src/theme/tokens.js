@@ -257,17 +257,21 @@ export const shadow = {
 
 // Typography scale. Every screen heading/body/label should map to one of
 // these instead of a one-off fontSize.
+//
+// Sized for people who may not read easily, often on a small phone in
+// sunlight: body text is 17px, nothing a user must read is under 13px, and
+// line heights leave room for Devanagari's vowel marks above and below.
 export const type = {
-  display: { fontSize: 28, lineHeight: 36, fontWeight: '700' },
-  h1: { fontSize: 24, lineHeight: 31, fontWeight: '700' },
-  h2: { fontSize: 20, lineHeight: 27, fontWeight: '700' },
-  h3: { fontSize: 17, lineHeight: 23, fontWeight: '600' },
-  bodyLarge: { fontSize: 16, lineHeight: 23, fontWeight: '400' },
-  body: { fontSize: 15, lineHeight: 21, fontWeight: '400' },
-  bodyMedium: { fontSize: 15, lineHeight: 21, fontWeight: '600' },
-  small: { fontSize: 13, lineHeight: 18, fontWeight: '400' },
-  smallMedium: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
-  caption: { fontSize: 11, lineHeight: 15, fontWeight: '700' },
+  display: { fontSize: 30, lineHeight: 39, fontWeight: '700' },
+  h1: { fontSize: 26, lineHeight: 34, fontWeight: '700' },
+  h2: { fontSize: 22, lineHeight: 30, fontWeight: '700' },
+  h3: { fontSize: 19, lineHeight: 26, fontWeight: '600' },
+  bodyLarge: { fontSize: 18, lineHeight: 26, fontWeight: '400' },
+  body: { fontSize: 17, lineHeight: 25, fontWeight: '400' },
+  bodyMedium: { fontSize: 17, lineHeight: 25, fontWeight: '600' },
+  small: { fontSize: 15, lineHeight: 21, fontWeight: '400' },
+  smallMedium: { fontSize: 15, lineHeight: 21, fontWeight: '600' },
+  caption: { fontSize: 13, lineHeight: 18, fontWeight: '700' },
 };
 
 // Icon sizes, tied to the text size they typically sit next to.

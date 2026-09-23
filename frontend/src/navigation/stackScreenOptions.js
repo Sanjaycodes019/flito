@@ -17,14 +17,15 @@ const ADMIN_ROUTES = ADMIN_SECTIONS.flatMap((section) => [section.route, section
 const NAV_ROUTES = Object.values(ROLE_NAV).flat().map((item) => item.route);
 
 // Right side of the header. On a laptop the sidebar carries the language switch
-// and account, so it is empty. On a phone or tablet: the language switch (first
-// screens only on a phone, to leave the title room) and your avatar, which opens
-// Profile.
-const HeaderRight = ({ isDesktop, isPhone, isRoot }) => {
+// and account, so it is empty. On a phone or tablet: the language switch and
+// your avatar, which opens Profile. On a phone the switch shows only where the
+// header has no title (Home), since the FLITO mark, a title, the switch, the
+// bell and the avatar don't all fit across one.
+const HeaderRight = ({ isDesktop, isPhone, hasTitle }) => {
   if (isDesktop) return null;
   return (
     <View style={styles.headerRight}>
-      {(!isPhone || isRoot) && <LanguageToggle compact />}
+      {(!isPhone || !hasTitle) && <LanguageToggle compact />}
       <NotificationBell />
       <ProfileButton />
     </View>
@@ -39,19 +40,20 @@ const HeaderRight = ({ isDesktop, isPhone, isRoot }) => {
 const stackScreenOptions = ({ isDesktop, isPhone = false, isAdmin = false, activeTab, rootScreen }) => ({ route }) => {
   const isRoot = route.name === rootScreen || ADMIN_ROUTES.includes(route.name) || (activeTab === 'HomeTab' && NAV_ROUTES.includes(route.name));
   const dropsTitle = route.name === rootScreen || ADMIN_ROUTES.includes(route.name);
+  const hasTitle = !(dropsTitle && isPhone && activeTab === 'HomeTab');
   return {
     headerTintColor: colors.primaryText,
     headerStyle: { backgroundColor: colors.surface },
     headerTitleStyle: { color: colors.textPrimary, fontSize: type.h3.fontSize, fontWeight: type.h3.fontWeight },
     headerShadowVisible: isDesktop,
     contentStyle: { backgroundColor: colors.background },
-    headerRight: () => <HeaderRight isDesktop={isDesktop} isPhone={isPhone} isRoot={isRoot} />,
+    headerRight: () => <HeaderRight isDesktop={isDesktop} isPhone={isPhone} hasTitle={hasTitle} />,
     // The FLITO mark leads a first screen on a phone or tablet; on a laptop it is in the sidebar.
     ...(isRoot && !isDesktop ? { headerLeft: () => <BrandMark /> } : {}),
     // On a laptop the admin pages are a console with its own sidebar (brand, sections,
     // account), so the generic top bar would only repeat it.
     ...(isDesktop && (ADMIN_ROUTES.includes(route.name) || (isAdmin && route.name === rootScreen)) ? { headerShown: false } : {}),
-    ...(dropsTitle && isPhone && activeTab === 'HomeTab' ? { headerTitle: '' } : {}),
+    ...(hasTitle ? {} : { headerTitle: '' }),
   };
 };
 

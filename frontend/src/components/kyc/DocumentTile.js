@@ -38,7 +38,7 @@ const styles = themedStyles(() => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { color: colors.textOnDark, fontWeight: '700', fontSize: 11, marginTop: 2 },
+  badgeText: { color: colors.textOnDark, fontWeight: '700', fontSize: 12, marginTop: 2 },
   labelRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   label: { flex: 1, ...type.small, color: colors.textLink },
 }));

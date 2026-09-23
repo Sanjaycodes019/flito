@@ -168,7 +168,7 @@ const styles = themedStyles(() => ({
   fieldHovered: { borderColor: colors.borderStrong },
   fieldError: { borderColor: colors.error },
   fieldDisabled: { backgroundColor: colors.surfaceMuted },
-  value: { ...type.body, fontSize: 16, color: colors.textPrimary, flex: 1 },
+  value: { ...type.body, color: colors.textPrimary, flex: 1 },
   placeholder: { color: colors.textMuted },
   valueDisabled: { color: colors.disabledText },
   helper: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },

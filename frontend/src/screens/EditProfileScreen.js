@@ -222,7 +222,7 @@ const styles = themedStyles(() => ({
   },
   verifiedPillOn: { backgroundColor: colors.successMuted },
   verifiedPillOff: { backgroundColor: colors.warningMuted },
-  verifiedPillText: { ...type.caption, fontSize: 10 },
+  verifiedPillText: { ...type.caption, fontSize: 12 },
   readOnlyRow: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.md },
   readOnly: { ...type.small, color: colors.textMuted, textTransform: 'capitalize' },
 }));

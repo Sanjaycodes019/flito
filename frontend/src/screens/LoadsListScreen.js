@@ -185,7 +185,7 @@ const styles = themedStyles(() => ({
   route: { ...type.small, color: colors.textMuted },
   meta: { ...type.small, color: colors.textMuted },
   budget: { ...type.bodyMedium, color: colors.primaryText },
-  date: { ...type.small, fontSize: 11, color: colors.textMuted, marginTop: spacing.xs },
+  date: { ...type.caption, fontWeight: '400', color: colors.textMuted, marginTop: spacing.xs },
 }));
 
 export default LoadsListScreen;

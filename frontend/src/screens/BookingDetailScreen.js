@@ -12,6 +12,7 @@ import DeliveryProofSection from '../components/bookings/DeliveryProofSection';
 import DeliverySignatureSection from '../components/bookings/DeliverySignatureSection';
 import LocationSharingToggle from '../components/bookings/LocationSharingToggle';
 import CallContactsCard from '../components/bookings/CallContactsCard';
+import DriverJobCard from '../components/bookings/DriverJobCard';
 import TrackingMap from '../components/map/TrackingMap';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import useScreenLayout from '../hooks/useScreenLayout';
@@ -150,19 +151,12 @@ const BookingDetailScreen = ({ route }) => {
     onConfirm: action,
   });
 
-  const sendPickupStatus = (pickupStatus) => runAction(() =>
-    api.patch(`/bookings/${bookingId}/status`, { pickupStatus, status: pickupStatus === 'picked_up' ? 'in_transit' : undefined })
-  );
-  const handlePickupStatus = (pickupStatus) => (pickupStatus === 'picked_up'
-    ? confirmThen('pickedUp', () => sendPickupStatus(pickupStatus))
-    : sendPickupStatus(pickupStatus));
-
-  const sendDropoffStatus = (dropoffStatus) => runAction(() =>
-    api.patch(`/bookings/${bookingId}/status`, { dropoffStatus, status: dropoffStatus === 'delivered' ? 'completed' : undefined })
-  );
-  const handleDropoffStatus = (dropoffStatus) => (dropoffStatus === 'delivered'
-    ? confirmThen('delivered', () => sendDropoffStatus(dropoffStatus))
-    : sendDropoffStatus(dropoffStatus));
+  // The driver's next step (see DriverJobCard), asking first when it can't be undone.
+  const handleDriverStep = (step) => {
+    const send = () => runAction(() => api.patch(`/bookings/${bookingId}/status`, step.send));
+    if (step.confirm) confirmThen(step.confirm, send);
+    else send();
+  };
 
   const handleCancel = () => confirmThen(
     'cancel',
@@ -194,6 +188,10 @@ const BookingDetailScreen = ({ route }) => {
     >
       <View style={twoColumns ? styles.columns : null}>
         <View style={twoColumns ? styles.mainColumn : null}>
+          {/* For the driver the next step is the whole point of this page, so it comes first. */}
+          {isDriver && booking.status !== 'completed' && booking.status !== 'cancelled' && (
+            <DriverJobCard booking={booking} busy={busy} onStep={handleDriverStep} />
+          )}
           <CallContactsCard booking={booking} myId={user?._id} />
           <Card>
             <View style={styles.row}>
@@ -278,24 +276,6 @@ const BookingDetailScreen = ({ route }) => {
             </Card>
           )}
 
-          {isDriver && booking.status !== 'completed' && booking.status !== 'cancelled' && (
-            <Card>
-              <SectionTitle icon="truckDelivery" title={t('bookings:detail.updateJobStatusTitle')} />
-              {booking.pickupStatus !== 'picked_up' && (
-                <View style={styles.actionsRow}>
-                  <Button title={t('bookings:detail.arrivedAtPickup')} icon="pickup" variant="tertiary" onPress={() => handlePickupStatus('arrived')} loading={busy} style={styles.actionButton} />
-                  <Button title={t('bookings:detail.pickedUp')} icon="checkmark" onPress={() => handlePickupStatus('picked_up')} loading={busy} style={styles.actionButton} />
-                </View>
-              )}
-              {booking.pickupStatus === 'picked_up' && booking.dropoffStatus !== 'delivered' && (
-                <View style={styles.actionsRow}>
-                  <Button title={t('bookings:detail.arrivedAtDropoff')} icon="dropoff" variant="tertiary" onPress={() => handleDropoffStatus('arrived')} loading={busy} style={styles.actionButton} />
-                  <Button title={t('bookings:detail.delivered')} icon="checkmark" onPress={() => handleDropoffStatus('delivered')} loading={busy} style={styles.actionButton} />
-                </View>
-              )}
-            </Card>
-          )}
-
           <DeliveryProofSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
           <DeliverySignatureSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />
 
@@ -373,8 +353,6 @@ const styles = themedStyles(() => ({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   sectionIcon: { marginRight: spacing.xs },
   sectionTitle: { ...type.h3, color: colors.textPrimary },
-  actionsRow: { flexDirection: 'row', gap: spacing.sm },
-  actionButton: { flex: 1 },
   cancelButton: { marginTop: spacing.xs },
   waitingDriver: { ...type.small, color: colors.textMuted, paddingVertical: spacing.sm },
   otherDriverLabel: { ...type.smallMedium, color: colors.textSecondary, marginTop: spacing.md, marginBottom: spacing.xs },

@@ -188,7 +188,7 @@ const styles = themedStyles(() => ({
   tile: { flex: 1, minWidth: 0, backgroundColor: colors.surfaceMuted, borderRadius: radius.lg, padding: spacing.md },
   tileIcon: { width: 30, height: 30, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   tileValue: { ...type.bodyMedium, color: colors.textPrimary },
-  tileLabel: { ...type.small, fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  tileLabel: { ...type.caption, fontWeight: '400', color: colors.textMuted, marginTop: 2 },
 }));
 
 export default ProfileHero;

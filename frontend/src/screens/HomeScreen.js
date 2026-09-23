@@ -143,7 +143,23 @@ const HomeScreen = ({ navigation }) => {
     );
   }
   if (isDriver) {
-    mainTile = tile('myJobs', 'jobs', activeBookings.length, 'Jobs', { primary: true });
+    // One job under way (the usual case): the big button opens it straight
+    // to its next step, instead of a list with one thing in it.
+    const [onlyJob] = activeBookings.length === 1 ? activeBookings : [];
+    mainTile = onlyJob ? (
+      <ActionTile
+        key="continueJob"
+        icon="truckDelivery"
+        title={t('common:home.tiles.continueJob')}
+        detail={[
+          onlyJob.loadId?.goodsType,
+          [onlyJob.loadId?.pickupLocation, onlyJob.loadId?.dropoffLocation].map((stop) => stop?.label || stop?.address).filter(Boolean).join(' → '),
+        ].filter(Boolean).join(' · ')}
+        onPress={() => navigation.navigate('BookingDetail', { bookingId: onlyJob._id })}
+        primary
+      />
+    ) : tile('myJobs', 'jobs', activeBookings.length, 'Jobs', { primary: true });
+    if (onlyJob) tiles.push(tile('myJobs', 'jobs', null, 'Jobs'));
     tiles.push(tile('earnings', 'earnings', null, 'Earnings', { value: formatCurrency(todaysEarnings) }));
   }
   if (user?.role === ROLES.ADMIN) {

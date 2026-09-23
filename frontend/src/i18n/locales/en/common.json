@@ -236,7 +236,8 @@
       "myTrucks": "My trucks",
       "myJobs": "My jobs",
       "earnings": "Earnings",
-      "admin": "Admin"
+      "admin": "Admin",
+      "continueJob": "Continue my job"
     }
   },
   "errorBoundary": {
@@ -250,5 +251,16 @@
     "skip": "Skip",
     "cancel": "Cancel",
     "stepOf": "Step {{current}} of {{total}}"
+  },
+  "days": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat"
   }
 }

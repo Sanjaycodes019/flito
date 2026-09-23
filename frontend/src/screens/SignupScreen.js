@@ -497,7 +497,7 @@ const styles = themedStyles(() => ({
   roleLabel: { ...type.smallMedium, color: colors.textPrimary, marginTop: spacing.xs, textAlign: 'center' },
   roleLabelStacked: { marginTop: 0, textAlign: 'left' },
   roleLabelSelected: { color: colors.primaryText },
-  roleDesc: { ...type.small, fontSize: 11, lineHeight: 14, color: colors.textMuted, textAlign: 'center', marginTop: 2 },
+  roleDesc: { ...type.caption, fontWeight: '400', color: colors.textMuted, textAlign: 'center', marginTop: 2 },
   roleDescStacked: { textAlign: 'left' },
   roleCheck: { position: 'absolute', top: 6, right: 6 },
   fieldRow: { flexDirection: 'row', gap: spacing.md },

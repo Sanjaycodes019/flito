@@ -49,7 +49,7 @@ const styles = themedStyles(() => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontSize: 10, lineHeight: 13, fontWeight: '700', color: colors.textOnDark },
+  badgeText: { fontSize: 11, lineHeight: 14, fontWeight: '700', color: colors.textOnDark },
 }));
 
 export default NotificationBell;
