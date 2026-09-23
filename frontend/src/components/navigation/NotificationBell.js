@@ -34,7 +34,7 @@ const NotificationBell = () => {
 };
 
 const styles = themedStyles(() => ({
-  button: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  button: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   badge: {
     position: 'absolute',
     top: 0,

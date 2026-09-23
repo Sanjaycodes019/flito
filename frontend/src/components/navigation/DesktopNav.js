@@ -83,7 +83,7 @@ export const ProfileButton = () => {
       accessibilityLabel={t('navigation:tabs.profile')}
       hitSlop={6}
     >
-      <Avatar uri={user?.avatarUrl} role={user?.role} size={36} />
+      <Avatar uri={user?.avatarUrl} role={user?.role} size={32} />
     </Pressable>
   );
 };

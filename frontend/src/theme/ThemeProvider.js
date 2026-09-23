@@ -1,6 +1,7 @@
 import React, { Fragment, createContext, useContext, useEffect, useMemo } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as NavigationBar from 'expo-navigation-bar';
 import { colors, applyScheme } from './tokens';
 import { setThemePreference, useThemePreference } from '../services/themePreference';
 
@@ -27,11 +28,20 @@ export const ThemeProvider = ({ children }) => {
     document.body.style.backgroundColor = colors.background;
   }, [scheme]);
 
+  // Android: a solid status bar and navigation bar in the app's own colours, so
+  // the header and bottom bar sit below/above them instead of running underneath
+  // (which is how titles ended up behind the clock and notification icons).
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    NavigationBar.setBackgroundColorAsync(colors.surface).catch(() => {});
+    NavigationBar.setButtonStyleAsync(scheme === 'dark' ? 'light' : 'dark').catch(() => {});
+  }, [scheme]);
+
   const value = useMemo(() => ({ scheme, preference, setPreference: setThemePreference }), [scheme, preference]);
 
   return (
     <ThemeContext.Provider value={value}>
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} translucent={false} backgroundColor={colors.surface} />
       <Fragment key={scheme}>{children}</Fragment>
     </ThemeContext.Provider>
   );

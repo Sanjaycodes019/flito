@@ -7,20 +7,17 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../theme/icons';
 import Button from '../components/common/Button';
 import { SidebarFrame, SidebarNavItem } from '../components/navigation/Sidebar';
-import { colors, spacing, radius, shadow, iconSize, themedStyles } from '../theme/tokens';
+import { colors, radius, shadow, iconSize, themedStyles } from '../theme/tokens';
 import useBreakpoint from '../hooks/useBreakpoint';
 import useAdminStats from '../admin/useAdminStats';
 import { ADMIN_SECTIONS } from '../admin/sections';
 import { ROLE_NAV, isItemActive } from './roleNav';
 
-const BAR_HEIGHT = 62;
+const BAR_HEIGHT = 54;
 // The raised main action sticks out above the bar. Android only delivers touches
 // inside a view's own bounds, so the bar's frame includes that headroom (with the
 // coloured surface drawn below it) instead of letting the button overhang.
-const CTA_LIFT = 14;
-// Android phones with three-button navigation report no bottom inset, so keep a
-// little breathing room under the labels there.
-const MIN_BOTTOM_GAP = Platform.OS === 'android' ? 6 : 0;
+const CTA_LIFT = 10;
 
 // True while the keyboard is up. The bar steps aside then, so it doesn't ride on
 // top of the keyboard and squeeze a form into a sliver.
@@ -144,11 +141,13 @@ const AppTabBar = ({ state, navigation }) => {
   if (keyboardOpen) return null;
 
   const items = barItems({ role, t, navigation, focusedTab: focused.name, nestedName, stats });
-  const bottom = Math.max(insets.bottom, MIN_BOTTOM_GAP);
+  // Android reserves the system navigation bar itself (it reports no inset), so
+  // the bar adds nothing there; iPhones and gesture-inset devices add theirs.
+  const bottom = insets.bottom;
   const lift = items.some((item) => item.cta) ? CTA_LIFT : 0;
 
   return (
-    <View style={[styles.bar, { height: BAR_HEIGHT + bottom + lift, paddingTop: spacing.xs + lift, paddingBottom: bottom }]} accessibilityRole="tablist">
+    <View style={[styles.bar, { height: BAR_HEIGHT + bottom + lift, paddingTop: 2 + lift, paddingBottom: bottom }]} accessibilityRole="tablist">
       <View style={[styles.barSurface, { top: lift }]} pointerEvents="none" />
       {items.map((item) => <TabItem key={item.key} item={item} />)}
     </View>
@@ -166,13 +165,13 @@ const styles = themedStyles(() => ({
     borderTopWidth: 1,
     borderTopColor: colors.divider,
   },
-  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, minWidth: 0 },
-  pill: { width: 52, height: 30, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 1, minWidth: 0 },
+  pill: { width: 48, height: 26, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   pillActive: { backgroundColor: colors.primaryMuted },
   cta: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     marginTop: -CTA_LIFT,
     backgroundColor: colors.primary,
     alignItems: 'center',
@@ -180,7 +179,7 @@ const styles = themedStyles(() => ({
     ...shadow.level2,
   },
   ctaLabel: { color: colors.primaryText },
-  label: { fontSize: 11, fontWeight: '600', color: colors.textMuted, maxWidth: '100%' },
+  label: { fontSize: 10.5, fontWeight: '600', color: colors.textMuted, maxWidth: '100%' },
   labelActive: { color: colors.primaryText },
   badge: {
     position: 'absolute',
