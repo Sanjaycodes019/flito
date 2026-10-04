@@ -262,5 +262,15 @@
     "thu": "Thu",
     "fri": "Fri",
     "sat": "Sat"
+  },
+  "card": {
+    "viewDetails": "View details",
+    "pickup": "Pickup",
+    "offers": "Offers",
+    "posted": "Posted",
+    "booked": "Booked",
+    "sent": "Sent",
+    "truck": "Truck",
+    "yourTurn": "Your turn"
   }
 }

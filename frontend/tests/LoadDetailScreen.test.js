@@ -23,6 +23,9 @@ const baseLoad = (overrides = {}) => ({
   ...overrides,
 });
 
+// 30 tonnes on three trucks, one booked so far.
+const multiLoad = (overrides = {}) => baseLoad({ weight: 30000, trucksNeeded: 3, trucksBooked: 1, ...overrides });
+
 const baseQuote = (overrides = {}) => ({
   _id: 'quote-1',
   loadId: LOAD_ID,
@@ -49,6 +52,8 @@ const BIG_TRUCK = {
   unavailableReason: null,
   askingPrice: 16000,
 };
+
+const truck = (n, overrides = {}) => ({ ...BIG_TRUCK, _id: `truck-${n}`, registrationNumber: `BA 2 KHA 45${n}0`, ...overrides });
 
 // Routes each api.get call to the fixture that matches its path; each test
 // supplies only the pieces its scenario actually needs.
@@ -78,7 +83,7 @@ beforeEach(() => {
 });
 
 describe('shipper reviewing an offer', () => {
-  it("shows accept/counter/reject for a pending quote (it's the shipper's turn)", async () => {
+  it('shows accept and decline for a truck an owner offered, and no bargaining', async () => {
     const shipper = fakeUser('shipper');
     const { findByText, queryByText } = renderAs(shipper, {
       load: baseLoad(),
@@ -88,14 +93,14 @@ describe('shipper reviewing an offer', () => {
     expect(await findByText('Bikash Thapa')).toBeTruthy();
     expect(await findByText('Rs. 15,000')).toBeTruthy();
     expect(await findByText('Accept')).toBeTruthy();
-    expect(await findByText('Counter')).toBeTruthy();
-    expect(await findByText('Reject')).toBeTruthy();
+    expect(await findByText('Decline')).toBeTruthy();
+    expect(queryByText('Counter')).toBeNull();
     expect(queryByText('Waiting for the other party to respond to your offer.')).toBeNull();
   });
 
-  it('accepts a quote and navigates to the resulting booking', async () => {
+  it('accepts the truck on a one-truck load and goes to the booking', async () => {
     const shipper = fakeUser('shipper');
-    api.patch.mockResolvedValue({ data: { booking: { _id: 'booking-99' } } });
+    api.patch.mockResolvedValue({ data: { booking: { _id: 'booking-99' }, load: { trucksNeeded: 1, trucksBooked: 1 } } });
     const { findByText, navigation } = renderAs(shipper, {
       load: baseLoad(),
       quotes: [baseQuote()],
@@ -107,7 +112,7 @@ describe('shipper reviewing an offer', () => {
     await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('BookingDetail', { bookingId: 'booking-99' }));
   });
 
-  it('rejects a quote directly, no confirmation needed', async () => {
+  it('declines an offer directly, no confirmation needed', async () => {
     const shipper = fakeUser('shipper');
     api.patch.mockResolvedValue({ data: {} });
     const { findByText } = renderAs(shipper, {
@@ -115,68 +120,12 @@ describe('shipper reviewing an offer', () => {
       quotes: [baseQuote()],
     });
 
-    fireEvent.press(await findByText('Reject'));
+    fireEvent.press(await findByText('Decline'));
 
     await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/quotes/quote-1/reject'));
   });
 
-  it('sends a counter-offer with the typed amount', async () => {
-    const shipper = fakeUser('shipper');
-    api.patch.mockResolvedValue({ data: {} });
-    const { findByText, getByPlaceholderText } = renderAs(shipper, {
-      load: baseLoad(),
-      quotes: [baseQuote()],
-    });
-
-    fireEvent.press(await findByText('Counter'));
-    fireEvent.changeText(getByPlaceholderText('15000'), '13000');
-    fireEvent.press(await findByText('Send'));
-
-    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/quotes/quote-1/counter', { counterOfferPrice: 13000 }));
-  });
-
-  it('refuses to send a counter-offer of zero', async () => {
-    const shipper = fakeUser('shipper');
-    const { findByText, getByPlaceholderText } = renderAs(shipper, {
-      load: baseLoad(),
-      quotes: [baseQuote()],
-    });
-    const { notify } = require('../src/utils/alert');
-
-    fireEvent.press(await findByText('Counter'));
-    fireEvent.changeText(getByPlaceholderText('15000'), '0');
-    fireEvent.press(await findByText('Send'));
-
-    expect(notify).toHaveBeenCalledWith('Invalid price', expect.any(String));
-    expect(api.patch).not.toHaveBeenCalled();
-  });
-
-  it("shows 'waiting' after the shipper counters, with no accept or counter", async () => {
-    const shipper = fakeUser('shipper');
-    const { findByText, queryByText } = renderAs(shipper, {
-      load: baseLoad({ status: 'negotiating' }),
-      quotes: [baseQuote({ status: 'countered', counterOfferBy: 'shipper', counterOfferPrice: 13000 })],
-    });
-
-    expect(await findByText('Waiting for the other party to respond to your offer.')).toBeTruthy();
-    expect(queryByText('Accept')).toBeNull();
-    expect(queryByText('Counter')).toBeNull();
-    expect(queryByText('Reject')).toBeNull();
-  });
-
-  it('shows accept/counter/reject again once the owner counters back', async () => {
-    const shipper = fakeUser('shipper');
-    const { findByText } = renderAs(shipper, {
-      load: baseLoad({ status: 'negotiating' }),
-      quotes: [baseQuote({ status: 'countered', counterOfferBy: 'owner', counterOfferPrice: 14000 })],
-    });
-
-    expect(await findByText('Rs. 14,000')).toBeTruthy();
-    expect(await findByText('Accept')).toBeTruthy();
-    expect(await findByText('Counter')).toBeTruthy();
-  });
-
-  it('shows the earlier offers in a back-and-forth', async () => {
+  it('keeps the earlier offers of a quote from when bargaining was allowed', async () => {
     const shipper = fakeUser('shipper');
     const { findByText, getByText } = renderAs(shipper, {
       load: baseLoad({ status: 'negotiating' }),
@@ -188,9 +137,10 @@ describe('shipper reviewing an offer', () => {
       })],
     });
 
-    expect(await findByText('Earlier offers (3 of 6)')).toBeTruthy();
+    expect(await findByText('Earlier offers')).toBeTruthy();
     expect(getByText('Rs. 12,000')).toBeTruthy();
-    expect(getByText('Latest offer from the owner')).toBeTruthy();
+    expect(getByText('Rs. 14,000')).toBeTruthy();
+    expect(getByText('Accept')).toBeTruthy();
   });
 
   it('shows a truck request the shipper sent, and lets them withdraw it', async () => {
@@ -230,15 +180,62 @@ describe('shipper reviewing an offer', () => {
   });
 });
 
-describe('owner quoting and responding', () => {
-  it('shows a quote form when no quote has been submitted yet', async () => {
+describe('a load that needs several trucks', () => {
+  it('shows how many trucks are booked, and what each carries', async () => {
+    const shipper = fakeUser('shipper');
+    const { findByLabelText, getByText } = renderAs(shipper, { load: multiLoad(), quotes: [] });
+
+    expect(await findByLabelText('1 of 3 trucks booked')).toBeTruthy();
+    expect(getByText('3 trucks, 10,000 kg each')).toBeTruthy();
+    expect(getByText('Choose Trucks')).toBeTruthy();
+    expect(getByText('You need 2 more trucks. See the trucks that can carry a share, and send your price.')).toBeTruthy();
+  });
+
+  it('keeps the shipper on the load after accepting while trucks are still needed', async () => {
+    const shipper = fakeUser('shipper');
+    api.patch.mockResolvedValue({ data: { booking: { _id: 'booking-2' }, load: { trucksNeeded: 3, trucksBooked: 2 } } });
+    const { findByText, navigation } = renderAs(shipper, { load: multiLoad(), quotes: [baseQuote()] });
+    const { notify } = require('../src/utils/alert');
+
+    fireEvent.press(await findByText('Accept'));
+
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('Truck booked', '2 of 3 trucks booked. Keep choosing, or tap Enough Trucks.'));
+    expect(navigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('links each booked truck to its booking', async () => {
+    const shipper = fakeUser('shipper');
+    const { findByText, navigation } = renderAs(shipper, {
+      load: multiLoad(),
+      quotes: [baseQuote({ status: 'accepted', booking: { _id: 'booking-1', status: 'confirmed' } })],
+    });
+
+    fireEvent.press(await findByText('Open Booking'));
+    expect(navigation.navigate).toHaveBeenCalledWith('BookingDetail', { bookingId: 'booking-1' });
+  });
+
+  it('lets the shipper stop at the trucks they have, and no longer cancel the load', async () => {
+    const shipper = fakeUser('shipper');
+    api.patch.mockResolvedValue({ data: {} });
+    const { findByText, queryByText } = renderAs(shipper, { load: multiLoad(), quotes: [] });
+
+    expect(queryByText('Cancel Load')).toBeNull();
+    // The test setup confirms every confirmAction straight away.
+    fireEvent.press(await findByText('Enough Trucks'));
+
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith(`/loads/${LOAD_ID}/close`));
+  });
+});
+
+describe('owner offering trucks and responding', () => {
+  it('shows an offer form when no truck has been offered yet', async () => {
     const owner = fakeUser('owner');
     const { findByText } = renderAs(owner, { load: baseLoad({ status: 'open' }), myTrucks: [BIG_TRUCK] });
 
-    expect(await findByText('Submit a Quote')).toBeTruthy();
+    expect(await findByText('Offer a Truck')).toBeTruthy();
   });
 
-  it('quotes with the chosen truck, starting from its asking price', async () => {
+  it('offers the chosen truck, starting from its asking price', async () => {
     const owner = fakeUser('owner');
     api.post.mockResolvedValue({ data: {} });
     const { findByText, getByDisplayValue, getByText } = renderAs(owner, {
@@ -249,10 +246,33 @@ describe('owner quoting and responding', () => {
     // A truck too small for the load says why, and the one that fits is chosen.
     expect(await findByText('Carries up to 3,000 kg, and this load is 6,000 kg')).toBeTruthy();
     fireEvent.changeText(getByDisplayValue('16000'), '15500');
-    fireEvent.press(getByText('Submit Quote'));
+    fireEvent.press(getByText('Send Offer'));
 
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/quotes', {
-      loadId: LOAD_ID, quotedPrice: 15500, truckId: 'truck-1',
+      loadId: LOAD_ID, quotedPrice: 15500, truckIds: ['truck-1'],
+    }));
+  });
+
+  it('lets an owner offer several trucks, up to the number still needed', async () => {
+    const owner = fakeUser('owner');
+    api.post.mockResolvedValue({ data: {} });
+    const { findByText, getByLabelText, getByText } = renderAs(owner, {
+      load: multiLoad(),
+      myTrucks: [truck(1), truck(2), truck(3)],
+    });
+
+    expect(await findByText('Offer Your Trucks')).toBeTruthy();
+    expect(getByText('Pick up to 2. Each truck carries 10,000 kg.')).toBeTruthy();
+    fireEvent.press(getByLabelText('10-Ton Truck BA 2 KHA 4520'));
+
+    // Two picked: the third can't be added, and the total shows.
+    expect(getByLabelText('10-Ton Truck BA 2 KHA 4530').props.accessibilityState.disabled).toBe(true);
+    expect(getByText('2 trucks × Rs. 16,000')).toBeTruthy();
+    expect(getByText('Rs. 32,000')).toBeTruthy();
+    fireEvent.press(getByText('Offer 2 Trucks'));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/quotes', {
+      loadId: LOAD_ID, quotedPrice: 16000, truckIds: ['truck-1', 'truck-2'],
     }));
   });
 
@@ -268,29 +288,30 @@ describe('owner quoting and responding', () => {
     expect(navigation.navigate).toHaveBeenCalledWith('Fleet');
   });
 
-  it('shows an unverified prompt instead of the quote form', async () => {
+  it('shows an unverified prompt instead of the offer form', async () => {
     const owner = fakeUser('owner', { kycStatus: 'not_submitted' });
     const { findByText, queryByText } = renderAs(owner, { load: baseLoad({ status: 'open' }), myQuotes: [] });
 
-    expect(await findByText('Verify your identity to submit a quote on this load.')).toBeTruthy();
-    expect(queryByText('Submit a Quote')).toBeNull();
+    expect(await findByText('Verify your identity to offer your trucks for this load.')).toBeTruthy();
+    expect(queryByText('Offer a Truck')).toBeNull();
   });
 
-  it("shows 'waiting' for their own freshly-submitted quote (their own offer)", async () => {
+  it("shows 'waiting' for their own offer, and no form once the load's trucks are all offered", async () => {
     const owner = fakeUser('owner');
     const { findByText, queryByText } = renderAs(owner, {
       load: baseLoad({ status: 'quoted' }),
       myQuotes: [baseQuote({ status: 'pending' })],
     });
 
-    expect(await findByText('Your Quote')).toBeTruthy();
+    expect(await findByText('Your Offer')).toBeTruthy();
     expect(await findByText('Waiting for the other party to respond to your offer.')).toBeTruthy();
     expect(queryByText('Accept')).toBeNull();
+    expect(queryByText('Offer a Truck')).toBeNull();
   });
 
-  it("lets the owner answer a shipper's booking request", async () => {
+  it("lets the owner accept or decline a shipper's booking request", async () => {
     const owner = fakeUser('owner', { kycStatus: 'approved' });
-    const { findByText } = renderAs(owner, {
+    const { findByText, queryByText } = renderAs(owner, {
       load: baseLoad({ status: 'quoted' }),
       myQuotes: [baseQuote({ initiatedBy: 'shipper', status: 'pending', quotedPrice: 14000 })],
     });
@@ -298,31 +319,19 @@ describe('owner quoting and responding', () => {
     expect(await findByText('Booking Request')).toBeTruthy();
     expect(await findByText('A shipper asked for your truck')).toBeTruthy();
     expect(await findByText('Accept')).toBeTruthy();
-    expect(await findByText('Counter')).toBeTruthy();
+    expect(await findByText('Decline')).toBeTruthy();
+    expect(queryByText('Counter')).toBeNull();
   });
 
-  it('lets a verified owner accept/counter/reject when the shipper has countered them', async () => {
-    const owner = fakeUser('owner', { kycStatus: 'approved' });
-    const { findByText } = renderAs(owner, {
-      load: baseLoad({ status: 'negotiating' }),
-      myQuotes: [baseQuote({ status: 'countered', counterOfferBy: 'shipper', counterOfferPrice: 13000 })],
-    });
-
-    expect(await findByText('Accept')).toBeTruthy();
-    expect(await findByText('Counter')).toBeTruthy();
-    expect(await findByText('Reject')).toBeTruthy();
-  });
-
-  it('lets an unverified owner reject a countered quote, but not accept or counter it', async () => {
+  it('lets an unverified owner decline a request, but not accept it', async () => {
     const owner = fakeUser('owner', { kycStatus: 'rejected' });
     const { findByText, queryByText } = renderAs(owner, {
-      load: baseLoad({ status: 'negotiating' }),
-      myQuotes: [baseQuote({ status: 'countered', counterOfferBy: 'shipper', counterOfferPrice: 13000 })],
+      load: baseLoad({ status: 'quoted' }),
+      myQuotes: [baseQuote({ initiatedBy: 'shipper', status: 'pending', quotedPrice: 14000 })],
     });
 
-    expect(await findByText('Verify your identity to accept or counter this offer. You can still reject it.')).toBeTruthy();
-    expect(await findByText('Reject')).toBeTruthy();
+    expect(await findByText('Verify your identity to accept this offer. You can still decline it.')).toBeTruthy();
+    expect(await findByText('Decline')).toBeTruthy();
     expect(queryByText('Accept')).toBeNull();
-    expect(queryByText('Counter')).toBeNull();
   });
 });

@@ -1,14 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import StatusBadge from '../../components/common/StatusBadge';
+import { useNavigation } from '@react-navigation/native';
 import DocumentTile from '../../components/kyc/DocumentTile';
 import { formatDate, kycDocumentLabel, kycIdTypeLabel } from '../../utils/helpers';
 import api from '../../services/api';
 import ResourceScreen from '../components/ResourceScreen';
-import AdminCard, { Fact, DocumentGrid } from '../components/AdminCard';
+import AdminCard, { Fact, DocumentGrid, VerificationPill } from '../components/AdminCard';
 import ReviewActions from '../components/ReviewActions';
 import { refreshAdminStats } from '../useAdminStats';
-import { displayName } from '../format';
+import { displayName, formatPhone } from '../format';
+import { openAdminRecord } from '../records';
 
 const FILTER_GROUPS = [
   {
@@ -23,6 +24,7 @@ const FILTER_GROUPS = [
 
 const KycCard = ({ user, list }) => {
   const { t } = useTranslation();
+  const navigation = useNavigation();
   const status = list.filters.status || 'pending';
 
   const decide = async (decision, reason) => {
@@ -31,31 +33,34 @@ const KycCard = ({ user, list }) => {
     refreshAdminStats();
   };
 
-  const name = displayName(user);
+  const name = displayName(user) || user.email || formatPhone(user.phone);
   return (
     <AdminCard
       person={name}
       title={name}
       subtitle={[t(`admin:roles.${user.role}`, user.role), user.companyName].filter(Boolean).join(' · ')}
-      right={<StatusBadge status={status} />}
+      badges={<VerificationPill status={status} />}
+      onPress={() => openAdminRecord(navigation, 'user', user._id)}
       footer={status === 'pending' ? <ReviewActions audience="user" onDecide={decide} /> : null}
     >
       <Fact icon="email">{user.email}</Fact>
-      <Fact icon="phone">{user.phone}</Fact>
-      <Fact icon="owner">
-        {user.addedBy ? t('admin:kycQueue.addedBy', { name: user.addedBy.name, phone: user.addedBy.phone || '' }) : null}
+      <Fact icon="phone">{formatPhone(user.phone)}</Fact>
+      <Fact icon="owner" lines={2}>
+        {user.addedBy ? t('admin:kycQueue.addedBy', { name: user.addedBy.name, phone: formatPhone(user.addedBy.phone) }) : null}
       </Fact>
-      <Fact icon="idCard">
+      <Fact icon="idCard" lines={2}>
         {user.identityDocuments?.length
           ? t('admin:kycQueue.identity', { list: user.identityDocuments.map((idType) => kycIdTypeLabel(idType, t)).join(', ') })
           : null}
       </Fact>
-      <Fact icon="calendar">{user.submittedAt ? t('admin:common.submitted', { date: formatDate(user.submittedAt) }) : null}</Fact>
-      <DocumentGrid>
-        {user.documents.map((doc) => (
-          <DocumentTile key={doc._id} doc={doc} label={kycDocumentLabel(doc.type, t)} />
-        ))}
-      </DocumentGrid>
+      <Fact icon="time" label={t('admin:cards.sent')}>{user.submittedAt ? formatDate(user.submittedAt) : null}</Fact>
+      {user.documents?.length ? (
+        <DocumentGrid>
+          {user.documents.map((doc) => (
+            <DocumentTile key={doc._id} doc={doc} label={kycDocumentLabel(doc.type, t)} size={48} />
+          ))}
+        </DocumentGrid>
+      ) : null}
     </AdminCard>
   );
 };

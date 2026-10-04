@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
 import Avatar from '../common/Avatar';
 import { BrandMark } from './DesktopNav';
+import QuickToggles from '../common/QuickToggles';
 import { logout } from '../../redux/slices/authSlice';
 import { authService } from '../../services/auth';
 import socketService from '../../services/socket';
@@ -130,13 +131,14 @@ export const AccountCard = ({ current }) => {
 };
 
 // The frame of a laptop sidebar. Every role's sidebar is this, so they look
-// like one product: the FLITO mark, a tag saying which console you are in, an
-// optional main action, a labelled group of navigation rows (children), and
-// the account card.
+// like one product: the FLITO mark with the language + light/dark pill, a tag
+// saying which console you are in, an optional main action, a labelled group of
+// navigation rows (children), and the account card.
 export const SidebarFrame = ({ tagIcon, tag, group, action, current, children }) => (
   <View style={styles.sidebar}>
     <View style={styles.brandRow}>
       <BrandMark />
+      <QuickToggles />
     </View>
     <View style={styles.consoleTag}>
       <Icon name={tagIcon} size={iconSize.xs} color={colors.primaryText} />
@@ -168,7 +170,7 @@ const styles = themedStyles(() => ({
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.md,
   },
-  brandRow: { marginLeft: -spacing.xs },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginLeft: -spacing.xs },
   consoleTag: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,15 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import StatusBadge from '../../components/common/StatusBadge';
+import { useNavigation } from '@react-navigation/native';
 import DocumentTile from '../../components/kyc/DocumentTile';
 import { TRUCK_DOCUMENT_LABELS } from '../../utils/constants';
 import { bodyTypeLabel, formatDate, formatKg, truckTypeLabel } from '../../utils/helpers';
 import api from '../../services/api';
 import ResourceScreen from '../components/ResourceScreen';
-import AdminCard, { Fact, DocumentGrid } from '../components/AdminCard';
+import AdminCard, { Fact, Pill, DocumentGrid, VerificationPill } from '../components/AdminCard';
 import ReviewActions from '../components/ReviewActions';
 import { refreshAdminStats } from '../useAdminStats';
-import { partyName } from '../format';
+import { partyName, formatPhone } from '../format';
+import { openAdminRecord } from '../records';
 
 const FILTER_GROUPS = [
   {
@@ -27,6 +28,7 @@ const documentLabel = (docType, t) => t(`trucks:documents.${docType}`, TRUCK_DOC
 
 const TruckCard = ({ truck, list }) => {
   const { t } = useTranslation();
+  const navigation = useNavigation();
   const owner = truck.owner;
 
   const decide = async (decision, reason) => {
@@ -37,37 +39,42 @@ const TruckCard = ({ truck, list }) => {
 
   const specs = [truckTypeLabel(truck.truckType, t), bodyTypeLabel(truck.bodyType, t), truck.capacity ? formatKg(truck.capacity) : null]
     .filter(Boolean).join(' · ');
+  const papers = [
+    { key: 'bluebookTax', date: truck.bluebookRenewedUntil },
+    { key: 'insurance', date: truck.insurance?.validUntil },
+    { key: 'emissionTest', date: truck.emissionTestValidUntil },
+  ];
 
   return (
     <AdminCard
       icon="truck"
       title={truck.registrationNumber}
       subtitle={[specs, truck.makeModel, truck.year].filter(Boolean).join(' · ')}
-      right={<StatusBadge status={truck.verificationStatus || 'pending'} />}
+      badges={(
+        <>
+          <VerificationPill status={truck.verificationStatus || 'not_submitted'} kind="papers" />
+          {owner?.verified ? <Pill icon="owner" tone="success">{t('admin:cards.ownerVerified')}</Pill> : null}
+        </>
+      )}
+      onPress={() => openAdminRecord(navigation, 'truck', truck._id)}
       footer={truck.verificationStatus === 'pending' ? <ReviewActions audience="owner" onDecide={decide} /> : null}
     >
-      <Fact icon="owner">
-        {t('admin:truckQueue.owner', { details: [partyName(owner), owner?.phone, owner?.email].filter(Boolean).join(' · ') }) +
-          (owner?.verified ? t('admin:truckQueue.verifiedSuffix') : t('admin:truckQueue.notVerifiedSuffix'))}
-      </Fact>
-      <Fact icon="document">
-        {truck.chassisNumber || truck.engineNumber
-          ? t('admin:truckQueue.chassisEngine', { chassis: truck.chassisNumber || '-', engine: truck.engineNumber || '-' })
-          : null}
-      </Fact>
-      <Fact icon="calendar">{truck.bluebookRenewedUntil ? t('admin:truckQueue.bluebookTax', { date: formatDate(truck.bluebookRenewedUntil) }) : null}</Fact>
-      <Fact icon="calendar">
-        {truck.insurance?.validUntil
-          ? t('admin:truckQueue.insuranceUntil', { date: formatDate(truck.insurance.validUntil) }) +
-            (truck.insurance.company ? t('admin:truckQueue.insuranceCompanySuffix', { company: truck.insurance.company }) : '')
-          : null}
-      </Fact>
-      <Fact icon="calendar">{truck.emissionTestValidUntil ? t('admin:truckQueue.greenSticker', { date: formatDate(truck.emissionTestValidUntil) }) : null}</Fact>
-      <Fact icon="time">{truck.submittedAt ? t('admin:common.submitted', { date: formatDate(truck.submittedAt) }) : null}</Fact>
+      <Fact icon="owner" label={t('admin:detail.truck.owner')}>{partyName(owner) || '—'}</Fact>
+      <Fact icon="phone">{formatPhone(owner?.phone)}</Fact>
+      {papers.map(({ key, date }) => {
+        if (!date) return null;
+        const expired = new Date(date).getTime() < Date.now();
+        return (
+          <Fact key={key} icon="document" label={t(`admin:detail.truck.${key}`)} tone={expired ? 'warning' : undefined}>
+            {expired ? t('admin:detail.truck.expiredOn', { date: formatDate(date) }) : formatDate(date)}
+          </Fact>
+        );
+      })}
+      <Fact icon="time" label={t('admin:cards.sent')}>{truck.submittedAt ? formatDate(truck.submittedAt) : null}</Fact>
       {truck.documents?.length ? (
         <DocumentGrid>
           {truck.documents.map((doc) => (
-            <DocumentTile key={doc._id} doc={doc} label={documentLabel(doc.type, t)} />
+            <DocumentTile key={doc._id} doc={doc} label={documentLabel(doc.type, t)} size={48} />
           ))}
         </DocumentGrid>
       ) : null}

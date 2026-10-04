@@ -1,13 +1,14 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, FlatList, RefreshControl } from 'react-native';
+import { View, FlatList, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import Card from '../../components/common/Card';
+import RecordCard, { Fact, Pill, RouteLine } from '../../components/common/RecordCard';
+import { CardCell, cardGridProps, useCardColumns } from '../../components/common/CardGrid';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
-import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
+import { colors, themedStyles } from '../../theme/tokens';
 import { formatCurrency, formatDate, getErrorMessage, truckTypeLabel } from '../../utils/helpers';
+import { dayLabel } from '../../utils/nepalDate';
 import { isTurnOf, openingSide, standingOffer } from '../../utils/negotiation';
 import { notify } from '../../utils/alert';
 import api from '../../services/api';
@@ -21,7 +22,8 @@ const MyQuotesScreen = ({ navigation }) => {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const layout = useScreenLayout('narrow');
+  const layout = useScreenLayout('wide');
+  const columns = useCardColumns();
 
   const load = useCallback(async () => {
     try {
@@ -51,6 +53,8 @@ const MyQuotesScreen = ({ navigation }) => {
 
   return (
     <FlatList
+      key={`columns-${columns}`}
+      {...cardGridProps(columns)}
       style={styles.container}
       contentContainerStyle={[styles.content, layout.contentStyle]}
       data={quotes}
@@ -71,50 +75,43 @@ const MyQuotesScreen = ({ navigation }) => {
         const goodsType = load.goodsType || t('trucks:myQuotes.loadFallback');
 
         return (
-          <Card
-            style={styles.card}
-            onPress={() => navigation.navigate('LoadDetail', { loadId: load._id || load })}
-            accessibilityLabel={t('trucks:myQuotes.cardAccessibilityLabel', {
-              goodsType,
-              kind: request ? t('trucks:myQuotes.bookingRequestWord') : t('trucks:myQuotes.quoteWord'),
-            })}
-          >
-            <View style={styles.row}>
-              <Text style={styles.goodsType} numberOfLines={1}>{goodsType}</Text>
-              <StatusBadge status={item.status} />
-            </View>
-            <Text style={styles.kind} numberOfLines={1}>
-              {[
-                request ? t('trucks:myQuotes.bookingRequestFromShipper') : t('trucks:myQuotes.yourQuote'),
-                truck && `${truckTypeLabel(truck.truckType, t)} ${truck.registrationNumber || ''}`.trim(),
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
-            {load.pickupLocation?.address ? (
-              <View style={styles.routeRow}>
-                <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
-                <Text style={styles.route} numberOfLines={1}>{load.pickupLocation.label || load.pickupLocation.address}</Text>
-                <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
-                <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
-                <Text style={styles.route} numberOfLines={1}>{load.dropoffLocation?.label || load.dropoffLocation?.address}</Text>
-              </View>
-            ) : null}
-            <View style={styles.rowBottom}>
-              <Text style={styles.price}>{formatCurrency(standingOffer(item).price)}</Text>
-              <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-            </View>
-            {needsYou && (
-              <View style={styles.actionNeededRow}>
-                <Icon name="warning" size={iconSize.xs} color={colors.warningText} />
-                <Text style={styles.actionNeeded}>
-                  {request && item.status === 'pending'
-                    ? t('trucks:myQuotes.shipperWantsYourTruck')
-                    : t('trucks:myQuotes.shipperCountered')}
-                </Text>
-              </View>
-            )}
-          </Card>
+          <CardCell columns={columns}>
+            <RecordCard
+              icon={request ? 'send' : 'quote'}
+              title={goodsType}
+              subtitle={request ? t('trucks:myQuotes.bookingRequestFromShipper') : t('trucks:myQuotes.yourQuote')}
+              highlight={needsYou}
+              badges={(
+                <>
+                  <StatusBadge status={item.status} />
+                  <Pill icon="price" tone="accent">{formatCurrency(standingOffer(item).price)}</Pill>
+                  {needsYou ? <Pill icon="warning" tone="warning">{t('common:card.yourTurn')}</Pill> : null}
+                </>
+              )}
+              onPress={() => navigation.navigate('LoadDetail', { loadId: load._id || load })}
+              accessibilityLabel={t('trucks:myQuotes.cardAccessibilityLabel', {
+                goodsType,
+                kind: request ? t('trucks:myQuotes.bookingRequestWord') : t('trucks:myQuotes.quoteWord'),
+              })}
+            >
+              {load.pickupLocation || load.dropoffLocation ? (
+                <RouteLine
+                  from={load.pickupLocation?.label || load.pickupLocation?.address}
+                  to={load.dropoffLocation?.label || load.dropoffLocation?.address}
+                />
+              ) : null}
+              <Fact icon="truck" label={t('common:card.truck')}>
+                {truck ? [truckTypeLabel(truck.truckType, t), truck.registrationNumber].filter(Boolean).join(' · ') : null}
+              </Fact>
+              <Fact icon="calendar" label={t('common:card.pickup')}>{load.pickupDay ? dayLabel(load.pickupDay) : null}</Fact>
+              <Fact icon="time" label={t('common:card.sent')}>{formatDate(item.createdAt)}</Fact>
+              {needsYou ? (
+                <Fact icon="warning" tone="warning" lines={2}>
+                  {request && item.status === 'pending' ? t('trucks:myQuotes.shipperWantsYourTruck') : t('trucks:myQuotes.shipperCountered')}
+                </Fact>
+              ) : null}
+            </RecordCard>
+          </CardCell>
         );
       }}
     />
@@ -124,26 +121,6 @@ const MyQuotesScreen = ({ navigation }) => {
 const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1 },
-  card: { marginVertical: spacing.xs },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  kind: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
-  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },
-  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
-  goodsType: { ...type.h3, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
-  route: { ...type.small, color: colors.textMuted },
-  price: { ...type.bodyMedium, color: colors.primaryText },
-  date: { ...type.small, color: colors.textMuted },
-  actionNeededRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: spacing.sm,
-    backgroundColor: colors.warningMuted,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  actionNeeded: { ...type.small, color: colors.warningText, fontWeight: '600', flex: 1 },
 }));
 
 export default MyQuotesScreen;

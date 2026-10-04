@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { validateAddress, validateArea, describeAddress } = require('../services/nepalLocations');
 const { nepalDay, addDays, isDayKey } = require('../services/nepalTime');
 const {
@@ -5,6 +6,7 @@ const {
 } = require('../config/truckTypes');
 const { fail: respond } = require('../utils/respond');
 const { isValidPin, isGuessablePin } = require('../services/pin');
+const { MAX_TRUCKS_PER_LOAD } = require('../services/loadSlots');
 
 const PHONE_REGEX = /^\+977\d{10}$/;
 const EMAIL_AUTH_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -208,7 +210,7 @@ const cleanStop = (input, name) => {
 };
 
 // Matching trucks needs the weight, so it's required. The heaviest rigs on
-// Nepal's roads carry about this much.
+// Nepal's roads carry about this much, so it caps each truck's share.
 const MAX_LOAD_WEIGHT_KG = 60000;
 const MAX_PICKUP_DAYS_AHEAD = 14;
 
@@ -229,12 +231,18 @@ const pickupDayFrom = (value) => {
 const validateCreateLoad = (req, res, next) => {
   const fail = (message, code, extra) => respond(res, 400, code, message, extra);
   const { goodsType, weight, pickupDate, pickupLocation, dropoffLocation } = req.body;
+  // One truck when not given.
+  const trucksNeeded = req.body.trucksNeeded ?? 1;
 
   if (typeof goodsType !== 'string' || !goodsType.trim() || goodsType.trim().length > 100) {
     return fail('goodsType is required (up to 100 characters)', 'VALIDATION_LOAD_GOODS_TYPE');
   }
-  if (typeof weight !== 'number' || !Number.isFinite(weight) || weight <= 0 || weight > MAX_LOAD_WEIGHT_KG) {
-    return fail(`weight is required, in kg, up to ${MAX_LOAD_WEIGHT_KG.toLocaleString('en-IN')}`, 'VALIDATION_LOAD_WEIGHT', { max: MAX_LOAD_WEIGHT_KG });
+  if (!Number.isInteger(trucksNeeded) || trucksNeeded < 1 || trucksNeeded > MAX_TRUCKS_PER_LOAD) {
+    return fail(`trucksNeeded must be a whole number from 1 to ${MAX_TRUCKS_PER_LOAD}`, 'VALIDATION_LOAD_TRUCKS_NEEDED', { max: MAX_TRUCKS_PER_LOAD });
+  }
+  const maxWeight = MAX_LOAD_WEIGHT_KG * trucksNeeded;
+  if (typeof weight !== 'number' || !Number.isFinite(weight) || weight <= 0 || weight > maxWeight) {
+    return fail(`weight is required, in kg, up to ${maxWeight.toLocaleString('en-IN')}`, 'VALIDATION_LOAD_WEIGHT', { max: maxWeight });
   }
 
   // Today when not given.
@@ -247,6 +255,7 @@ const validateCreateLoad = (req, res, next) => {
   if (dropoffStop.error) return fail(dropoffStop.error, dropoffStop.code, dropoffStop.extra);
 
   req.body.goodsType = goodsType.trim();
+  req.body.trucksNeeded = trucksNeeded;
   req.body.pickupDay = pickup.day;
   req.body.pickupLocation = pickupStop.stop;
   req.body.dropoffLocation = dropoffStop.stop;
@@ -271,19 +280,22 @@ const MAX_PRICE = 10000000;
 const PRICE_RULE = `a whole number of rupees from Rs. ${MIN_PRICE} to Rs. ${MAX_PRICE.toLocaleString('en-IN')}`;
 const isValidPrice = (value) => Number.isInteger(value) && value >= MIN_PRICE && value <= MAX_PRICE;
 
+// An owner applies with one or more of their trucks (`truckIds`, or a single
+// `truckId`), at one price per truck.
 const validateCreateQuote = (req, res, next) => {
   const fail = (message, code, extra) => respond(res, 400, code, message, extra);
   const { loadId, quotedPrice, truckId } = req.body;
   if (!loadId) return fail('loadId is required', 'VALIDATION_LOAD_ID_REQUIRED');
   if (!isValidPrice(quotedPrice)) return fail(`quotedPrice must be ${PRICE_RULE}`, 'VALIDATION_PRICE', { field: 'quotedPrice', min: MIN_PRICE, max: MAX_PRICE });
-  if (!truckId) return fail('truckId is required: choose which of your trucks will carry this load', 'VALIDATION_QUOTE_TRUCK_REQUIRED');
-  next();
-};
-
-const validateCounterOffer = (req, res, next) => {
-  if (!isValidPrice(req.body.counterOfferPrice)) {
-    return respond(res, 400, 'VALIDATION_PRICE', `counterOfferPrice must be ${PRICE_RULE}`, { field: 'counterOfferPrice', min: MIN_PRICE, max: MAX_PRICE });
+  const truckIds = req.body.truckIds ?? (truckId ? [truckId] : []);
+  if (!Array.isArray(truckIds) || !truckIds.length) {
+    return fail('truckIds is required: choose which of your trucks will carry this load', 'VALIDATION_QUOTE_TRUCK_REQUIRED');
   }
+  const unique = [...new Set(truckIds.map(String))];
+  if (unique.length > MAX_TRUCKS_PER_LOAD || !unique.every((id) => mongoose.isValidObjectId(id))) {
+    return fail(`truckIds must be up to ${MAX_TRUCKS_PER_LOAD} of your trucks`, 'VALIDATION_QUOTE_TRUCK_REQUIRED', { max: MAX_TRUCKS_PER_LOAD });
+  }
+  req.body.truckIds = unique;
   next();
 };
 
@@ -584,7 +596,6 @@ module.exports = {
   validateCreateLoad,
   validateRelist,
   validateCreateQuote,
-  validateCounterOffer,
   validateTruckRequest,
   validateCreateTruck,
   validateUpdateTruck,

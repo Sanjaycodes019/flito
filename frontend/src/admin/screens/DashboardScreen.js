@@ -15,6 +15,7 @@ import api from '../../services/api';
 import { formatDate } from '../../utils/helpers';
 import useAdminStats, { refreshAdminStats } from '../useAdminStats';
 import { displayName } from '../format';
+import { openAdminRecord } from '../records';
 
 // Headline numbers. `stat` is a key of GET /admin/stats, `to` the section it
 // opens, `hintStat` a second number shown under the label. Add a tile by
@@ -205,8 +206,14 @@ const DashboardScreen = () => {
             ) : newest.length === 0 ? (
               <Text style={styles.empty}>{t('admin:dashboard.noData')}</Text>
             ) : newest.map((user, index) => (
-              <View key={user._id} style={[styles.userRow, index > 0 && styles.userRowRule]}>
-                <Avatar role={user.role} size={36} />
+              <Pressable
+                key={user._id}
+                onPress={() => openAdminRecord(navigation, 'user', user._id)}
+                accessibilityRole="link"
+                accessibilityLabel={displayName(user) || user.email}
+                style={({ pressed, hovered }) => [styles.userRow, index > 0 && styles.userRowRule, (pressed || hovered) && styles.userRowActive]}
+              >
+                <Avatar uri={user.avatarUrl} role={user.role} size={36} />
                 <View style={styles.userText}>
                   <Text style={styles.userName} numberOfLines={1}>{displayName(user) || user.email}</Text>
                   <Text style={styles.userMeta} numberOfLines={1}>
@@ -214,7 +221,8 @@ const DashboardScreen = () => {
                   </Text>
                 </View>
                 <StatusBadge status={user.status} />
-              </View>
+                <Icon name="forward" size={iconSize.sm} color={colors.textMuted} />
+              </Pressable>
             ))}
           </Card>
         </>
@@ -271,8 +279,9 @@ const styles = themedStyles(() => ({
 
   list: { paddingVertical: spacing.xs },
   listLoading: { minHeight: 80 },
-  userRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  userRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.sm, marginHorizontal: -spacing.sm, borderRadius: radius.md },
   userRowRule: { borderTopWidth: 1, borderTopColor: colors.divider },
+  userRowActive: { backgroundColor: colors.surfaceMuted },
   userText: { flex: 1, minWidth: 0 },
   userName: { ...type.bodyMedium, color: colors.textPrimary },
   userMeta: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },

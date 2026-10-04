@@ -11,12 +11,14 @@ const {
   offerExpiresAt,
 } = require('../services/expiry');
 const { capacityOf, driverIsReady, unavailableReason } = require('../services/truckMatching');
+const { standingOffer } = require('../services/negotiation');
 const {
-  MAX_OPEN_REQUESTS_PER_LOAD,
-  counterProblem,
-  offerHistory,
-  standingOffer,
-} = require('../services/negotiation');
+  HAS_OPEN_SLOT,
+  maxOpenRequestsFor,
+  openSlotsOf,
+  trucksBookedOf,
+  trucksNeededOf,
+} = require('../services/loadSlots');
 const { requiresVerification } = require('../services/kycPolicy');
 const { busyDaysOf } = require('../services/tripSchedule');
 const { PARTY_FIELDS, withVerification } = require('../services/partyView');
@@ -35,11 +37,11 @@ const withDetails = (query) => query.populate('ownerId', PARTY_FIELDS).populate(
 // A populated quote as the other party sees it, with who and what is verified.
 const quoteView = (quote) => withVerification(quote, { people: ['ownerId'], trucks: ['truckId'] });
 
-// A new offer counts toward the load's offers and moves an untouched load to
+// New offers count toward the load's offers and move an untouched load to
 // "quoted". Both updates are atomic, so offers landing together can't lose a
-// count, and a later offer can't pull "negotiating" back to "quoted".
-const recordNewOffer = async (load) => {
-  await Load.updateOne({ _id: load._id }, { $inc: { totalQuotes: 1 } });
+// count.
+const recordNewOffers = async (load, count = 1) => {
+  await Load.updateOne({ _id: load._id }, { $inc: { totalQuotes: count } });
   await Load.updateOne({ _id: load._id, status: 'open' }, { status: 'quoted' });
 };
 
@@ -56,30 +58,45 @@ const refuseIfLoadClosed = (res, load) => {
   return false;
 };
 
-// An owner quotes on a load with one of their own trucks that can carry it.
+// An owner applies to a load with one or more of their own trucks that can
+// carry it, at one price per truck. Each truck becomes its own offer, so the
+// shipper can take some of them and not others. An owner can't offer more
+// trucks than the load still needs, and each truck only once.
 exports.createQuote = async (req, res, next) => {
   try {
-    const { loadId, quotedPrice, truckId, estimatedDuration } = req.body;
+    const { loadId, quotedPrice, truckIds, estimatedDuration } = req.body;
 
     const load = await Load.findById(loadId);
     if (!load) return fail(res, 404, 'QUOTES_LOAD_NOT_FOUND', 'Load not found');
     if (refuseIfLoadClosed(res, load)) return;
 
-    const truck = await Truck.findOne({ _id: truckId, ownerId: req.user.userId });
-    if (!truck) return fail(res, 404, 'QUOTES_TRUCK_NOT_IN_FLEET', 'That truck is not in your fleet');
-    const problem = unavailableReason(truck, load);
-    if (problem) return fail(res, 400, 'QUOTES_TRUCK_UNAVAILABLE', problem, { detail: problem });
+    const trucks = await Truck.find({ _id: { $in: truckIds }, ownerId: req.user.userId });
+    if (trucks.length !== truckIds.length) return fail(res, 404, 'QUOTES_TRUCK_NOT_IN_FLEET', 'That truck is not in your fleet');
+    for (const truck of trucks) {
+      const problem = unavailableReason(truck, load);
+      if (problem) {
+        const detail = trucks.length > 1 ? `${truck.registrationNumber}: ${problem}` : problem;
+        return fail(res, 400, 'QUOTES_TRUCK_UNAVAILABLE', detail, { detail });
+      }
+    }
 
-    // One live negotiation per owner per load. They negotiate on it rather
-    // than stacking new offers.
-    const existing = await Quote.exists({
-      loadId,
-      ownerId: req.user.userId,
-      status: { $in: OPEN_QUOTE_STATUSES },
-    });
-    if (existing) return fail(res, 409, 'QUOTES_ACTIVE_OFFER_EXISTS', 'You already have an active offer on this load');
+    const live = await Quote.find({ loadId, ownerId: req.user.userId, status: { $in: OPEN_QUOTE_STATUSES } }).select('truckId');
+    const liveTrucks = new Set(live.map((quote) => String(quote.truckId)));
+    if (trucks.some((truck) => liveTrucks.has(String(truck._id)))) {
+      return fail(res, 409, 'QUOTES_ACTIVE_OFFER_EXISTS', 'You have already offered that truck for this load');
+    }
+    const slots = openSlotsOf(load);
+    if (live.length + trucks.length > slots) {
+      return fail(
+        res,
+        400,
+        'QUOTES_MORE_TRUCKS_THAN_NEEDED',
+        `This load needs ${slots} more ${slots === 1 ? 'truck' : 'trucks'}, so you can offer up to ${slots} in all.`,
+        { slots },
+      );
+    }
 
-    const quote = await Quote.create({
+    const quotes = await Quote.insertMany(trucks.map((truck) => ({
       loadId,
       ownerId: req.user.userId,
       truckId: truck._id,
@@ -90,22 +107,26 @@ exports.createQuote = async (req, res, next) => {
       offers: [{ by: 'owner', price: quotedPrice }],
       estimatedDuration,
       expiresAt: offerExpiresAt(load),
-    });
-    await recordNewOffer(load);
+    })));
+    await recordNewOffers(load, quotes.length);
 
     const [updatedLoad, populated] = await Promise.all([
       Load.findById(load._id),
-      withDetails(Quote.findById(quote._id)),
+      withDetails(Quote.find({ _id: { $in: quotes.map((quote) => quote._id) } })),
     ]);
+    const views = populated.map(quoteView);
 
-    req.io?.to(`user-${load.shipperId}`).emit('new-quote', { load: updatedLoad, quote: quoteView(populated) });
+    views.forEach((quote) => req.io?.to(`user-${load.shipperId}`).emit('new-quote', { load: updatedLoad, quote }));
+    const owner = displayName(populated[0].ownerId);
     await sendPushToUser(load.shipperId, {
-      title: 'New quote received',
-      body: `${displayName(populated.ownerId)} quoted ${formatCurrency(quotedPrice)} on your ${load.goodsType} load`,
+      title: quotes.length > 1 ? `${quotes.length} trucks applied` : 'A truck applied',
+      body: quotes.length > 1
+        ? `${owner} offers ${quotes.length} trucks at ${formatCurrency(quotedPrice)} each for your ${load.goodsType} load`
+        : `${owner} offers a truck at ${formatCurrency(quotedPrice)} for your ${load.goodsType} load`,
       data: { type: 'load', loadId: String(load._id) },
     });
 
-    res.status(201).json({ success: true, quote: quoteView(populated) });
+    res.status(201).json({ success: true, quotes: views });
   } catch (error) {
     next(error);
   }
@@ -132,7 +153,7 @@ exports.requestTruck = async (req, res, next) => {
     if (problem) return fail(res, 400, 'QUOTES_TRUCK_UNAVAILABLE', problem, { detail: problem });
 
     const [existing, waiting] = await Promise.all([
-      Quote.exists({ loadId: load._id, ownerId: owner._id, status: { $in: OPEN_QUOTE_STATUSES } }),
+      Quote.exists({ loadId: load._id, truckId: truck._id, status: { $in: OPEN_QUOTE_STATUSES } }),
       Quote.countDocuments({ loadId: load._id, initiatedBy: 'shipper', status: { $in: OPEN_QUOTE_STATUSES } }),
     ]);
     if (existing) {
@@ -140,17 +161,18 @@ exports.requestTruck = async (req, res, next) => {
         res,
         409,
         'QUOTES_OPEN_OFFER_WITH_OWNER',
-        `You already have an open offer with ${displayName(owner)} on this load. Reply to it instead.`,
+        `There is already an open offer for this truck from ${displayName(owner)}. Answer it instead.`,
         { ownerName: displayName(owner) },
       );
     }
-    if (waiting >= MAX_OPEN_REQUESTS_PER_LOAD) {
+    const maxRequests = maxOpenRequestsFor(load);
+    if (waiting >= maxRequests) {
       return fail(
         res,
         409,
         'QUOTES_TOO_MANY_OPEN_REQUESTS',
-        `You can have ${MAX_OPEN_REQUESTS_PER_LOAD} requests waiting at once. Wait for a reply, or withdraw one first.`,
-        { max: MAX_OPEN_REQUESTS_PER_LOAD },
+        `You can have ${maxRequests} requests waiting at once. Wait for a reply, or withdraw one first.`,
+        { max: maxRequests },
       );
     }
 
@@ -165,7 +187,7 @@ exports.requestTruck = async (req, res, next) => {
       offers: [{ by: 'shipper', price }],
       expiresAt: offerExpiresAt(load),
     });
-    await recordNewOffer(load);
+    await recordNewOffers(load);
     const populated = await withDetails(Quote.findById(quote._id));
 
     req.io?.to(`user-${owner._id}`).emit('quote-updated', { quote: quoteView(populated) });
@@ -214,9 +236,10 @@ const loadNegotiation = async (req, res) => {
   return { quote, load, side: isShipper ? 'shipper' : 'owner' };
 };
 
-// Shared by accept and counter: the offer must still be live, its load still
-// taking offers, and it must be the caller's turn. Nobody responds to their own
-// standing offer. Returns the sent response when a rule fails.
+// Before accepting: the offer must still be live, its load still taking
+// offers, and it must be the caller's turn. An owner's application is the
+// shipper's to accept; a shipper's request is the owner's. Nobody accepts their
+// own offer. Returns the sent response when a rule fails.
 const refuseIfNotRespondable = (res, { quote, load, side }) => {
   if (!OPEN_QUOTE_STATUSES.includes(quote.status)) {
     return fail(res, 400, 'QUOTES_ALREADY_DECIDED', `Quote is already ${quote.status}`, { status: quote.status });
@@ -235,52 +258,9 @@ const refuseIfNotRespondable = (res, { quote, load, side }) => {
 // simultaneous responses can't both apply.
 const unchangedSince = (quote) => ({ _id: quote._id, status: quote.status, updatedAt: quote.updatedAt });
 
-// Shipper or owner makes a counter-offer, within the negotiation rules.
-exports.counterQuote = async (req, res, next) => {
-  try {
-    const negotiation = await loadNegotiation(req, res);
-    if (!negotiation) return;
-    if (refuseIfNotRespondable(res, negotiation)) return;
-    const { quote, load, side } = negotiation;
-
-    const price = req.body.counterOfferPrice;
-    const problem = counterProblem(quote, side, price);
-    if (problem) return fail(res, 400, 'QUOTES_COUNTER_PROBLEM', problem, { detail: problem });
-
-    const now = new Date();
-    const updated = await Quote.findOneAndUpdate(
-      unchangedSince(quote),
-      {
-        status: 'countered',
-        counterOfferPrice: price,
-        counterOfferBy: side,
-        counterOfferedAt: now,
-        offers: [...offerHistory(quote), { by: side, price, at: now }],
-        // A counter is fresh activity, so the offer gets a full window again.
-        expiresAt: offerExpiresAt(load),
-      },
-      { new: true },
-    );
-    if (!updated) return fail(res, 409, 'QUOTES_CHANGED_UNDERNEATH', CHANGED_UNDERNEATH);
-
-    await Load.updateOne({ _id: load._id, status: { $in: ['open', 'quoted'] } }, { status: 'negotiating' });
-
-    const notifyUserId = side === 'shipper' ? quote.ownerId : load.shipperId;
-    req.io?.to(`user-${notifyUserId}`).emit('quote-updated', { quote: updated });
-    await sendPushToUser(notifyUserId, {
-      title: 'Counter-offer received',
-      body: `New offer of ${formatCurrency(price)} on ${load.goodsType}`,
-      data: { type: 'load', loadId: String(load._id) },
-    });
-
-    res.json({ success: true, quote: updated });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Accepting closes the negotiation and creates the Booking. Whoever did NOT
-// make the standing offer accepts it.
+// Accepting books one truck: it fills one of the load's slots and creates that
+// truck's Booking. Whoever did NOT make the offer accepts it. Once every slot
+// is filled the load is booked and the offers still open are closed.
 exports.acceptQuote = async (req, res, next) => {
   try {
     const negotiation = await loadNegotiation(req, res);
@@ -313,17 +293,19 @@ exports.acceptQuote = async (req, res, next) => {
       if (truck && busyDays.length) await Truck.updateOne({ _id: truck._id }, { $pull: { reservedDays: { $in: busyDays } } });
     };
 
-    // Then the load, claimed atomically: when two acceptances race on the same
-    // load exactly one matches and books it.
+    // Then a slot on the load, claimed atomically: when acceptances race for
+    // the last slot exactly one matches and gets it.
     const claimed = await Load.findOneAndUpdate(
-      { _id: load._id, status: { $in: BIDDABLE_LOAD_STATUSES } },
-      { status: 'booked' },
+      { _id: load._id, status: { $in: BIDDABLE_LOAD_STATUSES }, ...HAS_OPEN_SLOT },
+      { $inc: { trucksBooked: 1 } },
       { new: true },
     );
     if (!claimed) {
       await releaseTruck();
-      return fail(res, 400, 'QUOTES_LOAD_ALREADY_BOOKED', 'This load has already been booked');
+      return fail(res, 400, 'QUOTES_LOAD_ALREADY_BOOKED', 'This load already has all the trucks it needs');
     }
+    const full = trucksBookedOf(claimed) >= trucksNeededOf(claimed);
+    if (full) await Load.updateOne({ _id: load._id, status: { $in: BIDDABLE_LOAD_STATUSES } }, { status: 'booked' });
 
     const accepted = await Quote.findOneAndUpdate(
       unchangedSince(quote),
@@ -331,8 +313,9 @@ exports.acceptQuote = async (req, res, next) => {
       { new: true },
     );
     if (!accepted) {
-      // The quote was countered or rejected mid-request: release everything.
-      await Load.updateOne({ _id: load._id, status: 'booked' }, { status: load.status });
+      // The quote was withdrawn or declined mid-request: release everything.
+      await Load.updateOne({ _id: load._id }, { $inc: { trucksBooked: -1 } });
+      if (full) await Load.updateOne({ _id: load._id, status: 'booked' }, { status: load.status });
       await releaseTruck();
       return fail(res, 409, 'QUOTES_CHANGED_UNDERNEATH', CHANGED_UNDERNEATH);
     }
@@ -355,31 +338,25 @@ exports.acceptQuote = async (req, res, next) => {
       amountPending: finalPrice,
     });
 
-    // The load is taken, so every other live offer on it is closed out.
-    const losing = await Quote.find({
-      loadId: load._id,
-      _id: { $ne: accepted._id },
-      status: { $in: OPEN_QUOTE_STATUSES },
-    }).select('ownerId');
+    // With every truck found, the other live offers on the load are closed out.
+    if (full) await closeOpenOffers(req, load, 'Load no longer available', `${load.goodsType} has all the trucks it needs`);
 
-    if (losing.length) {
-      await Quote.updateMany({ _id: { $in: losing.map((q) => q._id) } }, { status: 'rejected' });
-      losing.forEach((q) => req.io?.to(`user-${q.ownerId}`)
-        .emit('quote-updated', { quote: { _id: q._id, loadId: load._id, status: 'rejected' } }));
-      await sendPushToUsers(losing.map((q) => q.ownerId), {
-        title: 'Load no longer available',
-        body: `${load.goodsType} was booked with another truck`,
-        data: { type: 'load', loadId: String(load._id) },
-      });
-    }
-
+    const slots = { trucksNeeded: trucksNeededOf(claimed), trucksBooked: trucksBookedOf(claimed) };
     const otherPartyId = side === 'shipper' ? accepted.ownerId : load.shipperId;
-    req.io?.to(`user-${otherPartyId}`).emit('quote-accepted', { quote: accepted, booking });
-    await sendPushToUser(otherPartyId, {
-      title: 'Offer accepted!',
-      body: `Your ${formatCurrency(finalPrice)} offer on ${load.goodsType} was accepted`,
-      data: { type: 'booking', bookingId: String(booking._id) },
-    });
+    req.io?.to(`user-${otherPartyId}`).emit('quote-accepted', { quote: accepted, booking, load: slots });
+    await sendPushToUser(otherPartyId, side === 'shipper'
+      ? {
+        title: 'Your truck is booked!',
+        body: `Your ${formatCurrency(finalPrice)} offer on ${load.goodsType} was accepted`,
+        data: { type: 'booking', bookingId: String(booking._id) },
+      }
+      : {
+        title: 'Truck booked',
+        body: slots.trucksNeeded > 1
+          ? `${slots.trucksBooked} of ${slots.trucksNeeded} trucks booked for ${load.goodsType}`
+          : `Your ${formatCurrency(finalPrice)} request for ${load.goodsType} was accepted`,
+        data: { type: 'booking', bookingId: String(booking._id) },
+      });
 
     if (driverReady) {
       req.io?.to(`user-${driver._id}`).emit('booking-assigned', { booking });
@@ -390,11 +367,27 @@ exports.acceptQuote = async (req, res, next) => {
       });
     }
 
-    res.json({ success: true, quote: accepted, booking });
+    res.json({ success: true, quote: accepted, booking, load: slots });
   } catch (error) {
     next(error);
   }
 };
+
+// Closes every offer still open on a load (it is full, or the shipper has
+// enough trucks) and tells their owners.
+const closeOpenOffers = async (req, load, title, body) => {
+  const losing = await Quote.find({ loadId: load._id, status: { $in: OPEN_QUOTE_STATUSES } }).select('ownerId');
+  if (!losing.length) return;
+  await Quote.updateMany({ _id: { $in: losing.map((q) => q._id) } }, { status: 'rejected' });
+  losing.forEach((q) => req.io?.to(`user-${q.ownerId}`)
+    .emit('quote-updated', { quote: { _id: q._id, loadId: load._id, status: 'rejected' } }));
+  await sendPushToUsers([...new Set(losing.map((q) => String(q.ownerId)))], {
+    title,
+    body,
+    data: { type: 'load', loadId: String(load._id) },
+  });
+};
+exports.closeOpenOffers = closeOpenOffers;
 
 // Either party walks away from a live offer: declining the other side's offer,
 // or withdrawing their own.

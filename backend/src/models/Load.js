@@ -63,6 +63,13 @@ const loadSchema = new mongoose.Schema(
     },
 
     budgetEstimate: Number,
+
+    // How many trucks the load goes out on, and how many are booked so far.
+    // Each booked truck is its own Booking; see services/loadSlots.js. The
+    // load stays on the market (open/quoted) until they meet, then "booked".
+    trucksNeeded: { type: Number, default: 1, min: 1, max: 10 },
+    trucksBooked: { type: Number, default: 0, min: 0 },
+
     status: {
       type: String,
       enum: ['open', 'quoted', 'negotiating', 'booked', 'completed', 'cancelled', 'expired'],
@@ -87,5 +94,7 @@ const loadSchema = new mongoose.Schema(
 );
 
 loadSchema.index({ status: 1, createdAt: -1 });
+// A shipper's loads, newest first.
+loadSchema.index({ shipperId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Load', loadSchema);

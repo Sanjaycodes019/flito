@@ -44,8 +44,8 @@ describe('quote permissions', () => {
   });
 });
 
-describe('counter-offer turn taking', () => {
-  it('lets the shipper accept the owner\'s original quote', async () => {
+describe('accepting or declining an offer', () => {
+  it('lets the shipper accept the owner\'s offer at its price', async () => {
     const { shipper, quote } = await setupNegotiation({ quotedPrice: 15000 });
 
     const res = await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`).expect(200);
@@ -53,7 +53,7 @@ describe('counter-offer turn taking', () => {
     expect(res.body.quote.acceptedBy).toBe('shipper');
   });
 
-  it('stops the owner accepting their own standing quote', async () => {
+  it('stops the owner accepting their own offer', async () => {
     const { owner, quote } = await setupNegotiation();
 
     const res = await as(owner.token).patch(`/api/quotes/${quote._id}/accept`);
@@ -61,46 +61,14 @@ describe('counter-offer turn taking', () => {
     expect(res.body.message).toMatch(/waiting on the other party/i);
   });
 
-  // Before this fix a shipper could counter but the owner had no way to
-  // accept, deadlocking the negotiation.
-  it('lets the owner accept a shipper counter-offer at the countered price', async () => {
-    const { shipper, owner, quote } = await setupNegotiation({ quotedPrice: 15000 });
+  it('lets the shipper decline an offer, opening the load again', async () => {
+    const { shipper, load, quote } = await setupNegotiation();
 
-    await as(shipper.token).patch(`/api/quotes/${quote._id}/counter`)
-      .send({ counterOfferPrice: 12000 }).expect(200);
+    const res = await as(shipper.token).patch(`/api/quotes/${quote._id}/reject`).expect(200);
+    expect(res.body.quote.status).toBe('rejected');
 
-    const res = await as(owner.token).patch(`/api/quotes/${quote._id}/accept`).expect(200);
-    expect(res.body.booking.totalAmount).toBe(12000);
-    expect(res.body.quote.acceptedBy).toBe('owner');
-  });
-
-  it('stops the shipper accepting their own counter-offer', async () => {
-    const { shipper, quote } = await setupNegotiation();
-
-    await as(shipper.token).patch(`/api/quotes/${quote._id}/counter`)
-      .send({ counterOfferPrice: 12000 }).expect(200);
-
-    const res = await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`);
-    expect(res.status).toBe(400);
-  });
-
-  it('allows counters to go back and forth', async () => {
-    const { shipper, owner, quote } = await setupNegotiation({ quotedPrice: 15000 });
-
-    await as(shipper.token).patch(`/api/quotes/${quote._id}/counter`)
-      .send({ counterOfferPrice: 12000 }).expect(200);
-    await as(owner.token).patch(`/api/quotes/${quote._id}/counter`)
-      .send({ counterOfferPrice: 13500 }).expect(200);
-
-    const res = await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`).expect(200);
-    expect(res.body.booking.totalAmount).toBe(13500);
-  });
-
-  it('rejects a non-numeric counter-offer', async () => {
-    const { shipper, quote } = await setupNegotiation();
-    const res = await as(shipper.token).patch(`/api/quotes/${quote._id}/counter`)
-      .send({ counterOfferPrice: 'cheap' });
-    expect(res.status).toBe(400);
+    const after = (await as(shipper.token).get(`/api/loads/${load._id}`).expect(200)).body.load;
+    expect(after.status).toBe('open');
   });
 
   it('refuses to accept an already-accepted quote twice', async () => {

@@ -36,12 +36,12 @@ const expireStale = async (now = new Date()) => {
     expiresAt: { $lte: now },
   });
 
+  // Re-check status: a load booked since the read above must not expire. A
+  // load that got some of its trucks goes ahead with them, as booked.
+  const stale = { _id: { $in: staleLoadIds }, status: { $in: BIDDABLE_LOAD_STATUSES } };
   const loads = staleLoadIds.length
-    ? (await Load.updateMany(
-      // Re-check status: a load booked since the read above must not expire.
-      { _id: { $in: staleLoadIds }, status: { $in: BIDDABLE_LOAD_STATUSES } },
-      { status: 'expired' },
-    )).modifiedCount
+    ? (await Load.updateMany({ ...stale, trucksBooked: { $gt: 0 } }, { status: 'booked' })).modifiedCount
+      + (await Load.updateMany(stale, { status: 'expired' })).modifiedCount
     : 0;
 
   // A quote lapses with its load even if its own window is still open.

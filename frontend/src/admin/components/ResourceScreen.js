@@ -7,16 +7,12 @@ import Button from '../../components/common/Button';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import useScreenLayout from '../../hooks/useScreenLayout';
+import CardGrid, { useCardColumns } from '../../components/common/CardGrid';
 import useAdminList from '../useAdminList';
 import useAdminStats, { refreshAdminStats } from '../useAdminStats';
 import FilterBar from './FilterBar';
 import Pagination from './Pagination';
 
-// Cards per row, from the room the list actually has (the window minus the
-// sidebar on a laptop): one on a phone, two once there is room for two cards
-// side by side, three on a wide screen.
-const SIDEBAR_WIDTH = 248;
-const columnsFor = (contentWidth) => (contentWidth >= 1180 ? 3 : contentWidth >= 640 ? 2 : 1);
 
 // The page every admin list section is built from. A section supplies what is
 // specific to it (endpoint, filters, how one record looks); this supplies the
@@ -45,8 +41,8 @@ const ResourceScreen = ({
   const stats = useAdminStats({ passive: true });
   const [refreshing, setRefreshing] = useState(false);
 
-  const contentWidth = layout.width - (layout.isDesktop ? SIDEBAR_WIDTH : 0) - layout.gutter * 2;
-  const columns = columnsFor(Math.min(contentWidth, 1200));
+  // Cards per row, from the room the list really has (components/common/CardGrid).
+  const columns = useCardColumns();
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -106,12 +102,10 @@ const ResourceScreen = ({
           onAction={list.clear}
         />
       ) : (
-        <View style={[styles.grid, list.loading && styles.dimmed]}>
-          {list.items.map((item) => (
-            <View key={item._id} style={[styles.cell, { width: `${100 / columns}%` }]}>
-              {renderItem(item, list)}
-            </View>
-          ))}
+        <View style={list.loading && styles.dimmed}>
+          <CardGrid columns={columns}>
+            {list.items.map((item) => <React.Fragment key={item._id}>{renderItem(item, list)}</React.Fragment>)}
+          </CardGrid>
         </View>
       )}
 
@@ -138,9 +132,7 @@ const styles = themedStyles(() => ({
   titlePhone: { ...type.h2 },
   subtitle: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
   loading: { minHeight: 240 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -spacing.sm },
   dimmed: { opacity: 0.55 },
-  cell: { paddingHorizontal: spacing.sm, paddingBottom: spacing.md },
 }));
 
 export default ResourceScreen;

@@ -110,7 +110,7 @@ const HomeScreen = ({ navigation }) => {
   const activeBookings = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status));
   const completedBookings = bookings.filter((b) => b.status === 'completed').length;
   const awaitingQuotes = loads.filter((l) => l.status === 'open' || l.status === 'quoted').length;
-  // Booking requests and shipper counter-offers waiting on the owner to reply.
+  // Booking requests from shippers waiting on the owner to reply.
   const awaitingMyResponse = myQuotes.filter((q) => isTurnOf(q, 'owner')).length;
   const todaysEarnings = bookings
     .filter((b) => b.status === 'completed')

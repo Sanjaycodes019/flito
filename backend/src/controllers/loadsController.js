@@ -2,6 +2,7 @@ const { fail } = require('../utils/respond');
 const Load = require('../models/Load');
 const Quote = require('../models/Quote');
 const Truck = require('../models/Truck');
+const Booking = require('../models/Booking');
 const storage = require('../services/storage');
 const {
   BIDDABLE_LOAD_STATUSES,
@@ -18,7 +19,9 @@ const {
   findMatches,
   unavailableReason,
 } = require('../services/truckMatching');
-const { MAX_OPEN_REQUESTS_PER_LOAD, standingOffer } = require('../services/negotiation');
+const { standingOffer } = require('../services/negotiation');
+const { maxOpenRequestsFor, trucksBookedOf } = require('../services/loadSlots');
+const { closeOpenOffers } = require('./quotesController');
 const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 
 const MAX_LOAD_PHOTOS = 6;
@@ -32,7 +35,7 @@ const PHOTO_EDITABLE_STATUSES = [...BIDDABLE_LOAD_STATUSES, 'expired'];
 exports.createLoad = async (req, res, next) => {
   try {
     const {
-      goodsType, description, weight, volume, quantity,
+      goodsType, description, weight, volume, quantity, trucksNeeded,
       pickupLocation, dropoffLocation, pickupDay,
       estimatedDeliveryDate, truckTypePreference, budgetEstimate,
     } = req.body;
@@ -46,6 +49,7 @@ exports.createLoad = async (req, res, next) => {
       weight,
       volume,
       quantity,
+      trucksNeeded,
       pickupLocation,
       dropoffLocation,
       pickupDay,
@@ -117,7 +121,7 @@ const findOwnLoad = async (req, res) => {
 };
 
 // The trucks a shipper can choose from for their load, best match first, each
-// with any offer already open with its owner on this load.
+// with any offer already open for it on this load.
 exports.listTruckMatches = async (req, res, next) => {
   try {
     const load = await findOwnLoad(req, res);
@@ -129,9 +133,11 @@ exports.listTruckMatches = async (req, res, next) => {
       Quote.find({ loadId: load._id, status: { $in: OPEN_QUOTE_STATUSES } }),
     ]);
 
-    const offerByOwner = new Map(openOffers.map((quote) => [String(quote.ownerId), quote]));
+    // Offers made before every offer named a truck are matched by owner.
+    const offerByTruck = new Map(openOffers.filter((quote) => quote.truckId).map((quote) => [String(quote.truckId), quote]));
+    const offerByOwner = new Map(openOffers.filter((quote) => !quote.truckId).map((quote) => [String(quote.ownerId), quote]));
     const withOffers = matches.map((match) => {
-      const quote = offerByOwner.get(String(match.owner._id));
+      const quote = offerByTruck.get(String(match.truck._id)) || offerByOwner.get(String(match.owner._id));
       if (!quote) return { ...match, offer: null };
       const standing = standingOffer(quote);
       return {
@@ -153,21 +159,25 @@ exports.listTruckMatches = async (req, res, next) => {
       takingOffers,
       matches: withOffers,
       openRequests: openOffers.filter((quote) => quote.initiatedBy === 'shipper').length,
-      maxOpenRequests: MAX_OPEN_REQUESTS_PER_LOAD,
+      maxOpenRequests: maxOpenRequestsFor(load),
     });
   } catch (error) {
     next(error);
   }
 };
 
-// An owner's trucks for one load: which can carry it (and why not), and what
-// each one's rates come to for the trip.
+// An owner's trucks for one load: which can carry it (and why not), what each
+// one's rates come to for the trip, and which are already offered for it.
 exports.listMyTrucksForLoad = async (req, res, next) => {
   try {
     const load = await Load.findById(req.params.id);
     if (!load) return fail(res, 404, 'LOADS_NOT_FOUND', 'Load not found');
 
-    const trucks = await Truck.find({ ownerId: req.user.userId }).sort({ createdAt: -1 });
+    const [trucks, offered] = await Promise.all([
+      Truck.find({ ownerId: req.user.userId }).sort({ createdAt: -1 }),
+      Quote.distinct('truckId', { loadId: load._id, ownerId: req.user.userId, status: { $in: [...OPEN_QUOTE_STATUSES, 'accepted'] } }),
+    ]);
+    const offeredIds = new Set(offered.map(String));
     res.json({
       success: true,
       trucks: trucks.map((truck) => ({
@@ -179,6 +189,7 @@ exports.listMyTrucksForLoad = async (req, res, next) => {
         verified: truck.verificationStatus === 'approved',
         unavailableReason: unavailableReason(truck, load),
         askingPrice: askingPriceFor(truck, load.distanceKm),
+        offered: offeredIds.has(String(truck._id)),
       })),
     });
   } catch (error) {
@@ -186,8 +197,10 @@ exports.listMyTrucksForLoad = async (req, res, next) => {
   }
 };
 
-// Shipper withdraws their own load before it is booked. Live bids on it are
-// closed out so owners aren't left negotiating on a load that no longer exists.
+// Shipper withdraws their own load before any truck is booked. Live offers on
+// it are closed out so owners aren't left waiting on a load that no longer
+// exists. Once a truck is booked the load can't be withdrawn: the shipper
+// cancels that booking, or stops looking with "Enough trucks".
 exports.cancelLoad = async (req, res, next) => {
   try {
     const load = await findOwnLoad(req, res);
@@ -197,12 +210,42 @@ exports.cancelLoad = async (req, res, next) => {
       const message = `Cannot cancel a load that is ${load.status}`;
       return fail(res, 400, 'LOADS_CANCEL_NOT_ALLOWED', message, { status: load.status });
     }
+    if (trucksBookedOf(load) > 0) {
+      return fail(res, 400, 'LOADS_CANCEL_HAS_BOOKINGS', 'Some trucks are already booked for this load. Cancel those bookings first, or stop looking for more trucks.');
+    }
 
     load.status = 'cancelled';
     await load.save();
     await Quote.updateMany({ loadId: load._id, status: { $in: OPEN_QUOTE_STATUSES } }, { status: 'rejected' });
 
     res.json({ success: true, load });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// "Enough trucks": the shipper stops looking once some of the trucks are
+// booked. The load counts as booked with the trucks it has, and the offers
+// still open are closed.
+exports.closeLoad = async (req, res, next) => {
+  try {
+    const load = await findOwnLoad(req, res);
+    if (!load) return;
+
+    if (trucksBookedOf(load) === 0) {
+      return fail(res, 400, 'LOADS_CLOSE_NO_BOOKINGS', 'No truck is booked yet. Cancel the load instead.');
+    }
+    const closed = await Load.findOneAndUpdate(
+      { _id: load._id, status: { $in: BIDDABLE_LOAD_STATUSES } },
+      { status: 'booked' },
+      { new: true },
+    );
+    if (!closed) {
+      return fail(res, 400, 'LOADS_CLOSE_NOT_ALLOWED', `This load is ${load.status}`, { status: load.status });
+    }
+    await closeOpenOffers(req, load, 'Load no longer available', `The shipper has all the trucks they need for ${load.goodsType}`);
+
+    res.json({ success: true, load: closed });
   } catch (error) {
     next(error);
   }
@@ -243,20 +286,29 @@ exports.relistLoad = async (req, res, next) => {
   }
 };
 
-// Every negotiation on one load, with the owner and the truck on offer.
+// Every offer on one load, with the owner and the truck on offer, and the
+// booking each accepted one became.
 exports.listQuotesForLoad = async (req, res, next) => {
   try {
     const load = await findOwnLoad(req, res);
     if (!load) return;
 
-    const quotes = await Quote.find({ loadId: load._id })
-      .populate('ownerId', PARTY_FIELDS)
-      .populate('truckId', 'truckType capacity makeModel baseLocation verificationStatus')
-      .sort({ createdAt: -1 });
+    const [quotes, bookings] = await Promise.all([
+      Quote.find({ loadId: load._id })
+        .populate('ownerId', PARTY_FIELDS)
+        .populate('truckId', 'truckType capacity makeModel baseLocation verificationStatus')
+        .sort({ createdAt: -1 }),
+      Booking.find({ loadId: load._id }).select('quoteId status'),
+    ]);
+    const bookingByQuote = new Map(bookings.map((booking) => [String(booking.quoteId), booking]));
 
     res.json({
       success: true,
-      quotes: quotes.map((quote) => withVerification(quote, { people: ['ownerId'], trucks: ['truckId'] })),
+      quotes: quotes.map((quote) => {
+        const view = withVerification(quote, { people: ['ownerId'], trucks: ['truckId'] });
+        const booking = bookingByQuote.get(String(quote._id));
+        return { ...view, booking: booking ? { _id: booking._id, status: booking.status } : null };
+      }),
     });
   } catch (error) {
     next(error);

@@ -1,10 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatDate, formatKg } from '../../utils/helpers';
+import { dayLabel } from '../../utils/nepalDate';
 import ResourceScreen from '../components/ResourceScreen';
-import AdminCard, { Fact } from '../components/AdminCard';
+import AdminCard, { Fact, Pill, RouteLine, VerificationPill } from '../components/AdminCard';
 import { partyName } from '../format';
+import { openAdminRecord } from '../records';
 
 const FILTER_GROUPS = [
   {
@@ -19,16 +22,36 @@ const FILTER_GROUPS = [
 
 const LoadCard = ({ load }) => {
   const { t } = useTranslation();
-  const shipper = [partyName(load.shipperId) || t('admin:loadsList.shipperFallback'), load.shipperId?.verified ? t('loads:common.verifiedOwner') : null]
-    .filter(Boolean).join(' · ');
+  const navigation = useNavigation();
+  const needed = load.trucksNeeded || 1;
+  const shipper = partyName(load.shipperId) || t('admin:loadsList.shipperFallback');
 
   return (
-    <AdminCard icon="load" title={load.goodsType} subtitle={shipper} right={<StatusBadge status={load.status} />}>
-      <Fact icon="pickup" label={t('loads:common.pickup')}>{load.pickupLocation?.label || load.pickupLocation?.address || '-'}</Fact>
-      <Fact icon="dropoff" label={t('loads:common.dropoff')}>{load.dropoffLocation?.label || load.dropoffLocation?.address || '-'}</Fact>
-      <Fact icon="weight">{load.weight ? formatKg(load.weight) : null}</Fact>
-      <Fact icon="quote">{load.totalQuotes ? t('admin:loadsList.quotes', { count: load.totalQuotes }) : null}</Fact>
-      <Fact icon="calendar">{t('admin:loadsList.posted', { date: formatDate(load.createdAt) })}</Fact>
+    <AdminCard
+      icon="load"
+      title={load.goodsType}
+      subtitle={shipper}
+      badges={(
+        <>
+          <StatusBadge status={load.status} />
+          {load.shipperId?.verified ? <VerificationPill status="approved" /> : null}
+          {needed > 1 ? (
+            <Pill icon="truck" tone={(load.trucksBooked || 0) >= needed ? 'accent' : 'info'}>
+              {t('loads:truckSlots.booked', { booked: load.trucksBooked || 0, needed })}
+            </Pill>
+          ) : null}
+        </>
+      )}
+      onPress={() => openAdminRecord(navigation, 'load', load._id)}
+    >
+      <RouteLine
+        from={load.pickupLocation?.label || load.pickupLocation?.address}
+        to={load.dropoffLocation?.label || load.dropoffLocation?.address}
+      />
+      <Fact icon="weight" label={t('loads:common.weight')}>{load.weight ? formatKg(load.weight) : null}</Fact>
+      <Fact icon="calendar" label={t('admin:cards.pickup')}>{load.pickupDay ? dayLabel(load.pickupDay) : null}</Fact>
+      <Fact icon="quote" label={t('admin:cards.offers')}>{String(load.totalQuotes || 0)}</Fact>
+      <Fact icon="time" label={t('admin:cards.posted')}>{formatDate(load.createdAt)}</Fact>
     </AdminCard>
   );
 };

@@ -82,7 +82,7 @@ describe('sending pushes', () => {
     expect(axios.post).not.toHaveBeenCalled();
   });
 
-  it('notifies the shipper when a quote is submitted', async () => {
+  it('notifies the shipper when a truck applies', async () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     await registerToken(shipper, VALID_TOKEN);
@@ -92,20 +92,20 @@ describe('sending pushes', () => {
 
     const push = pushCallTo(VALID_TOKEN);
     expect(push).toBeDefined();
-    expect(push.title).toMatch(/new quote/i);
+    expect(push.title).toMatch(/applied/i);
     expect(push.data).toEqual({ type: 'load', loadId: load._id });
   });
 
-  it('notifies the other party on a counter-offer', async () => {
+  it('notifies the owner when the shipper declines their offer', async () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     await registerToken(owner, VALID_TOKEN);
     const load = await postLoad(shipper);
     const quote = await placeQuote(owner, load, 12000);
 
-    await as(shipper.token).patch(`/api/quotes/${quote._id}/counter`).send({ counterOfferPrice: 10000 }).expect(200);
+    await as(shipper.token).patch(`/api/quotes/${quote._id}/reject`).expect(200);
 
-    expect(pushCallTo(VALID_TOKEN)?.title).toMatch(/counter-offer/i);
+    expect(pushCallTo(VALID_TOKEN)?.title).toMatch(/declined/i);
   });
 
   it('notifies the winner on acceptance and every losing owner separately', async () => {
@@ -120,7 +120,7 @@ describe('sending pushes', () => {
 
     await as(shipper.token).patch(`/api/quotes/${winningQuote._id}/accept`).expect(200);
 
-    expect(pushCallTo(VALID_TOKEN)?.title).toMatch(/accepted/i);
+    expect(pushCallTo(VALID_TOKEN)?.title).toMatch(/booked/i);
     expect(pushCallTo(VALID_TOKEN_2)?.title).toMatch(/no longer available/i);
   });
 
@@ -133,7 +133,7 @@ describe('sending pushes', () => {
     const load = await postLoad(shipper);
     const quote = await placeQuote(owner, load, 12000);
     const booking = (await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`)).body.booking;
-    axios.post.mockClear(); // isolate from the earlier "New quote received" push to this same token
+    axios.post.mockClear(); // isolate from the earlier "A truck applied" push to this same token
 
     await as(owner.token).patch(`/api/bookings/${booking._id}/assign-driver`).send({ driverId: driver.id }).expect(200);
 

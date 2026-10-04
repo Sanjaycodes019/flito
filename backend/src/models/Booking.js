@@ -105,5 +105,8 @@ const bookingSchema = new mongoose.Schema(
 bookingSchema.index({ shipperId: 1, status: 1 });
 bookingSchema.index({ ownerId: 1, status: 1 });
 bookingSchema.index({ driverId: 1, status: 1 });
+// A truck's or a load's bookings, for their admin pages.
+bookingSchema.index({ truckId: 1, createdAt: -1 });
+bookingSchema.index({ loadId: 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

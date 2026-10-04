@@ -55,7 +55,8 @@
       "enterWeightKg": "Enter the weight in kg",
       "enterWeightNumber": "Enter the weight as a number of kg",
       "maxWeight": "Loads can weigh up to {{max}}",
-      "enterGoodsType": "Enter what you are shipping"
+      "enterGoodsType": "Enter what you are shipping",
+      "moreTrucks": "One truck carries up to {{max}}. Add more trucks below."
     },
     "summary": {
       "title": "Summary",
@@ -65,7 +66,9 @@
       "photos": "Photos",
       "none": "None",
       "notSet": "Not set",
-      "notChosenYet": "Not chosen yet"
+      "notChosenYet": "Not chosen yet",
+      "trucks": "Trucks",
+      "trucksEach": "{{trucks}}, {{weight}} each"
     },
     "goodsChoices": {
       "cement": "Cement / Bricks",
@@ -107,7 +110,12 @@
         "title": "Check and send",
         "hint": "Is everything right? Then tap the button."
       }
-    }
+    },
+    "trucksTitle": "How many trucks?",
+    "trucksHint": "A big load can go on several trucks. Each is booked on its own.",
+    "eachTruckCarries": "Each truck carries about {{weight}}",
+    "fewerTrucks": "One truck fewer",
+    "moreTrucks": "One more truck"
   },
   "truckMatches": {
     "sorts": {
@@ -117,7 +125,7 @@
       "rating": "Top Rated"
     },
     "notTakingOffers": {
-      "booked": "It has been booked. Open the load to see the booking.",
+      "booked": "It has all the trucks it needs. Open the load to see the bookings.",
       "expired": "It expired before a truck was booked. You can relist it from the load page.",
       "cancelled": "It was cancelled.",
       "default": "Open the load to see where it stands."
@@ -125,7 +133,7 @@
     "truckBookedTitle": "Truck booked",
     "truckBookedMessage": "The owner accepted your offer.",
     "requestSentTitle": "Request sent",
-    "requestSentMessage": "{{owner}} can now accept, counter or decline your offer of {{price}}.",
+    "requestSentMessage": "{{owner}} can now accept or decline your offer of {{price}}.",
     "couldNotSendRequestTitle": "Could not send the request",
     "couldNotLoadTrucksTitle": "Could not load trucks",
     "pickupOn": "Pickup {{day}}",
@@ -143,7 +151,9 @@
     "noTrucksAvailableMessage": "No verified truck that carries {{weight}} is free for {{day}}. Your load is live, so owners can still send you quotes.",
     "thisDate": "this date",
     "listTitle_one": "{{count}} truck can carry this load",
-    "listTitle_other": "{{count}} trucks can carry this load"
+    "listTitle_other": "{{count}} trucks can carry this load",
+    "askForTrucksHint_one": "You need {{count}} more truck. Ask up to {{max}} at once: each owner who accepts books one truck.",
+    "askForTrucksHint_other": "You need {{count}} more trucks. Ask up to {{max}} at once: each owner who accepts books one truck."
   },
   "loadsList": {
     "myLoadsTitle": "My Loads",
@@ -164,10 +174,9 @@
   },
   "loadDetail": {
     "errorTitle": "Error",
-    "offerAcceptedTitle": "Offer accepted",
-    "offerAcceptedMessage": "The load is booked",
+    "offerAcceptedTitle": "Truck booked",
+    "offerAcceptedMessage": "This truck is booked for your load.",
     "couldNotAcceptTitle": "Could not accept",
-    "couldNotSendCounterOfferTitle": "Could not send the counter-offer",
     "loadRelistedTitle": "Load relisted",
     "loadRelistedMessage": "Your load is open for offers again",
     "loadNotFoundTitle": "Load not found",
@@ -185,42 +194,30 @@
     "chooseATruckButton": "Choose a Truck",
     "offersCount": "Offers ({{count}})",
     "noOffersYetTitle": "No offers yet",
-    "noOffersYetMessage": "Choose a truck to send your price, or wait for owners to quote.",
+    "noOffersYetMessage": "Choose a truck to send your price, or wait for owners to offer theirs.",
     "sideNames": {
       "you": "You",
       "owner": "Owner",
       "shipper": "Shipper"
     },
     "bookingRequestHeading": "Booking Request",
-    "yourQuoteHeading": "Your Quote",
+    "yourQuoteHeading": "Your Offer",
     "kind": {
       "youRequestedThisTruck": "You requested this truck",
-      "quoteFromOwner": "Quote from the owner",
+      "quoteFromOwner": "The owner offers this truck",
       "shipperAskedForYourTruck": "A shipper asked for your truck",
-      "youQuotedOnThisLoad": "You quoted on this load"
+      "youQuotedOnThisLoad": "You offered this truck"
     },
-    "invalidPriceTitle": "Invalid price",
-    "invalidPriceMessage": "Enter a whole number of rupees, at least {{min}}",
-    "counterRuleLess": "Offer less than {{price}}. Each side can move toward the other, up to {{max}} offers in all.",
-    "counterRuleMore": "Ask more than {{price}}. Each side can move toward the other, up to {{max}} offers in all.",
     "ratingFromReviews_one": "{{rating}} from {{count}} review",
     "ratingFromReviews_other": "{{rating}} from {{count}} reviews",
     "truckLabel": "Truck",
-    "latestOfferFrom": "Latest offer from {{side}}",
-    "you": "you",
-    "theOwner": "the owner",
-    "theShipper": "the shipper",
-    "earlierOffers": "Earlier offers ({{count}} of {{max}})",
+    "earlierOffers": "Earlier offers",
     "waitingForOtherParty": "Waiting for the other party to respond to your offer.",
     "withdrawButton": "Withdraw",
-    "verifyToRespond": "Verify your identity to accept or counter this offer. You can still reject it.",
-    "rejectButton": "Reject",
-    "lastOfferNote": "This is the last offer in this negotiation. Accept or reject it.",
+    "verifyToRespond": "Verify your identity to accept this offer. You can still decline it.",
+    "rejectButton": "Decline",
     "acceptButton": "Accept",
-    "counterButton": "Counter",
-    "counterOfferLabel": "Your Counter-Offer (Rs.)",
-    "sendButton": "Send",
-    "verifyToQuoteMessage": "Verify your identity to submit a quote on this load.",
+    "verifyToQuoteMessage": "Verify your identity to offer your trucks for this load.",
     "yourRatesShort": "your rates: {{price}}",
     "noRateSet": "no rate set",
     "couldNotLoadYourTrucksTitle": "Could not load your trucks",
@@ -228,10 +225,10 @@
     "chooseATruckAlertMessage": "Pick which of your trucks will carry this load",
     "missingInfoTitle": "Missing info",
     "missingInfoMessage": "Enter your price in whole rupees, at least {{min}}",
-    "couldNotSendQuoteTitle": "Could not send the quote",
-    "submitAQuoteTitle": "Submit a Quote",
+    "couldNotSendQuoteTitle": "Could not send the offer",
+    "submitAQuoteTitle": "Offer a Truck",
     "loadingYourTrucks": "Loading your trucks...",
-    "addTruckToFleetHint": "Add a truck to your fleet to quote on loads.",
+    "addTruckToFleetHint": "Add a truck to your fleet to offer it for loads.",
     "goToMyFleetButton": "Go to My Fleet",
     "whichTruckLabel": "Which truck will carry it?",
     "noSuitableTruckHint": "None of your trucks can carry this load right now.",
@@ -240,7 +237,36 @@
     "yourPricePlaceholder": "e.g. 15000",
     "yourRatesForTrip": "Your rates come to {{price}} for this trip.",
     "setRatePerKmHint": "Set a rate per km on this truck to get a suggested price.",
-    "submitQuoteButton": "Submit Quote"
+    "submitQuoteButton": "Send Offer",
+    "offerAcceptedSlotsMessage": "{{booked}} of {{needed}} trucks booked. Keep choosing, or tap Enough Trucks.",
+    "allTrucksBookedMessage": "All {{count}} trucks are booked. Each one has its own booking.",
+    "trucksLabel": "Trucks",
+    "trucksValue": "{{trucks}}, {{weight}} each",
+    "chooseTrucksTitle": "Choose trucks",
+    "chooseTrucksHint_one": "You need {{count}} more truck. See the trucks that can carry a share, and send your price.",
+    "chooseTrucksHint_other": "You need {{count}} more trucks. See the trucks that can carry a share, and send your price.",
+    "chooseTrucksButton": "Choose Trucks",
+    "enoughTrucks": {
+      "title": "Have enough trucks?",
+      "hint": "{{booked}} of {{needed}} trucks are booked. Stop looking and send the load on these.",
+      "button": "Enough Trucks",
+      "confirmTitle": "Stop looking for trucks?",
+      "confirmMessage_one": "The load goes on the {{count}} truck booked. Offers still open will be closed.",
+      "confirmMessage_other": "The load goes on the {{count}} trucks booked. Offers still open will be closed."
+    },
+    "perTruck": "for this truck",
+    "openBookingButton": "Open Booking",
+    "yourOffersTitle": "Your offers ({{count}})",
+    "offeredAllNeeded": "You have offered as many trucks as this load still needs. The shipper will accept or decline them.",
+    "alreadyOffered": "Already offered for this load",
+    "offerTrucksTitle": "Offer Your Trucks",
+    "whichTrucksLabel": "Which trucks will carry it?",
+    "pickUpTo_one": "Pick {{count}}. Each truck carries {{weight}}.",
+    "pickUpTo_other": "Pick up to {{count}}. Each truck carries {{weight}}.",
+    "pricePerTruckLabel": "Price per Truck (Rs.)",
+    "totalForTrucks": "{{count}} trucks × {{price}}",
+    "offerTrucksButton": "Offer {{count}} Trucks",
+    "noBargainingNote": "The shipper accepts or declines at this price."
   },
   "routeStop": {
     "pickup": {
@@ -296,11 +322,11 @@
     "noRateContext": "This owner hasn't listed a rate, so name the price you want to pay.",
     "priceLabel": "Your Price (Rs.)",
     "pricePlaceholder": "e.g. 15000",
-    "priceHelperText": "The owner can accept, counter or decline. If they accept, your load is booked at this price."
+    "priceHelperText": "The owner can accept or decline. If they accept, that truck is booked at this price."
   },
   "truckMatchCard": {
     "requestSentWaiting": "Request sent for {{price}}. Waiting for the owner.",
-    "ownerQuotedYourTurn": "This owner quoted {{price}}. Your turn to reply.",
+    "ownerQuotedYourTurn": "This owner offered {{price}}. Accept or decline it.",
     "ownerCounteredYourTurn": "The owner countered with {{price}}. Your turn to reply.",
     "comprehensiveInsurance": "Comprehensive insurance",
     "insured": "Insured",
@@ -309,7 +335,7 @@
     "newOnFlito": "New on FLITO",
     "completedTrips_one": "{{count}} trip",
     "completedTrips_other": "{{count}} trips",
-    "fillsPercent": "Your load fills {{percent}}% of it",
+    "fillsPercent": "Fills {{percent}}% of it",
     "cargoBedDims": "Cargo bed {{dims}} ft",
     "basedInWithDistance": "Based in {{base}}, about {{km}} km from pickup",
     "basedIn": "Based in {{base}}",
@@ -335,5 +361,14 @@
     "noLocationData": "No location data for this load",
     "fitMapAccessibilityLabel": "Fit map to all markers",
     "fit": "Fit"
+  },
+  "truckSlots": {
+    "count_one": "{{count}} truck",
+    "count_other": "{{count}} trucks",
+    "needs_one": "Needs {{count}} truck",
+    "needs_other": "Needs {{count}} trucks",
+    "booked": "{{booked}} of {{needed}} trucks booked",
+    "allBooked_one": "Truck booked",
+    "allBooked_other": "All {{count}} trucks booked"
   }
 }

@@ -1,5 +1,8 @@
 // Shared by every admin resource router. Adding a new admin section means a
 // new file in this folder plus one line in index.js; nothing here changes.
+const { fail } = require('../../utils/respond');
+
+const OBJECT_ID = /^[a-f\d]{24}$/i;
 
 // Every admin list is newest-first and paginated the same way: ?page=1&limit=20.
 const DEFAULT_PAGE_SIZE = 20;
@@ -36,6 +39,17 @@ const allOf = (...clauses) => {
   return present.length ? { $and: present } : {};
 };
 
+// Every admin router takes record ids in the path, e.g. router.param('userId',
+// requireObjectId('ADMIN_USER_NOT_FOUND', 'User not found')). An id that
+// can't exist is "not found", the same as one that doesn't, instead of a
+// database cast error.
+const requireObjectId = (code, message) => (req, res, next, id) => (OBJECT_ID.test(id) ? next() : fail(res, 404, code, message));
+
+// `?field=<id>` as a filter on `target`, only when it is a well-formed id.
+// This is how a record's page lists what belongs to it (a user's bookings, an
+// owner's trucks) through the same paginated list endpoints.
+const idFilter = (query, field, target = field) => (OBJECT_ID.test(query[field] || '') ? { [target]: query[field] } : null);
+
 const MIN_REASON_LENGTH = 5;
 const MAX_REASON_LENGTH = 500;
 
@@ -65,4 +79,60 @@ const readDecision = (body, who) => {
   return { decision, reason };
 };
 
-module.exports = { paginationParams, paginationMeta, searchClause, enumFilter, allOf, readDecision };
+// A reason for an action that affects someone (revoking a verification,
+// cancelling a booking): required, since they are told it.
+const readReason = (body, who) => {
+  const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
+  if (reason.length < MIN_REASON_LENGTH) {
+    return {
+      error: `Give the ${who} a reason (at least ${MIN_REASON_LENGTH} characters). They will see it.`,
+      code: 'ADMIN_REASON_TOO_SHORT',
+      extra: { who, minLength: MIN_REASON_LENGTH },
+    };
+  }
+  if (reason.length > MAX_REASON_LENGTH) {
+    return {
+      error: `The reason must be at most ${MAX_REASON_LENGTH} characters`,
+      code: 'ADMIN_REJECTION_REASON_TOO_LONG',
+      extra: { maxLength: MAX_REASON_LENGTH },
+    };
+  }
+  return { reason };
+};
+
+const fullName = (user) => [user?.firstName, user?.lastName].filter(Boolean).join(' ');
+
+// User fields for a person shown on another record's admin page.
+const PERSON_FIELDS = 'firstName lastName companyName email phone role status kycStatus rating totalRatings avatar';
+
+// A person as another record's admin page shows them: who they are, how to
+// reach them, and where their account and verification stand.
+const personSummary = (user) => (user && user._id ? {
+  _id: user._id,
+  name: fullName(user) || user.companyName || user.email || user.phone || null,
+  companyName: user.companyName,
+  role: user.role,
+  phone: user.phone,
+  email: user.email,
+  status: user.status || 'active',
+  kycStatus: user.kycStatus || 'not_submitted',
+  verified: user.kycStatus === 'approved',
+  rating: user.rating || 0,
+  totalRatings: user.totalRatings || 0,
+  avatarUrl: user.avatar?.url || null,
+} : null);
+
+module.exports = {
+  paginationParams,
+  paginationMeta,
+  searchClause,
+  enumFilter,
+  allOf,
+  readDecision,
+  readReason,
+  requireObjectId,
+  idFilter,
+  fullName,
+  PERSON_FIELDS,
+  personSummary,
+};

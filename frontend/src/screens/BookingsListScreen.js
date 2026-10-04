@@ -1,15 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, FlatList, RefreshControl } from 'react-native';
+import { View, FlatList, RefreshControl } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import Card from '../components/common/Card';
+import RecordCard, { Fact, Pill, RouteLine } from '../components/common/RecordCard';
+import { CardCell, cardGridProps, useCardColumns } from '../components/common/CardGrid';
 import StatusBadge from '../components/common/StatusBadge';
 import Spinner from '../components/common/Spinner';
 import EmptyState from '../components/common/EmptyState';
 import useScreenLayout from '../hooks/useScreenLayout';
-import Icon from '../theme/icons';
-import { colors, spacing, type, iconSize, themedStyles } from '../theme/tokens';
+import { colors, themedStyles } from '../theme/tokens';
+import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, getErrorMessage } from '../utils/helpers';
+import { dayLabel } from '../utils/nepalDate';
 import api from '../services/api';
 import { fetchBookingsStart, fetchBookingsSuccess, fetchBookingsError } from '../redux/slices/bookingSlice';
 
@@ -19,7 +21,8 @@ const BookingsListScreen = ({ navigation }) => {
   const { items: bookings, isLoading, error } = useSelector((state) => state.bookings);
   const [refreshing, setRefreshing] = useState(false);
   const layout = useScreenLayout('wide');
-  const columns = layout.isPhone ? 1 : layout.isDesktop ? 3 : 2;
+  const columns = useCardColumns();
+  const role = useSelector((state) => state.auth.user?.role);
 
   const load = useCallback(async () => {
     dispatch(fetchBookingsStart());
@@ -51,10 +54,8 @@ const BookingsListScreen = ({ navigation }) => {
 
   return (
     <FlatList
-      // A mounted list can't change its column count, so a new count remounts it.
       key={`columns-${columns}`}
-      numColumns={columns}
-      columnWrapperStyle={columns > 1 ? styles.columnRow : undefined}
+      {...cardGridProps(columns)}
       style={styles.container}
       contentContainerStyle={[styles.content, layout.contentStyle]}
       data={bookings}
@@ -63,52 +64,51 @@ const BookingsListScreen = ({ navigation }) => {
       ListEmptyComponent={
         <EmptyState icon="truckDelivery" title={t('bookings:list.emptyTitle')} message={t('bookings:list.emptyMessage')} />
       }
-      renderItem={({ item }) => (
-        <View style={columns > 1 ? [styles.cell, { width: `${100 / columns}%` }] : null}>
-          <Card
-            style={[styles.card, columns > 1 && styles.cardInGrid]}
-            containerStyle={columns > 1 ? styles.fill : undefined}
-            onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}
-            accessibilityLabel={t('bookings:list.accessibilityBooking', { goodsType: item.loadId?.goodsType || t('bookings:list.loadFallback') })}
-          >
-            <View style={styles.row}>
-              <Text style={styles.goodsType} numberOfLines={1}>{item.loadId?.goodsType || t('bookings:list.loadFallback')}</Text>
-              <StatusBadge status={item.status} />
-            </View>
-            <View style={styles.routeRow}>
-              <Icon name="pickup" size={iconSize.xs} color={colors.textMuted} />
-              <Text style={styles.route} numberOfLines={1}>{item.loadId?.pickupLocation?.label || item.loadId?.pickupLocation?.address}</Text>
-              <Icon name="forward" size={iconSize.xs} color={colors.textMuted} />
-              <Icon name="dropoff" size={iconSize.xs} color={colors.textMuted} />
-              <Text style={styles.route} numberOfLines={1}>{item.loadId?.dropoffLocation?.label || item.loadId?.dropoffLocation?.address}</Text>
-            </View>
-            <View style={styles.rowBottom}>
-              <Text style={styles.amount}>{formatCurrency(item.totalAmount)}</Text>
-              <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
-            </View>
-          </Card>
-        </View>
-      )}
+      renderItem={({ item }) => {
+        const load = item.loadId || {};
+        const goodsType = load.goodsType || t('bookings:list.loadFallback');
+        return (
+          <CardCell columns={columns}>
+            <RecordCard
+              icon="truckDelivery"
+              title={goodsType}
+              subtitle={item.truckId?.registrationNumber || null}
+              badges={(
+                <>
+                  <StatusBadge status={item.status} />
+                  {item.totalAmount ? <Pill icon="price" tone="accent">{formatCurrency(item.totalAmount)}</Pill> : null}
+                </>
+              )}
+              onPress={() => navigation.navigate('BookingDetail', { bookingId: item._id })}
+              accessibilityLabel={t('bookings:list.accessibilityBooking', { goodsType })}
+            >
+              <RouteLine
+                from={load.pickupLocation?.label || load.pickupLocation?.address}
+                to={load.dropoffLocation?.label || load.dropoffLocation?.address}
+              />
+              {role !== ROLES.SHIPPER ? <Fact icon="shipper" label={t('bookings:detail.shipper')}>{nameOf(item.shipperId) || '—'}</Fact> : null}
+              {role !== ROLES.OWNER ? <Fact icon="owner" label={t('bookings:detail.owner')}>{nameOf(item.ownerId) || '—'}</Fact> : null}
+              {role !== ROLES.DRIVER ? (
+                <Fact icon="driver" label={t('bookings:detail.driver')} tone={item.driverId ? undefined : 'warning'}>
+                  {item.driverId ? nameOf(item.driverId) : t('bookings:detail.notAssigned')}
+                </Fact>
+              ) : null}
+              <Fact icon="calendar" label={t('common:card.pickup')}>{load.pickupDay ? dayLabel(load.pickupDay) : null}</Fact>
+              <Fact icon="time" label={t('common:card.booked')}>{formatDate(item.createdAt)}</Fact>
+            </RecordCard>
+          </CardCell>
+        );
+      }}
     />
   );
 };
 
+// A company name when there is one, otherwise the person's own name.
+const nameOf = (person) => person?.companyName || [person?.firstName, person?.lastName].filter(Boolean).join(' ');
+
 const styles = themedStyles(() => ({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1 },
-  card: { marginVertical: spacing.xs },
-  // Grid layout: each cell carries half the gutter on both sides.
-  columnRow: { marginHorizontal: -spacing.sm },
-  cell: { paddingHorizontal: spacing.sm },
-  cardInGrid: { flex: 1, marginVertical: spacing.sm },
-  fill: { flex: 1 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm, flexWrap: 'wrap' },
-  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
-  goodsType: { ...type.h3, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
-  route: { ...type.small, color: colors.textMuted },
-  amount: { ...type.bodyMedium, color: colors.primaryText },
-  date: { ...type.small, color: colors.textMuted },
 }));
 
 export default BookingsListScreen;

@@ -36,7 +36,7 @@
     "descriptionPlaceholder": "प्याकेजिङ, ह्यान्डलिङ आवश्यकता, लोड सहयोग",
     "photosCount": "फोटोहरू ({{count}} / {{max}})",
     "findTrucksButton": "ट्रक खोज्नुहोस्",
-    "footnote": "अब, तपाईंले यो भाडा बोक्न सक्ने ट्रकहरू देख्नुहुनेछ र आफ्नो मूल्य पठाउनुहुनेछ।",
+    "footnote": "त्यसपछि, यो भाडा बोक्न सक्ने ट्रकहरू देख्नुहुनेछ र आफ्नो मूल्य पठाउन सक्नुहुनेछ।",
     "phoneHint": "+977 नम्बर प्रयोग गर्नुहोस्, जस्तै: +9779841234567",
     "couldNotLoadAddressOptionsTitle": "ठेगाना विकल्पहरू लोड गर्न सकिएन",
     "couldNotAddPhotosTitle": "फोटोहरू थप्न सकिएन",
@@ -55,7 +55,8 @@
       "enterWeightKg": "के.जी.मा तौल लेख्नुहोस्",
       "enterWeightNumber": "तौललाई के.जी.को संख्यामा लेख्नुहोस्",
       "maxWeight": "भाडाको तौल बढीमा {{max}} सम्म हुन सक्छ",
-      "enterGoodsType": "तपाईं के पठाउँदै हुनुहुन्छ लेख्नुहोस्"
+      "enterGoodsType": "तपाईं के पठाउँदै हुनुहुन्छ लेख्नुहोस्",
+      "moreTrucks": "एउटा ट्रकले बढीमा {{max}} बोक्छ। तल ट्रक थप्नुहोस्।"
     },
     "summary": {
       "title": "सारांश",
@@ -65,7 +66,9 @@
       "photos": "फोटोहरू",
       "none": "कुनै छैन",
       "notSet": "सेट गरिएको छैन",
-      "notChosenYet": "अझै छानिएको छैन"
+      "notChosenYet": "अझै छानिएको छैन",
+      "trucks": "ट्रक",
+      "trucksEach": "{{trucks}}, हरेकमा {{weight}}"
     },
     "goodsChoices": {
       "cement": "सिमेन्ट / इँटा",
@@ -107,7 +110,12 @@
         "title": "जाँच गर्नुहोस् र पठाउनुहोस्",
         "hint": "सबै ठिक छ? अनि बटन छुनुहोस्।"
       }
-    }
+    },
+    "trucksTitle": "कति ट्रक चाहिन्छ?",
+    "trucksHint": "ठूलो भाडा धेरै ट्रकमा जान सक्छ। हरेक ट्रक छुट्टाछुट्टै बुक हुन्छ।",
+    "eachTruckCarries": "हरेक ट्रकले लगभग {{weight}} बोक्छ",
+    "fewerTrucks": "एक ट्रक घटाउनुहोस्",
+    "moreTrucks": "एक ट्रक थप्नुहोस्"
   },
   "truckMatches": {
     "sorts": {
@@ -117,7 +125,7 @@
       "rating": "उच्च मूल्याङ्कन"
     },
     "notTakingOffers": {
-      "booked": "यो बुक भइसकेको छ। बुकिङ हेर्न भाडा खोल्नुहोस्।",
+      "booked": "यसलाई चाहिने सबै ट्रक भेटिए। बुकिङहरू हेर्न भाडा खोल्नुहोस्।",
       "expired": "ट्रक बुक हुनुअघि नै यसको म्याद सकियो। तपाईं भाडाको पेजबाट यसलाई फेरि लिस्ट गर्न सक्नुहुन्छ।",
       "cancelled": "यो रद्द गरिएको थियो।",
       "default": "यो कहाँ छ हेर्न भाडा खोल्नुहोस्।"
@@ -125,7 +133,7 @@
     "truckBookedTitle": "ट्रक बुक भयो",
     "truckBookedMessage": "मालिकले तपाईंको प्रस्ताव स्वीकार गर्नुभयो।",
     "requestSentTitle": "अनुरोध पठाइयो",
-    "requestSentMessage": "{{owner}} ले अब तपाईंको {{price}} को प्रस्ताव स्वीकार, प्रतिप्रस्ताव वा अस्वीकार गर्न सक्नुहुन्छ।",
+    "requestSentMessage": "{{owner}} ले अब तपाईंको {{price}} को प्रस्ताव स्वीकार वा अस्वीकार गर्न सक्नुहुन्छ।",
     "couldNotSendRequestTitle": "अनुरोध पठाउन सकिएन",
     "couldNotLoadTrucksTitle": "ट्रकहरू लोड गर्न सकिएन",
     "pickupOn": "उठान {{day}}",
@@ -143,7 +151,9 @@
     "noTrucksAvailableMessage": "{{weight}} बोक्ने कुनै प्रमाणित ट्रक {{day}} का लागि खाली छैन। तपाईंको भाडा लाइभ छ, त्यसैले मालिकहरूले अझै तपाईंलाई भाउ पठाउन सक्छन्।",
     "thisDate": "यो मिति",
     "listTitle_one": "{{count}} ट्रकले यो भाडा बोक्न सक्छ",
-    "listTitle_other": "{{count}} ट्रकहरूले यो भाडा बोक्न सक्छन्"
+    "listTitle_other": "{{count}} ट्रकहरूले यो भाडा बोक्न सक्छन्",
+    "askForTrucksHint_one": "अझै {{count}} ट्रक चाहिन्छ। एकैचोटि बढीमा {{max}} लाई सोध्नुहोस्: स्वीकार गर्ने हरेक मालिकले एउटा ट्रक बुक गर्छन्।",
+    "askForTrucksHint_other": "अझै {{count}} ट्रक चाहिन्छ। एकैचोटि बढीमा {{max}} लाई सोध्नुहोस्: स्वीकार गर्ने हरेक मालिकले एउटा ट्रक बुक गर्छन्।"
   },
   "loadsList": {
     "myLoadsTitle": "मेरा भाडाहरू",
@@ -164,10 +174,9 @@
   },
   "loadDetail": {
     "errorTitle": "त्रुटि",
-    "offerAcceptedTitle": "प्रस्ताव स्वीकृत भयो",
-    "offerAcceptedMessage": "भाडा बुक भयो",
+    "offerAcceptedTitle": "ट्रक बुक भयो",
+    "offerAcceptedMessage": "यो ट्रक तपाईंको भाडाका लागि बुक भयो।",
     "couldNotAcceptTitle": "स्वीकार गर्न सकिएन",
-    "couldNotSendCounterOfferTitle": "प्रतिप्रस्ताव पठाउन सकिएन",
     "loadRelistedTitle": "भाडा फेरि लिस्ट गरियो",
     "loadRelistedMessage": "तपाईंको भाडा फेरि प्रस्तावका लागि खुला छ",
     "loadNotFoundTitle": "भाडा फेला परेन",
@@ -185,42 +194,30 @@
     "chooseATruckButton": "ट्रक छान्नुहोस्",
     "offersCount": "प्रस्तावहरू ({{count}})",
     "noOffersYetTitle": "अझै कुनै प्रस्ताव छैन",
-    "noOffersYetMessage": "आफ्नो मूल्य पठाउन ट्रक छान्नुहोस्, वा मालिकहरूले भाउ दिने पर्खनुहोस्।",
+    "noOffersYetMessage": "आफ्नो मूल्य पठाउन ट्रक छान्नुहोस्, वा मालिकहरूले आफ्ना ट्रक प्रस्ताव गर्ने पर्खनुहोस्।",
     "sideNames": {
       "you": "तपाईं",
       "owner": "मालिक",
       "shipper": "पठाउने"
     },
     "bookingRequestHeading": "बुकिङ अनुरोध",
-    "yourQuoteHeading": "तपाईंको भाउ",
+    "yourQuoteHeading": "तपाईंको प्रस्ताव",
     "kind": {
       "youRequestedThisTruck": "तपाईंले यो ट्रक अनुरोध गर्नुभयो",
-      "quoteFromOwner": "मालिकबाट भाउ",
+      "quoteFromOwner": "मालिकले यो ट्रक प्रस्ताव गर्नुभयो",
       "shipperAskedForYourTruck": "एक पठाउनेले तपाईंको ट्रक माग गर्नुभयो",
-      "youQuotedOnThisLoad": "तपाईंले यो भाडामा भाउ दिनुभयो"
+      "youQuotedOnThisLoad": "तपाईंले यो ट्रक प्रस्ताव गर्नुभयो"
     },
-    "invalidPriceTitle": "अमान्य मूल्य",
-    "invalidPriceMessage": "रुपैयाँको पूर्ण संख्या लेख्नुहोस्, कम्तीमा {{min}}",
-    "counterRuleLess": "{{price}} भन्दा कम प्रस्ताव गर्नुहोस्। प्रत्येक पक्ष एकअर्कातिर सर्न सक्छ, कुल जम्मा बढीमा {{max}} पटकसम्म प्रस्ताव।",
-    "counterRuleMore": "{{price}} भन्दा बढी माग्नुहोस्। प्रत्येक पक्ष एकअर्कातिर सर्न सक्छ, कुल जम्मा बढीमा {{max}} पटकसम्म प्रस्ताव।",
     "ratingFromReviews_one": "{{count}} समीक्षाबाट {{rating}}",
     "ratingFromReviews_other": "{{count}} समीक्षाहरूबाट {{rating}}",
     "truckLabel": "ट्रक",
-    "latestOfferFrom": "{{side}}बाट पछिल्लो प्रस्ताव",
-    "you": "तपाईं",
-    "theOwner": "मालिक",
-    "theShipper": "पठाउने",
-    "earlierOffers": "अघिल्ला प्रस्तावहरू ({{max}} मध्ये {{count}})",
+    "earlierOffers": "अघिल्ला प्रस्तावहरू",
     "waitingForOtherParty": "तपाईंको प्रस्तावको जवाफको लागि अर्को पक्षको पर्खाइमा।",
     "withdrawButton": "फिर्ता लिनुहोस्",
-    "verifyToRespond": "यो प्रस्ताव स्वीकार वा प्रतिप्रस्ताव गर्न आफ्नो पहिचान प्रमाणित गर्नुहोस्। तपाईं अझै यसलाई अस्वीकार गर्न सक्नुहुन्छ।",
-    "rejectButton": "अस्वीकार गर्नुहोस्",
-    "lastOfferNote": "यो यस मोलमोलाइको अन्तिम प्रस्ताव हो। यसलाई स्वीकार वा अस्वीकार गर्नुहोस्।",
+    "verifyToRespond": "यो प्रस्ताव स्वीकार गर्न आफ्नो पहिचान प्रमाणित गर्नुहोस्। तपाईं अझै यसलाई अस्वीकार गर्न सक्नुहुन्छ।",
+    "rejectButton": "अस्वीकार",
     "acceptButton": "स्वीकार गर्नुहोस्",
-    "counterButton": "प्रतिप्रस्ताव",
-    "counterOfferLabel": "तपाईंको प्रतिप्रस्ताव (रु.)",
-    "sendButton": "पठाउनुहोस्",
-    "verifyToQuoteMessage": "यो भाडामा भाउ पेश गर्न आफ्नो पहिचान प्रमाणित गर्नुहोस्।",
+    "verifyToQuoteMessage": "यो भाडाका लागि आफ्ना ट्रक प्रस्ताव गर्न आफ्नो पहिचान प्रमाणित गर्नुहोस्।",
     "yourRatesShort": "तपाईंको दर: {{price}}",
     "noRateSet": "दर सेट गरिएको छैन",
     "couldNotLoadYourTrucksTitle": "तपाईंका ट्रकहरू लोड गर्न सकिएन",
@@ -228,10 +225,10 @@
     "chooseATruckAlertMessage": "यो भाडा कुन ट्रकले बोक्ने भनी छान्नुहोस्",
     "missingInfoTitle": "जानकारी छुटेको",
     "missingInfoMessage": "आफ्नो मूल्य रुपैयाँको पूर्ण संख्यामा लेख्नुहोस्, कम्तीमा {{min}}",
-    "couldNotSendQuoteTitle": "भाउ पठाउन सकिएन",
-    "submitAQuoteTitle": "भाउ पेश गर्नुहोस्",
+    "couldNotSendQuoteTitle": "प्रस्ताव पठाउन सकिएन",
+    "submitAQuoteTitle": "ट्रक प्रस्ताव गर्नुहोस्",
     "loadingYourTrucks": "तपाईंका ट्रकहरू लोड हुँदैछन्...",
-    "addTruckToFleetHint": "भाडाहरूमा भाउ दिन आफ्नो फ्लीटमा ट्रक थप्नुहोस्।",
+    "addTruckToFleetHint": "भाडाहरूमा प्रस्ताव गर्न आफ्नो फ्लीटमा ट्रक थप्नुहोस्।",
     "goToMyFleetButton": "मेरो फ्लीटमा जानुहोस्",
     "whichTruckLabel": "कुन ट्रकले यो बोक्ने?",
     "noSuitableTruckHint": "तपाईंको कुनै पनि ट्रकले अहिले यो भाडा बोक्न सक्दैन।",
@@ -240,7 +237,36 @@
     "yourPricePlaceholder": "जस्तै: 15000",
     "yourRatesForTrip": "यो यात्राका लागि तपाईंको दर {{price}} हुन्छ।",
     "setRatePerKmHint": "सुझाव गरिएको मूल्य पाउन यो ट्रकमा प्रति किमी दर सेट गर्नुहोस्।",
-    "submitQuoteButton": "भाउ पेश गर्नुहोस्"
+    "submitQuoteButton": "प्रस्ताव पठाउनुहोस्",
+    "offerAcceptedSlotsMessage": "{{needed}} मध्ये {{booked}} ट्रक बुक भयो। छान्दै जानुहोस्, वा \"पुग्यो\" थिच्नुहोस्।",
+    "allTrucksBookedMessage": "सबै {{count}} ट्रक बुक भए। हरेकको आफ्नै बुकिङ छ।",
+    "trucksLabel": "ट्रक",
+    "trucksValue": "{{trucks}}, हरेकमा {{weight}}",
+    "chooseTrucksTitle": "ट्रकहरू छान्नुहोस्",
+    "chooseTrucksHint_one": "अझै {{count}} ट्रक चाहिन्छ। आफ्नो भाग बोक्न सक्ने ट्रकहरू हेर्नुहोस्, र आफ्नो मूल्य पठाउनुहोस्।",
+    "chooseTrucksHint_other": "अझै {{count}} ट्रक चाहिन्छ। आफ्नो भाग बोक्न सक्ने ट्रकहरू हेर्नुहोस्, र आफ्नो मूल्य पठाउनुहोस्।",
+    "chooseTrucksButton": "ट्रकहरू छान्नुहोस्",
+    "enoughTrucks": {
+      "title": "ट्रक पुग्यो?",
+      "hint": "{{needed}} मध्ये {{booked}} ट्रक बुक भइसके। खोज्न रोकेर यिनैमा भाडा पठाउनुहोस्।",
+      "button": "पुग्यो",
+      "confirmTitle": "ट्रक खोज्न रोक्ने?",
+      "confirmMessage_one": "भाडा बुक भएको {{count}} ट्रकमा जान्छ। खुला रहेका प्रस्तावहरू बन्द हुनेछन्।",
+      "confirmMessage_other": "भाडा बुक भएका {{count}} ट्रकमा जान्छ। खुला रहेका प्रस्तावहरू बन्द हुनेछन्।"
+    },
+    "perTruck": "यो ट्रकका लागि",
+    "openBookingButton": "बुकिङ खोल्नुहोस्",
+    "yourOffersTitle": "तपाईंका प्रस्तावहरू ({{count}})",
+    "offeredAllNeeded": "यो भाडालाई अझै चाहिने जति ट्रक तपाईंले प्रस्ताव गरिसक्नुभयो। पठाउनेले स्वीकार वा अस्वीकार गर्नुहुनेछ।",
+    "alreadyOffered": "यो भाडाका लागि प्रस्ताव गरिसकिएको",
+    "offerTrucksTitle": "आफ्ना ट्रक प्रस्ताव गर्नुहोस्",
+    "whichTrucksLabel": "कुन-कुन ट्रकले यो बोक्ने?",
+    "pickUpTo_one": "{{count}} छान्नुहोस्। हरेक ट्रकले {{weight}} बोक्छ।",
+    "pickUpTo_other": "बढीमा {{count}} छान्नुहोस्। हरेक ट्रकले {{weight}} बोक्छ।",
+    "pricePerTruckLabel": "प्रति ट्रक मूल्य (रु.)",
+    "totalForTrucks": "{{count}} ट्रक × {{price}}",
+    "offerTrucksButton": "{{count}} ट्रक प्रस्ताव गर्नुहोस्",
+    "noBargainingNote": "पठाउनेले यही मूल्यमा स्वीकार वा अस्वीकार गर्नुहुन्छ।"
   },
   "routeStop": {
     "pickup": {
@@ -296,11 +322,11 @@
     "noRateContext": "यो मालिकले दर राख्नुभएको छैन, त्यसैले तपाईं तिर्न चाहनुभएको मूल्य राख्नुहोस्।",
     "priceLabel": "तपाईंको मूल्य (रु.)",
     "pricePlaceholder": "जस्तै: 15000",
-    "priceHelperText": "मालिकले स्वीकार, प्रतिप्रस्ताव वा अस्वीकार गर्न सक्नुहुन्छ। स्वीकार गरेमा, तपाईंको भाडा यही मूल्यमा बुक हुनेछ।"
+    "priceHelperText": "मालिकले स्वीकार वा अस्वीकार गर्न सक्नुहुन्छ। स्वीकार गरेमा, त्यो ट्रक यही मूल्यमा बुक हुनेछ।"
   },
   "truckMatchCard": {
     "requestSentWaiting": "{{price}}का लागि अनुरोध पठाइयो। मालिकको पर्खाइमा।",
-    "ownerQuotedYourTurn": "यो मालिकले {{price}} भाउ दिनुभयो। जवाफ दिने पालो तपाईंको हो।",
+    "ownerQuotedYourTurn": "यो मालिकले {{price}} प्रस्ताव गर्नुभयो। स्वीकार वा अस्वीकार गर्नुहोस्।",
     "ownerCounteredYourTurn": "मालिकले {{price}} सहित प्रतिप्रस्ताव गर्नुभयो। जवाफ दिने पालो तपाईंको हो।",
     "comprehensiveInsurance": "व्यापक बीमा",
     "insured": "बीमा गरिएको",
@@ -309,7 +335,7 @@
     "newOnFlito": "FLITO मा नयाँ",
     "completedTrips_one": "{{count}} यात्रा",
     "completedTrips_other": "{{count}} यात्राहरू",
-    "fillsPercent": "तपाईंको भाडाले यसको {{percent}}% भर्छ",
+    "fillsPercent": "यसको {{percent}}% भर्छ",
     "cargoBedDims": "कार्गो बेड {{dims}} फिट",
     "basedInWithDistance": "{{base}}मा आधारित, उठानदेखि लगभग {{km}} कि.मी.",
     "basedIn": "{{base}}मा आधारित",
@@ -335,5 +361,14 @@
     "noLocationData": "यो भाडाको लागि स्थान डाटा छैन",
     "fitMapAccessibilityLabel": "नक्सालाई सबै मार्करमा मिलाउनुहोस्",
     "fit": "मिलाउनुहोस्"
+  },
+  "truckSlots": {
+    "count_one": "{{count}} ट्रक",
+    "count_other": "{{count}} ट्रक",
+    "needs_one": "{{count}} ट्रक चाहिन्छ",
+    "needs_other": "{{count}} ट्रक चाहिन्छ",
+    "booked": "{{needed}} मध्ये {{booked}} ट्रक बुक भयो",
+    "allBooked_one": "ट्रक बुक भयो",
+    "allBooked_other": "सबै {{count}} ट्रक बुक भए"
   }
 }

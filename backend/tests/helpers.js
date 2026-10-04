@@ -121,7 +121,7 @@ const quoteOn = async (owner, load, quotedPrice = 15000, truck = null) => {
 const placeQuote = async (owner, load, quotedPrice = 15000, truck = null) => {
   const res = await quoteOn(owner, load, quotedPrice, truck);
   if (res.status !== 201) throw new Error(`Quote failed with ${res.status}: ${res.body.message}`);
-  return res.body.quote;
+  return res.body.quotes[0];
 };
 
 // Convenience: an authenticated supertest agent for a given token.

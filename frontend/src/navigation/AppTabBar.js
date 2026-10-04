@@ -10,7 +10,7 @@ import { SidebarFrame, SidebarNavItem } from '../components/navigation/Sidebar';
 import { colors, radius, shadow, iconSize, themedStyles } from '../theme/tokens';
 import useBreakpoint from '../hooks/useBreakpoint';
 import useAdminStats from '../admin/useAdminStats';
-import { ADMIN_SECTIONS } from '../admin/sections';
+import { ADMIN_SECTIONS, sectionOfRoute } from '../admin/sections';
 import { ROLE_NAV, isItemActive } from './roleNav';
 
 const BAR_HEIGHT = 54;
@@ -44,7 +44,8 @@ const barItems = ({ role, t, navigation, focusedTab, nestedName, stats }) => {
       key: section.key,
       label: t(section.labelKey),
       icon: section.icon,
-      active: focusedTab === 'HomeTab' && [section.route, section.alsoAt?.route].includes(nestedName),
+      // A record's page (a user, a truck) keeps its section marked.
+      active: focusedTab === 'HomeTab' && sectionOfRoute(nestedName) === section.key,
       badge: section.badgeStat && stats ? stats[section.badgeStat] : 0,
       onPress: () => navigation.navigate('HomeTab', { screen: section.route }),
     }));

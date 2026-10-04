@@ -32,14 +32,14 @@ describe('competitive bidding', () => {
     await placeQuote(ownerB, load, 14000);
   });
 
-  it('allows only one active quote per owner per load', async () => {
+  it('lets an owner offer no more trucks than the load needs', async () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     const load = await postLoad(shipper);
 
     await placeQuote(owner, load);
     const res = await quoteOn(owner, load, 9000);
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(400);
 
     expect((await Load().findById(load._id)).totalQuotes).toBe(1);
   });
@@ -105,13 +105,10 @@ describe('closed quotes are immutable', () => {
     return { shipper, owner, load, quote };
   };
 
-  // Bug: counter didn't check status, so countering an accepted quote flipped
-  // a booked load back to "negotiating".
-  it('refuses a counter-offer on an accepted quote', async () => {
-    const { owner, load, quote } = await acceptedQuote();
+  it('refuses to accept an accepted quote again', async () => {
+    const { shipper, load, quote } = await acceptedQuote();
 
-    const res = await as(owner.token).patch(`/api/quotes/${quote._id}/counter`)
-      .send({ counterOfferPrice: 20000 });
+    const res = await as(shipper.token).patch(`/api/quotes/${quote._id}/accept`);
 
     expect(res.status).toBe(400);
     expect((await Load().findById(load._id)).status).toBe('booked');

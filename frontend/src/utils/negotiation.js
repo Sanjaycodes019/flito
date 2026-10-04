@@ -1,7 +1,8 @@
-// How a negotiation between a shipper and a truck owner stands. Mirrors the
-// server's services/negotiation.js, which enforces the same rules.
+// Where an offer between a shipper and a truck owner stands. There is no
+// bargaining: the side that didn't make the offer accepts or declines it.
+// Offers from when counter-offers were allowed can still be "countered", so
+// these read them too. Mirrors the server's services/negotiation.js.
 
-export const MAX_OFFERS = 6;
 export const OPEN_QUOTE_STATUSES = ['pending', 'countered'];
 
 export const openingSide = (quote) => quote.initiatedBy || 'owner';

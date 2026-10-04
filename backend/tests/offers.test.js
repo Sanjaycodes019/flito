@@ -174,7 +174,7 @@ describe('a shipper requesting a truck', () => {
     expect(fourth.body.message).toMatch(/3 requests waiting/);
   });
 
-  it('keeps one negotiation per owner on a load', async () => {
+  it('keeps one open offer per truck on a load', async () => {
     const { shipper, owner, truck, load } = await setup();
     await placeQuote(owner, load, 16000, truck);
 
@@ -228,55 +228,14 @@ describe('an owner quoting with a truck', () => {
   });
 });
 
-describe('counter-offers move toward agreement', () => {
-  const opened = async () => {
+describe('offer prices', () => {
+  it('only takes whole-rupee prices', async () => {
     const shipper = await newUser('shipper');
     const owner = await newUser('owner');
     const load = await postLoad(shipper);
-    const quote = await placeQuote(owner, load, 15000);
-    const counter = (actor, price) => as(actor.token).patch(`/api/quotes/${quote._id}/counter`).send({ counterOfferPrice: price });
-    return { shipper, owner, quote, counter };
-  };
 
-  it("keeps each side's offers moving toward the other's", async () => {
-    const { shipper, owner, counter } = await opened();
-
-    expect((await counter(shipper, 15000)).body.message).toMatch(/accept that price/);
-    await counter(shipper, 12000).expect(200);
-
-    expect((await counter(owner, 12000)).body.message).toMatch(/accept that price/);
-    expect((await counter(owner, 16000)).body.message).toMatch(/has to be lower/);
-    await counter(owner, 14000).expect(200);
-
-    expect((await counter(shipper, 11000)).body.message).toMatch(/has to be higher/);
-    const res = await counter(shipper, 13000).expect(200);
-
-    expect(res.body.quote.offers.map((o) => [o.by, o.price])).toEqual([
-      ['owner', 15000], ['shipper', 12000], ['owner', 14000], ['shipper', 13000],
-    ]);
-  });
-
-  it('ends in a decision after six offers', async () => {
-    const { shipper, owner, quote, counter } = await opened();
-
-    await counter(shipper, 10000).expect(200);
-    await counter(owner, 14000).expect(200);
-    await counter(shipper, 11000).expect(200);
-    await counter(owner, 13000).expect(200);
-    await counter(shipper, 12000).expect(200);
-
-    const seventh = await counter(owner, 12500);
-    expect(seventh.status).toBe(400);
-    expect(seventh.body.message).toMatch(/6 offers/);
-
-    const { booking } = (await as(owner.token).patch(`/api/quotes/${quote._id}/accept`).expect(200)).body;
-    expect(booking.totalAmount).toBe(12000);
-  });
-
-  it('only takes whole-rupee prices', async () => {
-    const { shipper, counter } = await opened();
-    expect((await counter(shipper, 12000.5)).status).toBe(400);
-    expect((await counter(shipper, 50)).status).toBe(400);
+    expect((await quoteOn(owner, load, 12000.5)).status).toBe(400);
+    expect((await quoteOn(owner, load, 50)).status).toBe(400);
   });
 });
 

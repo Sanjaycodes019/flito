@@ -10,16 +10,16 @@ import Spinner from '../components/common/Spinner';
 import EmptyState from '../components/common/EmptyState';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
 import VerifiedBadge from '../components/common/VerifiedBadge';
+import TruckSlots from '../components/loads/TruckSlots';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
 import { formatCurrency, formatDate, formatKg, formatTrip, getErrorMessage, truckTypeLabel } from '../utils/helpers';
 import { dayLabel } from '../utils/nepalDate';
-import {
-  MAX_OFFERS, isOpenQuote, offerHistory, openingSide, standingOffer,
-} from '../utils/negotiation';
+import { isOpenQuote, offerHistory, openingSide, standingOffer } from '../utils/negotiation';
+import { openSlotsOf, trucksBookedOf, trucksNeededOf, weightPerTruck } from '../utils/loadSlots';
 import api from '../services/api';
-import { notify } from '../utils/alert';
+import { confirmAction, notify } from '../utils/alert';
 import LoadPhotosSection from '../components/loads/LoadPhotosSection';
 import useScreenLayout from '../hooks/useScreenLayout';
 
@@ -27,6 +27,7 @@ const TAKING_OFFERS = ['open', 'quoted', 'negotiating'];
 const MIN_PRICE = 100;
 
 const isWholePrice = (text) => /^\d+$/.test(text.trim()) && Number(text) >= MIN_PRICE;
+const loadIdOf = (quote) => quote.loadId?._id || quote.loadId;
 
 const LoadDetailScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -34,7 +35,7 @@ const LoadDetailScreen = ({ route, navigation }) => {
   const { user } = useSelector((state) => state.auth);
   const [load, setLoad] = useState(null);
   const [quotes, setQuotes] = useState([]);
-  const [myQuote, setMyQuote] = useState(null);
+  const [myQuotes, setMyQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -56,9 +57,7 @@ const LoadDetailScreen = ({ route, navigation }) => {
       }
       if (isOwner) {
         const { data: mineRes } = await api.get('/quotes/mine');
-        const existing = mineRes.quotes.find((q) => (q.loadId?._id || q.loadId) === loadId && isOpenQuote(q))
-          || mineRes.quotes.find((q) => (q.loadId?._id || q.loadId) === loadId);
-        setMyQuote(existing || null);
+        setMyQuotes(mineRes.quotes.filter((quote) => loadIdOf(quote) === loadId));
       }
     } catch (error) {
       notify(t('loads:loadDetail.errorTitle'), getErrorMessage(error));
@@ -79,13 +78,26 @@ const LoadDetailScreen = ({ route, navigation }) => {
     setRefreshing(false);
   };
 
+  // A one-truck load is done once its truck is booked, so the shipper goes
+  // straight to the booking. With more trucks to find they stay here.
   const handleAccept = async (quoteId) => {
     setBusy(true);
     try {
       const { data } = await api.patch(`/quotes/${quoteId}/accept`);
-      notify(t('loads:loadDetail.offerAcceptedTitle'), t('loads:loadDetail.offerAcceptedMessage'), () =>
-        navigation.replace('BookingDetail', { bookingId: data.booking._id })
-      );
+      const slots = data.load || {};
+      if ((slots.trucksNeeded || 1) > 1 && isShipper) {
+        await fetchAll();
+        notify(
+          t('loads:loadDetail.offerAcceptedTitle'),
+          slots.trucksBooked >= slots.trucksNeeded
+            ? t('loads:loadDetail.allTrucksBookedMessage', { count: slots.trucksNeeded })
+            : t('loads:loadDetail.offerAcceptedSlotsMessage', { booked: slots.trucksBooked, needed: slots.trucksNeeded }),
+        );
+      } else {
+        notify(t('loads:loadDetail.offerAcceptedTitle'), t('loads:loadDetail.offerAcceptedMessage'), () =>
+          navigation.replace('BookingDetail', { bookingId: data.booking._id })
+        );
+      }
     } catch (error) {
       notify(t('loads:loadDetail.couldNotAcceptTitle'), getErrorMessage(error));
     }
@@ -103,17 +115,6 @@ const LoadDetailScreen = ({ route, navigation }) => {
     setBusy(false);
   };
 
-  const handleCounter = async (quoteId, counterOfferPrice) => {
-    setBusy(true);
-    try {
-      await api.patch(`/quotes/${quoteId}/counter`, { counterOfferPrice });
-      await fetchAll();
-    } catch (error) {
-      notify(t('loads:loadDetail.couldNotSendCounterOfferTitle'), getErrorMessage(error));
-    }
-    setBusy(false);
-  };
-
   const handleCancelLoad = async () => {
     setBusy(true);
     try {
@@ -124,6 +125,22 @@ const LoadDetailScreen = ({ route, navigation }) => {
     }
     setBusy(false);
   };
+
+  const handleEnoughTrucks = () => confirmAction({
+    title: t('loads:loadDetail.enoughTrucks.confirmTitle'),
+    message: t('loads:loadDetail.enoughTrucks.confirmMessage', { count: trucksBookedOf(load) }),
+    confirmLabel: t('loads:loadDetail.enoughTrucks.button'),
+    onConfirm: async () => {
+      setBusy(true);
+      try {
+        await api.patch(`/loads/${loadId}/close`);
+        await fetchAll();
+      } catch (error) {
+        notify(t('loads:loadDetail.errorTitle'), getErrorMessage(error));
+      }
+      setBusy(false);
+    },
+  });
 
   const handleRelist = async () => {
     setBusy(true);
@@ -143,8 +160,13 @@ const LoadDetailScreen = ({ route, navigation }) => {
   const takingOffers = TAKING_OFFERS.includes(load.status) && !(load.expiresAt && new Date(load.expiresAt) <= new Date());
   const hasSide = (isShipper && isMyLoad) || isOwner;
   const twoColumns = layout.isDesktop && hasSide;
-  // Offers still waiting on someone come first.
-  const orderedQuotes = [...quotes].sort((a, b) => Number(isOpenQuote(b)) - Number(isOpenQuote(a)));
+  const needed = trucksNeededOf(load);
+  const booked = trucksBookedOf(load);
+  const openSlots = openSlotsOf(load);
+  const share = weightPerTruck(load);
+  // Offers still waiting on someone come first, then the trucks booked.
+  const rank = (quote) => (isOpenQuote(quote) ? 0 : quote.status === 'accepted' ? 1 : 2);
+  const orderedQuotes = [...quotes].sort((a, b) => rank(a) - rank(b));
 
   return (
     <ScrollView
@@ -159,6 +181,7 @@ const LoadDetailScreen = ({ route, navigation }) => {
               <Text style={styles.title}>{load.goodsType}</Text>
               <StatusBadge status={load.status} />
             </View>
+            {needed > 1 ? <TruckSlots load={load} /> : null}
             {load.description ? <Text style={styles.desc}>{load.description}</Text> : null}
 
             <LoadPhotosSection
@@ -172,6 +195,13 @@ const LoadDetailScreen = ({ route, navigation }) => {
             {load.pickupDay ? <Detail icon="calendar" label={t('loads:loadDetail.pickupDateLabel')} value={dayLabel(load.pickupDay)} /> : null}
             {load.distanceKm ? <Detail icon="route" label={t('loads:loadDetail.distanceLabel')} value={formatTrip(t, load)} /> : null}
             {load.weight ? <Detail icon="weight" label={t('loads:common.weight')} value={formatKg(load.weight)} /> : null}
+            {needed > 1 && share ? (
+              <Detail
+                icon="truck"
+                label={t('loads:loadDetail.trucksLabel')}
+                value={t('loads:loadDetail.trucksValue', { trucks: t('loads:truckSlots.count', { count: needed }), weight: formatKg(share) })}
+              />
+            ) : null}
             {load.truckTypePreference && load.truckTypePreference !== 'any'
               ? <Detail icon="truck" label={t('loads:loadDetail.truckTypeLabel')} value={truckTypeLabel(load.truckTypePreference, t)} />
               : null}
@@ -185,7 +215,9 @@ const LoadDetailScreen = ({ route, navigation }) => {
               </>
             )}
 
-            {isMyLoad && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status) && (
+            {/* Once a truck is booked the load can't just be withdrawn: the
+                shipper cancels that booking, or stops at "Enough trucks". */}
+            {isMyLoad && booked === 0 && ['open', 'quoted', 'negotiating', 'expired'].includes(load.status) && (
               <Button title={t('loads:loadDetail.cancelLoadButton')} icon="close" variant="destructive" onPress={handleCancelLoad} loading={busy} />
             )}
           </Card>
@@ -200,13 +232,36 @@ const LoadDetailScreen = ({ route, navigation }) => {
                     <Icon name="truck" size={iconSize.lg} color={colors.primaryText} />
                   </View>
                   <View style={styles.findText}>
-                    <Text style={styles.findTitle}>{t('loads:loadDetail.chooseATruckTitle')}</Text>
+                    <Text style={styles.findTitle}>
+                      {needed > 1 ? t('loads:loadDetail.chooseTrucksTitle') : t('loads:loadDetail.chooseATruckTitle')}
+                    </Text>
                     <Text style={styles.findHint}>
-                      {t('loads:loadDetail.chooseATruckHint')}
+                      {needed > 1
+                        ? t('loads:loadDetail.chooseTrucksHint', { count: openSlots })
+                        : t('loads:loadDetail.chooseATruckHint')}
                     </Text>
                   </View>
                 </View>
-                <Button title={t('loads:loadDetail.chooseATruckButton')} icon="truck" onPress={() => navigation.navigate('TruckMatches', { loadId })} />
+                <Button
+                  title={needed > 1 ? t('loads:loadDetail.chooseTrucksButton') : t('loads:loadDetail.chooseATruckButton')}
+                  icon="truck"
+                  onPress={() => navigation.navigate('TruckMatches', { loadId })}
+                />
+              </Card>
+            )}
+
+            {isShipper && isMyLoad && takingOffers && booked > 0 && (
+              <Card style={styles.enoughCard}>
+                <Text style={styles.enoughTitle}>{t('loads:loadDetail.enoughTrucks.title')}</Text>
+                <Text style={styles.findHint}>{t('loads:loadDetail.enoughTrucks.hint', { booked, needed })}</Text>
+                <Button
+                  title={t('loads:loadDetail.enoughTrucks.button')}
+                  icon="checkmark"
+                  variant="secondary"
+                  onPress={handleEnoughTrucks}
+                  loading={busy}
+                  style={styles.enoughButton}
+                />
               </Card>
             )}
 
@@ -226,23 +281,23 @@ const LoadDetailScreen = ({ route, navigation }) => {
                     busy={busy}
                     onAccept={handleAccept}
                     onReject={handleReject}
-                    onCounter={handleCounter}
+                    onOpenBooking={(bookingId) => navigation.navigate('BookingDetail', { bookingId })}
                   />
                 ))}
               </View>
             )}
 
             {isOwner && (
-              <OwnerQuoteSection
+              <OwnerOffersSection
                 load={load}
-                myQuote={myQuote}
+                myQuotes={myQuotes}
+                takingOffers={takingOffers}
                 kycStatus={user?.kycStatus}
                 busy={busy}
                 navigation={navigation}
                 onSubmitted={fetchAll}
                 onAccept={handleAccept}
                 onReject={handleReject}
-                onCounter={handleCounter}
               />
             )}
           </View>
@@ -256,21 +311,19 @@ const sideName = (by, viewerSide, t) => (by === viewerSide
   ? t('loads:loadDetail.sideNames.you')
   : by === 'owner' ? t('loads:loadDetail.sideNames.owner') : t('loads:loadDetail.sideNames.shipper'));
 
-// One negotiation, from either side's point of view. Only the party who did
-// NOT make the offer on the table can accept or counter it; the other waits,
-// and can withdraw. `canRespond` is false for an owner who isn't verified:
-// they can still reject, but not make or accept an offer.
-const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, canRespond = true }) => {
+// One truck on offer, from either side's point of view. There is no
+// bargaining: the party who did NOT make the offer accepts or declines it at
+// its price, and the one who made it can withdraw. `canRespond` is false for
+// an owner who isn't verified: they can still decline, but not accept.
+const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onOpenBooking, canRespond = true }) => {
   const { t } = useTranslation();
-  const [countering, setCountering] = useState(false);
-  const [counterPrice, setCounterPrice] = useState('');
 
   const standing = standingOffer(quote);
   const history = offerHistory(quote);
   const isOpen = isOpenQuote(quote);
   const myTurn = isOpen && standing.by !== viewerSide;
   const request = openingSide(quote) === 'shipper';
-  const offersLeft = history.length < MAX_OFFERS;
+  const bookedHere = quote.status === 'accepted';
 
   const ownerName = quote.ownerId?.companyName
     || `${quote.ownerId?.firstName || ''} ${quote.ownerId?.lastName || ''}`.trim();
@@ -284,28 +337,14 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, can
     ? [truckTypeLabel(truck.truckType, t), truck.capacity ? formatKg(truck.capacity) : null, truck.makeModel, truck.registrationNumber].filter(Boolean).join(' · ')
     : quote.truckType ? truckTypeLabel(quote.truckType, t) : null;
 
-  const submitCounter = () => {
-    if (!isWholePrice(counterPrice)) {
-      notify(t('loads:loadDetail.invalidPriceTitle'), t('loads:loadDetail.invalidPriceMessage', { min: formatCurrency(MIN_PRICE) }));
-      return;
-    }
-    setCountering(false);
-    setCounterPrice('');
-    onCounter(quote._id, Number(counterPrice));
-  };
-
-  const counterRule = viewerSide === 'shipper'
-    ? t('loads:loadDetail.counterRuleLess', { price: formatCurrency(standing.price), max: MAX_OFFERS })
-    : t('loads:loadDetail.counterRuleMore', { price: formatCurrency(standing.price), max: MAX_OFFERS });
-
   return (
-    <Card>
+    <Card style={bookedHere && styles.quoteBooked}>
       <View style={styles.row}>
         <View style={styles.headingRow}>
           <Text style={styles.ownerName} numberOfLines={1}>{heading}</Text>
           {viewerSide === 'shipper' && quote.ownerId?.verified && <VerifiedBadge size={16} label={t('loads:common.verifiedOwner')} />}
         </View>
-        <StatusBadge status={quote.status} />
+        <StatusBadge status={bookedHere ? 'booked' : quote.status} />
       </View>
       <Text style={styles.quoteKind}>{kind}</Text>
 
@@ -320,16 +359,15 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, can
 
       {truckLine ? <Detail icon="truck" label={t('loads:loadDetail.truckLabel')} value={truckLine} verified={truck?.verified} verifiedLabel={t('loads:common.verifiedTruck')} /> : null}
 
-      <Text style={styles.price}>{formatCurrency(standing.price)}</Text>
-      <Text style={styles.counterNote}>
-        {t('loads:loadDetail.latestOfferFrom', {
-          side: standing.by === viewerSide ? t('loads:loadDetail.you') : t(`loads:loadDetail.the${standing.by === 'owner' ? 'Owner' : 'Shipper'}`),
-        })}
-      </Text>
+      <View style={styles.priceRow}>
+        <Text style={styles.price}>{formatCurrency(standing.price)}</Text>
+        <Text style={styles.priceUnit}>{t('loads:loadDetail.perTruck')}</Text>
+      </View>
 
+      {/* Offers from when bargaining was allowed keep their history. */}
       {history.length > 1 && (
         <View style={styles.history}>
-          <Text style={styles.historyTitle}>{t('loads:loadDetail.earlierOffers', { count: history.length, max: MAX_OFFERS })}</Text>
+          <Text style={styles.historyTitle}>{t('loads:loadDetail.earlierOffers')}</Text>
           {history.slice(0, -1).map((offer, index) => (
             <View key={`${offer.by}-${index}`} style={styles.historyRow}>
               <Text style={styles.historyWho}>{sideName(offer.by, viewerSide, t)}</Text>
@@ -355,9 +393,7 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, can
         <>
           <View style={styles.waitingRow}>
             <Icon name="unverified" size={iconSize.xs} color={colors.warningText} />
-            <Text style={styles.waitingNote}>
-              {t('loads:loadDetail.verifyToRespond')}
-            </Text>
+            <Text style={styles.waitingNote}>{t('loads:loadDetail.verifyToRespond')}</Text>
           </View>
           <View style={styles.actionsRow}>
             <Button title={t('loads:loadDetail.rejectButton')} icon="close" variant="destructive" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
@@ -365,41 +401,23 @@ const QuoteCard = ({ quote, viewerSide, busy, onAccept, onReject, onCounter, can
         </>
       )}
 
-      {myTurn && canRespond && !countering && (
-        <>
-          {!offersLeft && (
-            <Text style={styles.lastOffer}>{t('loads:loadDetail.lastOfferNote')}</Text>
-          )}
-          <View style={styles.actionsRow}>
-            <Button title={t('loads:loadDetail.acceptButton')} icon="checkmark" onPress={() => onAccept(quote._id)} loading={busy} style={styles.actionButton} />
-            {offersLeft && (
-              <Button title={t('loads:loadDetail.counterButton')} icon="counterOffer" variant="secondary" onPress={() => setCountering(true)} style={styles.actionButton} />
-            )}
-            <Button title={t('loads:loadDetail.rejectButton')} icon="close" variant="destructive" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
-          </View>
-        </>
+      {myTurn && canRespond && (
+        <View style={styles.actionsRow}>
+          <Button title={t('loads:loadDetail.acceptButton')} icon="checkmark" onPress={() => onAccept(quote._id)} loading={busy} style={styles.actionButton} />
+          <Button title={t('loads:loadDetail.rejectButton')} icon="close" variant="tertiary" onPress={() => onReject(quote._id)} loading={busy} style={styles.actionButton} />
+        </View>
       )}
 
-      {myTurn && canRespond && countering && (
-        <View>
-          <Input
-            label={t('loads:loadDetail.counterOfferLabel')}
-            value={counterPrice}
-            onChangeText={setCounterPrice}
-            keyboardType="numeric"
-            placeholder={String(standing.price)}
-            icon="price"
-            helperText={counterRule}
+      {bookedHere && quote.booking && onOpenBooking && (
+        <View style={styles.actionsRow}>
+          <Button
+            title={t('loads:loadDetail.openBookingButton')}
+            icon="forward"
+            iconPosition="right"
+            variant="secondary"
+            onPress={() => onOpenBooking(quote.booking._id)}
+            style={styles.actionButton}
           />
-          <View style={styles.actionsRow}>
-            <Button title={t('loads:loadDetail.sendButton')} icon="send" onPress={submitCounter} loading={busy} style={styles.actionButton} />
-            <Button
-              title={t('common:actions.cancel')}
-              variant="ghost"
-              onPress={() => { setCountering(false); setCounterPrice(''); }}
-              style={styles.actionButton}
-            />
-          </View>
         </View>
       )}
     </Card>
@@ -422,78 +440,91 @@ const Detail = ({ icon, label, value, verified = false, verifiedLabel }) => {
   );
 };
 
-const OwnerQuoteSection = ({ load, myQuote, kycStatus, busy, navigation, onSubmitted, onAccept, onReject, onCounter }) => {
+// An owner's side of a load: the trucks they have offered or been asked for,
+// then a form to offer more while the load still needs trucks.
+const OwnerOffersSection = ({ load, myQuotes, takingOffers, kycStatus, busy, navigation, onSubmitted, onAccept, onReject }) => {
   const { t } = useTranslation();
   // Mirrors the server: owners must be verified to make or accept offers.
   const verified = kycStatus === 'approved';
-  const canQuote = TAKING_OFFERS.includes(load.status) && !(myQuote && isOpenQuote(myQuote));
+  const live = myQuotes.filter(isOpenQuote).length;
+  const canOfferMore = takingOffers && openSlotsOf(load) - live > 0;
+  const ordered = [...myQuotes].sort((a, b) => Number(isOpenQuote(b)) - Number(isOpenQuote(a)));
 
-  if (myQuote && (isOpenQuote(myQuote) || !canQuote)) {
-    return (
-      <QuoteCard
-        quote={myQuote}
-        viewerSide="owner"
-        busy={busy}
-        onAccept={onAccept}
-        onReject={onReject}
-        onCounter={onCounter}
-        canRespond={verified}
-      />
-    );
-  }
+  return (
+    <View>
+      {ordered.length > 0 && (
+        <Text style={[styles.sectionTitle, styles.formTitle]}>{t('loads:loadDetail.yourOffersTitle', { count: ordered.length })}</Text>
+      )}
+      {ordered.map((quote) => (
+        <QuoteCard
+          key={quote._id}
+          quote={quote}
+          viewerSide="owner"
+          busy={busy}
+          onAccept={onAccept}
+          onReject={onReject}
+          canRespond={verified}
+        />
+      ))}
 
-  if (!canQuote) return null;
+      {canOfferMore && (verified ? (
+        <QuoteForm load={load} maxTrucks={openSlotsOf(load) - live} navigation={navigation} onSubmitted={onSubmitted} />
+      ) : (
+        <VerificationPrompt kycStatus={kycStatus} message={t('loads:loadDetail.verifyToQuoteMessage')} />
+      ))}
 
-  if (!verified) {
-    return (
-      <VerificationPrompt
-        kycStatus={kycStatus}
-        message={t('loads:loadDetail.verifyToQuoteMessage')}
-      />
-    );
-  }
-
-  return <QuoteForm load={load} navigation={navigation} onSubmitted={onSubmitted} />;
+      {takingOffers && !canOfferMore && live > 0 && (
+        <Text style={styles.formHint}>{t('loads:loadDetail.offeredAllNeeded')}</Text>
+      )}
+    </View>
+  );
 };
 
-const TruckChoice = ({ truck, selected, onPress }) => {
+const TruckChoice = ({ truck, selected, disabled, onPress }) => {
   const { t } = useTranslation();
-  const unavailable = Boolean(truck.unavailableReason);
+  const unavailable = Boolean(truck.unavailableReason) || truck.offered;
   const label = `${truckTypeLabel(truck.truckType, t)} ${truck.registrationNumber}`;
+  const hint = truck.offered
+    ? t('loads:loadDetail.alreadyOffered')
+    : truck.unavailableReason
+      || [formatKg(truck.capacity), truck.askingPrice ? t('loads:loadDetail.yourRatesShort', { price: formatCurrency(truck.askingPrice) }) : t('loads:loadDetail.noRateSet')].join(' · ');
+  const off = unavailable || disabled;
   return (
     <Pressable
       onPress={onPress}
-      disabled={unavailable}
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected, disabled: unavailable }}
+      disabled={off}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected, disabled: off }}
       accessibilityLabel={label}
       style={[styles.truckChoice, selected && styles.truckChoiceSelected, unavailable && styles.truckChoiceUnavailable]}
     >
-      <Icon name="truck" size={iconSize.md} color={unavailable ? colors.disabledText : selected ? colors.primaryText : colors.textMuted} />
+      <Icon
+        name={selected ? 'checkboxOn' : 'checkboxOff'}
+        size={iconSize.lg}
+        color={unavailable ? colors.disabledText : selected ? colors.primaryText : colors.textMuted}
+      />
       <View style={styles.truckChoiceText}>
         <View style={styles.headingRow}>
-          <Text style={[styles.truckChoiceTitle, unavailable && styles.truckChoiceMuted]}>{label}</Text>
+          <Text style={[styles.truckChoiceTitle, off && !selected && styles.truckChoiceMuted]}>{label}</Text>
           {truck.verified && <VerifiedBadge size={14} label={t('loads:common.verifiedTruck')} />}
         </View>
-        <Text style={styles.truckChoiceHint}>
-          {unavailable
-            ? truck.unavailableReason
-            : [formatKg(truck.capacity), truck.askingPrice ? t('loads:loadDetail.yourRatesShort', { price: formatCurrency(truck.askingPrice) }) : t('loads:loadDetail.noRateSet')].join(' · ')}
-        </Text>
+        <Text style={styles.truckChoiceHint}>{hint}</Text>
       </View>
-      {selected && <Icon name="checkmark" size={iconSize.md} color={colors.primaryText} />}
     </Pressable>
   );
 };
 
-// An owner picks which of their trucks carries the load, and their price.
-const QuoteForm = ({ load, navigation, onSubmitted }) => {
+// An owner ticks which of their trucks will carry the load (as many as it
+// still needs) and names one price per truck.
+const QuoteForm = ({ load, maxTrucks, navigation, onSubmitted }) => {
   const { t } = useTranslation();
   const [trucks, setTrucks] = useState(null);
-  const [truckId, setTruckId] = useState(null);
+  const [truckIds, setTruckIds] = useState([]);
   const [price, setPrice] = useState('');
   const [priceEdited, setPriceEdited] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const share = weightPerTruck(load);
+  const multi = trucksNeededOf(load) > 1;
 
   useEffect(() => {
     let active = true;
@@ -501,9 +532,9 @@ const QuoteForm = ({ load, navigation, onSubmitted }) => {
       .then(({ data }) => {
         if (!active) return;
         setTrucks(data.trucks);
-        const first = data.trucks.find((truck) => !truck.unavailableReason);
+        const first = data.trucks.find((truck) => !truck.unavailableReason && !truck.offered);
         if (first) {
-          setTruckId(first._id);
+          setTruckIds([first._id]);
           if (first.askingPrice) setPrice(String(first.askingPrice));
         }
       })
@@ -515,13 +546,16 @@ const QuoteForm = ({ load, navigation, onSubmitted }) => {
     return () => { active = false; };
   }, [load._id, t]);
 
-  const chooseTruck = (truck) => {
-    setTruckId(truck._id);
-    if (!priceEdited && truck.askingPrice) setPrice(String(truck.askingPrice));
+  const toggleTruck = (truck) => {
+    const picked = truckIds.includes(truck._id);
+    const next = picked ? truckIds.filter((id) => id !== truck._id) : [...truckIds, truck._id];
+    // One truck at a time when only one is needed: picking another swaps it.
+    setTruckIds(maxTrucks === 1 && !picked ? [truck._id] : next);
+    if (!picked && !priceEdited && truck.askingPrice) setPrice(String(truck.askingPrice));
   };
 
   const handleSubmit = async () => {
-    if (!truckId) {
+    if (!truckIds.length) {
       notify(t('loads:loadDetail.chooseATruckAlertTitle'), t('loads:loadDetail.chooseATruckAlertMessage'));
       return;
     }
@@ -531,7 +565,8 @@ const QuoteForm = ({ load, navigation, onSubmitted }) => {
     }
     setSubmitting(true);
     try {
-      await api.post('/quotes', { loadId: load._id, quotedPrice: Number(price), truckId });
+      await api.post('/quotes', { loadId: load._id, quotedPrice: Number(price), truckIds });
+      setTruckIds([]);
       await onSubmitted();
     } catch (error) {
       notify(t('loads:loadDetail.couldNotSendQuoteTitle'), getErrorMessage(error));
@@ -539,12 +574,17 @@ const QuoteForm = ({ load, navigation, onSubmitted }) => {
     setSubmitting(false);
   };
 
-  const selected = trucks?.find((truck) => truck._id === truckId);
-  const available = (trucks || []).filter((truck) => !truck.unavailableReason);
+  const lastPicked = trucks?.find((truck) => truck._id === truckIds[truckIds.length - 1]);
+  const available = (trucks || []).filter((truck) => !truck.unavailableReason && !truck.offered);
+  const full = maxTrucks > 1 && truckIds.length >= maxTrucks;
+  const count = truckIds.length;
+  const total = isWholePrice(price) && count > 1 ? Number(price) * count : null;
 
   return (
     <Card>
-      <Text style={[styles.sectionTitle, styles.formTitle]}>{t('loads:loadDetail.submitAQuoteTitle')}</Text>
+      <Text style={[styles.sectionTitle, styles.formTitle]}>
+        {multi ? t('loads:loadDetail.offerTrucksTitle') : t('loads:loadDetail.submitAQuoteTitle')}
+      </Text>
 
       {!trucks ? (
         <Text style={styles.formHint}>{t('loads:loadDetail.loadingYourTrucks')}</Text>
@@ -555,10 +595,21 @@ const QuoteForm = ({ load, navigation, onSubmitted }) => {
         </>
       ) : (
         <>
-          <Text style={styles.fieldLabel}>{t('loads:loadDetail.whichTruckLabel')}</Text>
-          <View accessibilityRole="radiogroup" style={styles.truckChoices}>
+          <Text style={styles.fieldLabel}>
+            {multi ? t('loads:loadDetail.whichTrucksLabel') : t('loads:loadDetail.whichTruckLabel')}
+          </Text>
+          {multi && share ? (
+            <Text style={styles.formHint}>{t('loads:loadDetail.pickUpTo', { count: maxTrucks, weight: formatKg(share) })}</Text>
+          ) : null}
+          <View style={styles.truckChoices}>
             {trucks.map((truck) => (
-              <TruckChoice key={truck._id} truck={truck} selected={truck._id === truckId} onPress={() => chooseTruck(truck)} />
+              <TruckChoice
+                key={truck._id}
+                truck={truck}
+                selected={truckIds.includes(truck._id)}
+                disabled={full && !truckIds.includes(truck._id)}
+                onPress={() => toggleTruck(truck)}
+              />
             ))}
           </View>
 
@@ -570,17 +621,29 @@ const QuoteForm = ({ load, navigation, onSubmitted }) => {
           ) : (
             <>
               <Input
-                label={t('loads:loadDetail.yourPriceLabel')}
+                label={multi ? t('loads:loadDetail.pricePerTruckLabel') : t('loads:loadDetail.yourPriceLabel')}
                 value={price}
                 onChangeText={(value) => { setPrice(value); setPriceEdited(true); }}
                 keyboardType="numeric"
                 placeholder={t('loads:loadDetail.yourPricePlaceholder')}
                 icon="price"
-                helperText={selected?.askingPrice
-                  ? t('loads:loadDetail.yourRatesForTrip', { price: formatCurrency(selected.askingPrice) })
+                helperText={lastPicked?.askingPrice
+                  ? t('loads:loadDetail.yourRatesForTrip', { price: formatCurrency(lastPicked.askingPrice) })
                   : t('loads:loadDetail.setRatePerKmHint')}
               />
-              <Button title={t('loads:loadDetail.submitQuoteButton')} icon="quote" onPress={handleSubmit} loading={submitting} />
+              {total ? (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>{t('loads:loadDetail.totalForTrucks', { count, price: formatCurrency(Number(price)) })}</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(total)}</Text>
+                </View>
+              ) : null}
+              <Button
+                title={count > 1 ? t('loads:loadDetail.offerTrucksButton', { count }) : t('loads:loadDetail.submitQuoteButton')}
+                icon="send"
+                onPress={handleSubmit}
+                loading={submitting}
+              />
+              <Text style={styles.footnote}>{t('loads:loadDetail.noBargainingNote')}</Text>
             </>
           )}
         </>
@@ -630,13 +693,19 @@ const styles = themedStyles(() => ({
   findTitle: { ...type.h3, color: colors.textPrimary },
   findHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
 
+  enoughCard: { borderWidth: 1, borderColor: colors.accentMuted },
+  enoughTitle: { ...type.bodyMedium, color: colors.textPrimary },
+  enoughButton: { marginTop: spacing.md },
+
+  quoteBooked: { borderWidth: 1, borderColor: colors.accentMuted },
   headingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1, minWidth: 0 },
   ownerName: { ...type.bodyMedium, color: colors.textPrimary, flexShrink: 1 },
   quoteKind: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, marginTop: spacing.xs },
   ratingText: { ...type.small, color: colors.textSecondary },
-  price: { ...type.h2, color: colors.primaryText, marginTop: spacing.sm },
-  counterNote: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, marginTop: spacing.sm },
+  price: { ...type.h2, color: colors.primaryText },
+  priceUnit: { ...type.small, color: colors.textMuted },
   history: {
     marginTop: spacing.xs,
     padding: spacing.sm,
@@ -649,7 +718,6 @@ const styles = themedStyles(() => ({
   historyPrice: { ...type.smallMedium, color: colors.textSecondary },
   waitingRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: spacing.sm },
   waitingNote: { ...type.small, color: colors.textMuted, flex: 1 },
-  lastOffer: { ...type.small, color: colors.warningText, marginTop: spacing.sm },
   expiredNote: { ...type.small, color: colors.textMuted, marginTop: spacing.md, marginBottom: spacing.sm },
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   actionButton: { flex: 1 },
@@ -673,6 +741,19 @@ const styles = themedStyles(() => ({
   truckChoiceTitle: { ...type.bodyMedium, color: colors.textPrimary },
   truckChoiceMuted: { color: colors.textMuted },
   truckChoiceHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
+  },
+  totalLabel: { ...type.small, color: colors.textSecondary, flexShrink: 1 },
+  totalValue: { ...type.h3, color: colors.textPrimary },
+  footnote: { ...type.small, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
 }));
 
 export default LoadDetailScreen;

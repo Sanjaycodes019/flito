@@ -116,7 +116,7 @@ describe('choosing a truck', () => {
     expect(screen.getByText('Comprehensive insurance')).toBeTruthy();
     expect(screen.getByText('Tarpaulin')).toBeTruthy();
     expect(screen.getByText('Helper')).toBeTruthy();
-    expect(screen.getByText('Cargo bed 19 x 7.5 x 7 ft')).toBeTruthy();
+    expect(screen.getByText('Cargo bed 19 × 7.5 × 7 ft')).toBeTruthy();
 
     // The verified badge sits only on the truck and owner an admin verified.
     expect(screen.getAllByLabelText('Verified truck')).toHaveLength(1);

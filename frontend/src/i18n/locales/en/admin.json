@@ -39,7 +39,8 @@
   "common": {
     "submitted": "Submitted {{date}}",
     "error": "Error",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "retry": "Try again"
   },
   "roles": {
     "shipper": "Shipper",
@@ -136,21 +137,21 @@
     "noMatchesMessage": "Try a different search or clear the filters.",
     "users": {
       "title": "Users",
-      "subtitle": "Everyone on FLITO. Suspend or reactivate accounts.",
+      "subtitle": "Everyone on FLITO. Open an account to see everything about it.",
       "search": "Search by name, email, phone or company",
       "emptyTitle": "No users yet",
       "emptyMessage": "New signups will show up here."
     },
     "loads": {
       "title": "Loads",
-      "subtitle": "Every load posted by shippers, in any status.",
+      "subtitle": "Every load posted by shippers, in any status. Open one for its offers and bookings.",
       "search": "Search by goods type",
       "emptyTitle": "No loads yet",
       "emptyMessage": "Loads posted by shippers will show up here."
     },
     "bookings": {
       "title": "Bookings",
-      "subtitle": "Every booking created from an accepted quote.",
+      "subtitle": "Every booking created from an accepted offer. Open one to follow the trip.",
       "search": "",
       "emptyTitle": "No bookings yet",
       "emptyMessage": "Bookings created from accepted quotes will show up here."
@@ -164,7 +165,7 @@
     },
     "trucks": {
       "title": "Trucks",
-      "subtitle": "Every truck on the platform and its verification.",
+      "subtitle": "Every truck on the platform and its verification. Open one for its papers.",
       "search": "Search by registration or make/model",
       "emptyTitle": "No trucks yet",
       "emptyMessage": "Trucks owners add will show up here."
@@ -194,5 +195,301 @@
     "noData": "Nothing to show yet.",
     "newestUsers": "Newest users",
     "viewAll": "View all"
+  },
+  "detail": {
+    "viewDetails": "View details",
+    "backTo": "Back to {{section}}",
+    "notFoundTitle": "Not found",
+    "notFoundMessage": "This record may have been removed, or the link is wrong.",
+    "loadErrorTitle": "Couldn't load this page",
+    "notGiven": "Not given",
+    "verified": "Verified",
+    "call": "Call",
+    "emailButton": "Email",
+    "yes": "Yes",
+    "no": "No",
+    "stats": {
+      "loads_one": "load",
+      "loads_other": "loads",
+      "trucks_one": "truck",
+      "trucks_other": "trucks",
+      "drivers_one": "driver",
+      "drivers_other": "drivers",
+      "bookings_one": "booking",
+      "bookings_other": "bookings",
+      "offers_one": "offer",
+      "offers_other": "offers",
+      "bookedDays_one": "booked day ahead",
+      "bookedDays_other": "booked days ahead",
+      "completed": "Completed",
+      "active": "In progress"
+    },
+    "related": {
+      "loads": "Loads",
+      "noLoads": "No loads posted yet.",
+      "trucks": "Trucks",
+      "noTrucks": "No trucks added yet.",
+      "drivers": "Drivers",
+      "noDrivers": "No drivers added yet.",
+      "drivesTrucks": "Trucks they drive",
+      "noAssignedTrucks": "Not assigned to a truck.",
+      "bookings": "Bookings",
+      "noBookings": "No bookings yet."
+    },
+    "user": {
+      "title": "User",
+      "account": "Account",
+      "blocked": {
+        "suspended": "Account suspended",
+        "banned": "Account banned"
+      },
+      "blockedHint": "They can't sign in or use FLITO until you reactivate them.",
+      "thisIsYou": "This is your own account. Another admin has to change its status.",
+      "contact": "Contact",
+      "identity": "Identity verification",
+      "anIdentityDocument": "an identity document",
+      "memberSince": "Member since {{date}}",
+      "profile": "Profile",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "role": "Role",
+      "company": "Company",
+      "email": "Email",
+      "phone": "Phone",
+      "confirmed": "confirmed",
+      "notConfirmed": "not confirmed",
+      "address": "Address",
+      "signIn": "Signs in with",
+      "signInPin": "Phone + PIN",
+      "signInPassword": "Email + password",
+      "pinLocked": "PIN locked",
+      "notifications": "Notifications",
+      "pushOn": "On, on their phone",
+      "pushOff": "Off",
+      "memberSinceLabel": "Joined",
+      "bank": "Payout bank",
+      "wallet": "Wallet",
+      "addedBy": "Added by",
+      "documents": "Documents",
+      "noDocuments": "No documents uploaded yet."
+    },
+    "truck": {
+      "title": "Truck",
+      "carries": "carries {{capacity}}",
+      "verification": "Truck verification",
+      "owner": "Owner",
+      "driver": "Driver",
+      "noDriver": "No driver assigned.",
+      "specs": "Specifications",
+      "type": "Type",
+      "body": "Body",
+      "capacity": "Capacity",
+      "makeModel": "Make and model",
+      "year": "Year made",
+      "fuel": "Fuel",
+      "cargoBed": "Cargo bed (L × W × H)",
+      "features": "Comes with",
+      "operations": "Where it works",
+      "base": "Based in",
+      "serviceArea": "Takes loads",
+      "ratePerKm": "Rate",
+      "perKm": "{{price}} per km",
+      "minimumCharge": "Minimum charge",
+      "added": "Added",
+      "updated": "Last changed",
+      "bookedDays": "Booked days",
+      "papers": "Papers",
+      "chassis": "Chassis number",
+      "engine": "Engine number",
+      "bluebookTax": "Bluebook tax",
+      "emissionTest": "Green sticker",
+      "insurance": "Insurance",
+      "insurer": "Insurer",
+      "expiredOn": "Expired {{date}}",
+      "expiresSoon": "Runs out {{date}}",
+      "validUntil": "Valid until {{date}}",
+      "documents": "Papers sent",
+      "noDocuments": "No papers uploaded yet."
+    },
+    "booking": {
+      "title": "Booking",
+      "kicker": "Booking · {{date}}",
+      "agreedPrice": "Agreed price",
+      "paid": "Paid",
+      "due": "Still due",
+      "distance": "Distance",
+      "adminActions": "Admin actions",
+      "cancelHint": "Stop this booking if something is wrong, such as fraud or a dispute. Everyone on it is told why, and the truck and the load are freed.",
+      "cancelButton": "Cancel Booking",
+      "cancelTitle": "Cancel this booking?",
+      "cancelMessage": "The shipper, the owner and the driver will see your reason. This can't be undone.",
+      "cancelConfirm": "Cancel Booking",
+      "closed": {
+        "completed": "Delivered. A finished booking can't be changed.",
+        "cancelled": "This booking was cancelled."
+      },
+      "payment": "Payment",
+      "method": "Paid with",
+      "methods": {
+        "khalti": "Khalti",
+        "esewa": "eSewa",
+        "cash": "Cash"
+      },
+      "people": "People",
+      "noDriver": "No driver yet",
+      "noDriverHint": "The owner still has to put a driver on this booking.",
+      "cancelledTitle": "Cancelled",
+      "cancelledHint": "Its truck and its slot on the load were freed.",
+      "trip": "Trip",
+      "steps": {
+        "booked": "Booked",
+        "confirmed": "Driver ready",
+        "pickedUp": "Picked up",
+        "delivered": "Delivered"
+      },
+      "pickupDay": "Pickup day",
+      "weight": "Weight",
+      "trucksOnLoad": "Trucks on this load",
+      "pickupStatus": "Pickup",
+      "dropoffStatus": "Delivery",
+      "openLoad": "Open Load",
+      "truck": "Truck and offer",
+      "noTruck": "No truck on record.",
+      "offeredBy": "How it started",
+      "openedBy": {
+        "owner": "The owner applied",
+        "shipper": "The shipper asked"
+      },
+      "offerPrice": "Agreed price",
+      "acceptedAt": "Accepted",
+      "proof": "Proof of delivery",
+      "openPhoto": "Open photo",
+      "signature": "Recipient's signature",
+      "noProof": "No photos or signature yet.",
+      "ratings": "Ratings",
+      "byShipper": "Shipper's rating",
+      "byOwner": "Owner's rating",
+      "notRated": "Not rated yet",
+      "starsOutOf": "{{count}} out of 5 stars",
+      "lastLocation": "Last known location",
+      "coordinates": "Coordinates",
+      "updated": "Updated",
+      "openMap": "Open in Maps",
+      "noLocation": "No location shared yet."
+    },
+    "load": {
+      "title": "Load",
+      "kicker": "Load · posted {{date}}",
+      "weight": "Weight",
+      "trucksBooked": "Trucks booked",
+      "cancelHint": "Take this load off FLITO, e.g. if it breaks the rules. The shipper is told why, and open offers are closed.",
+      "cancelButton": "Remove Load",
+      "cancelTitle": "Remove this load?",
+      "cancelMessage": "The shipper will see your reason. Owners with open offers are told it is gone.",
+      "cancelConfirm": "Remove Load",
+      "hasBookings": "Trucks are booked for this load. To stop it, cancel those bookings from their pages.",
+      "closed": {
+        "cancelled": "This load was cancelled.",
+        "booked": "This load has all its trucks.",
+        "completed": "This load was delivered.",
+        "default": "This load is closed."
+      },
+      "shipper": "Shipper",
+      "cancelledTitle": "This load was taken off the market",
+      "cargo": "Cargo and route",
+      "perTruck": "Trucks",
+      "truckType": "Truck type",
+      "anyTruck": "Any",
+      "budget": "Budget",
+      "openUntil": "Open for offers until",
+      "photos": "Photos",
+      "offers": "Offers",
+      "noOffers": "No offers yet."
+    }
+  },
+  "verification": {
+    "approvedTitle": {
+      "user": "Identity verified",
+      "owner": "Truck verified"
+    },
+    "reviewedBy": "{{date}} by {{name}}",
+    "reviewedOn": "{{date}}",
+    "revokeButton": "Remove Verification",
+    "revokeTitle": "Remove this verification?",
+    "revokeMessage": {
+      "user": "They lose the verified badge straight away and are asked to send their documents again. Your reason is shown to them.",
+      "owner": "The truck loses its verified badge and the owner is asked to send its papers again. Your reason is shown to them."
+    },
+    "revokeConfirm": "Remove Verification",
+    "pendingTitle": "Waiting for your review",
+    "submittedOn": "Sent {{date}}",
+    "pendingHint": {
+      "user": "Check the documents match the person, then approve, or reject with a reason.",
+      "owner": "Check the papers match the truck, then approve, or reject with a reason."
+    },
+    "rejectedTitle": "Rejected",
+    "notSubmittedTitle": {
+      "user": "Not sent for verification yet",
+      "owner": "Papers not sent yet"
+    },
+    "missing": "Still missing: {{list}}"
+  },
+  "reasonModal": {
+    "reasonLabel": "Reason",
+    "noteLabel": "Note (optional)",
+    "placeholder": "Write what happened",
+    "helper": "They will see this. At least 5 characters.",
+    "noteHelper": "Kept in this account's admin history.",
+    "tooShort": "Write at least {{min}} characters"
+  },
+  "history": {
+    "title": "Admin history",
+    "empty": "No admin has changed anything here yet.",
+    "by": "by {{name}}",
+    "actions": {
+      "user": {
+        "suspended": "Account suspended",
+        "banned": "Account banned",
+        "reactivated": "Account reactivated",
+        "pinReset": "Login PIN reset"
+      },
+      "kyc": {
+        "approved": "Identity approved",
+        "rejected": "Identity rejected",
+        "revoked": "Identity verification removed"
+      },
+      "truck": {
+        "approved": "Truck approved",
+        "rejected": "Truck rejected",
+        "revoked": "Truck verification removed"
+      },
+      "booking": {
+        "cancelled": "Booking cancelled by an admin"
+      },
+      "load": {
+        "cancelled": "Load removed by an admin"
+      }
+    }
+  },
+  "cards": {
+    "joined": "Joined",
+    "pickup": "Pickup",
+    "offers": "Offers",
+    "posted": "Posted",
+    "booked": "Booked",
+    "sent": "Sent for review",
+    "ownerVerified": "Owner verified",
+    "identity": {
+      "approved": "ID verified",
+      "pending": "ID waiting for review",
+      "rejected": "ID rejected",
+      "not_submitted": "ID not sent"
+    },
+    "papers": {
+      "approved": "Papers verified",
+      "pending": "Papers waiting for review",
+      "rejected": "Papers rejected",
+      "not_submitted": "Papers not sent"
+    }
   }
 }

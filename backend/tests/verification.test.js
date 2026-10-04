@@ -72,17 +72,18 @@ describe('owners must be verified to make offers', () => {
     await placeQuote(owner, load);
   });
 
-  it('stops an unverified owner countering or accepting, but still lets them reject', async () => {
+  it('stops an unverified owner accepting a request, but still lets them decline it', async () => {
     const shipper = await newUser('shipper', { verified: false });
     const owner = await newUser('owner', { verified: true });
+    const { addTruck } = require('./helpers');
+    const truck = await addTruck(owner);
     const load = await postLoad(shipper);
-    const quote = await placeQuote(owner, load);
-    await as(shipper.token).patch(`/api/quotes/${quote._id}/counter`).send({ counterOfferPrice: 12000 }).expect(200);
+    const quote = (await as(shipper.token).post(`/api/loads/${load._id}/requests`)
+      .send({ truckId: truck._id, price: 12000 }).expect(201)).body.quote;
 
-    // Verification revoked after the quote was made.
+    // Verification revoked after the request was made.
     await setKyc(owner, 'rejected');
 
-    expect((await as(owner.token).patch(`/api/quotes/${quote._id}/counter`).send({ counterOfferPrice: 13000 })).status).toBe(403);
     expect((await as(owner.token).patch(`/api/quotes/${quote._id}/accept`)).status).toBe(403);
     await as(owner.token).patch(`/api/quotes/${quote._id}/reject`).expect(200);
   });

@@ -13,9 +13,11 @@ import PhotoStrip from '../../components/common/PhotoStrip';
 import PhotoSourceButtons from '../../components/common/PhotoSourceButtons';
 import RouteStop, { emptyStop } from '../../components/loads/RouteStop';
 import { isPlaceComplete, missingPlaceFields, shortPlaceName } from '../../components/address/NepalAddressFields';
-import { colors, spacing, radius, type, themedStyles } from '../../theme/tokens';
+import Icon from '../../theme/icons';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { MAX_LOAD_PHOTOS, MAX_LOAD_WEIGHT_KG, PICKUP_DAYS_SHOWN } from '../../utils/constants';
 import { formatKg, getErrorMessage, isValidPhone } from '../../utils/helpers';
+import { MAX_TRUCKS_PER_LOAD } from '../../utils/loadSlots';
 import { dayLabel, describeDay, upcomingDays } from '../../utils/nepalDate';
 import useScreenLayout from '../../hooks/useScreenLayout';
 import api from '../../services/api';
@@ -37,12 +39,72 @@ const GOODS_CHOICES = [
 ];
 const WEIGHT_CHOICES = [500, 1000, 2000, 5000, 10000, 20000];
 
-const weightProblem = (text, t) => {
+// Each truck carries up to MAX_LOAD_WEIGHT_KG, so a heavier load needs more trucks.
+const weightProblem = (text, trucks, t) => {
   const value = text.trim();
   if (!value) return t('loads:createLoad.errors.enterWeightKg');
   if (!/^\d+(\.\d+)?$/.test(value) || Number(value) <= 0) return t('loads:createLoad.errors.enterWeightNumber');
-  if (Number(value) > MAX_LOAD_WEIGHT_KG) return t('loads:createLoad.errors.maxWeight', { max: formatKg(MAX_LOAD_WEIGHT_KG) });
+  if (Number(value) > MAX_LOAD_WEIGHT_KG * MAX_TRUCKS_PER_LOAD) {
+    return t('loads:createLoad.errors.maxWeight', { max: formatKg(MAX_LOAD_WEIGHT_KG * MAX_TRUCKS_PER_LOAD) });
+  }
+  if (Number(value) > MAX_LOAD_WEIGHT_KG * trucks) {
+    return t('loads:createLoad.errors.moreTrucks', { max: formatKg(MAX_LOAD_WEIGHT_KG) });
+  }
   return null;
+};
+
+const StepButton = ({ icon, label, disabled, onPress }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      hitSlop={4}
+      style={({ pressed }) => [styles.stepButton, hovered && !disabled && styles.stepButtonHovered, pressed && styles.stepButtonPressed, disabled && styles.stepButtonDisabled]}
+    >
+      <Icon name={icon} size={iconSize.lg} color={disabled ? colors.disabledText : colors.primaryText} />
+    </Pressable>
+  );
+};
+
+// How many trucks the load goes out on. One for most loads; a big load of
+// cement or sand is often split across several, each booked on its own.
+const TruckCount = ({ trucks, weight, onChange }) => {
+  const { t } = useTranslation();
+  const share = weight > 0 ? Math.ceil(weight / trucks) : null;
+  return (
+    <View style={styles.truckCount}>
+      <View style={styles.truckCountRow}>
+        <View style={styles.truckCountText}>
+          <Text style={styles.truckCountTitle}>{t('loads:createLoad.trucksTitle')}</Text>
+          <Text style={styles.truckCountHint}>
+            {trucks > 1 && share
+              ? t('loads:createLoad.eachTruckCarries', { weight: formatKg(share) })
+              : t('loads:createLoad.trucksHint')}
+          </Text>
+        </View>
+        <View style={styles.stepper}>
+          <StepButton icon="remove" label={t('loads:createLoad.fewerTrucks')} disabled={trucks <= 1} onPress={() => onChange(trucks - 1)} />
+          <Text style={styles.stepperValue} accessibilityLiveRegion="polite" accessibilityLabel={t('loads:truckSlots.count', { count: trucks })}>
+            {trucks}
+          </Text>
+          <StepButton icon="add" label={t('loads:createLoad.moreTrucks')} disabled={trucks >= MAX_TRUCKS_PER_LOAD} onPress={() => onChange(trucks + 1)} />
+        </View>
+      </View>
+      {trucks > 1 ? (
+        <View style={styles.truckIcons} accessible={false}>
+          {Array.from({ length: trucks }, (_, index) => (
+            <Icon key={index} name="truck" size={iconSize.lg} color={colors.primaryText} />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 };
 
 const stopPayload = ({ place, contactPerson, phone, coordinates }) => ({
@@ -113,6 +175,7 @@ const CreateLoadScreen = ({ navigation }) => {
   const [loadError, setLoadError] = useState(null);
   const [goodsType, setGoodsType] = useState('');
   const [weight, setWeight] = useState('');
+  const [trucks, setTrucks] = useState(1);
   const [stops, setStops] = useState({ pickup: emptyStop, dropoff: emptyStop });
   const [pickupDay, setPickupDay] = useState(days[0]);
   const scrollRef = useRef(null);
@@ -166,7 +229,7 @@ const CreateLoadScreen = ({ navigation }) => {
     !isPlaceComplete(stops.pickup.place) && t('loads:createLoad.missing.pickupAddress'),
     !isPlaceComplete(stops.dropoff.place) && t('loads:createLoad.missing.dropoffAddress'),
   ].filter(Boolean);
-  const hasInvalidField = Boolean(weight.trim() && weightProblem(weight, t))
+  const hasInvalidField = Boolean(weight.trim() && weightProblem(weight, trucks, t))
     || phoneInvalid(stops.pickup) || phoneInvalid(stops.dropoff);
 
   // Errors show only once the user has tried to post, not while they fill in.
@@ -184,6 +247,7 @@ const CreateLoadScreen = ({ navigation }) => {
       const { data } = await api.post('/loads', {
         goodsType: goodsType.trim(),
         weight: Number(weight),
+        trucksNeeded: trucks,
         pickupDate: pickupDay,
         description: description.trim() || undefined,
         pickupLocation: stopPayload(stops.pickup),
@@ -265,7 +329,7 @@ const CreateLoadScreen = ({ navigation }) => {
       icon: 'weight',
       title: stepTitle('weight'),
       hint: stepHint('weight'),
-      check: () => !weightProblem(weight, t),
+      check: () => !weightProblem(weight, trucks, t),
       content: (
         <>
           <ChoiceGrid>
@@ -287,9 +351,10 @@ const CreateLoadScreen = ({ navigation }) => {
             placeholder={t('loads:createLoad.weightPlaceholder')}
             icon="weight"
             required
-            error={shown(weightProblem(weight, t))}
+            error={shown(weightProblem(weight, trucks, t))}
             helperText={t('loads:createLoad.weightHelper')}
           />
+          <TruckCount trucks={trucks} weight={Number(weight) || 0} onChange={setTrucks} />
         </>
       ),
     },
@@ -373,7 +438,13 @@ const CreateLoadScreen = ({ navigation }) => {
           <RoutePoint kind="dropoff" value={shortPlaceName(tree, stops.dropoff.place)} />
           <View style={styles.summaryDivider} />
           <SummaryRow label={t('loads:createLoad.summary.goods')} value={goodsType.trim()} />
-          <SummaryRow label={t('loads:createLoad.summary.weight')} value={weight.trim() && !weightProblem(weight, t) ? formatKg(Number(weight)) : null} />
+          <SummaryRow label={t('loads:createLoad.summary.weight')} value={weight.trim() && !weightProblem(weight, trucks, t) ? formatKg(Number(weight)) : null} />
+          <SummaryRow
+            label={t('loads:createLoad.summary.trucks')}
+            value={trucks > 1 && Number(weight) > 0
+              ? t('loads:createLoad.summary.trucksEach', { trucks: t('loads:truckSlots.count', { count: trucks }), weight: formatKg(Math.ceil(Number(weight) / trucks)) })
+              : t('loads:truckSlots.count', { count: trucks })}
+          />
           <SummaryRow label={t('loads:createLoad.summary.pickup')} value={dayLabel(pickupDay, days[0])} />
           <SummaryRow label={t('loads:createLoad.summary.photos')} value={photos.length ? String(photos.length) : null} empty={t('loads:createLoad.summary.none')} />
           <Text style={styles.footnote}>{t('loads:createLoad.footnote')}</Text>
@@ -450,6 +521,33 @@ const styles = themedStyles(() => ({
   dayTextSelected: { color: colors.primaryText },
 
   photoButtonsWide: { maxWidth: 440 },
+
+  truckCount: {
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  truckCountRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  truckCountText: { flex: 1, minWidth: 0 },
+  truckCountTitle: { ...type.bodyMedium, color: colors.textPrimary },
+  truckCountHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xxs },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  stepButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryMuted,
+  },
+  stepButtonHovered: { borderWidth: 1, borderColor: colors.primaryText },
+  stepButtonPressed: { opacity: 0.7 },
+  stepButtonDisabled: { backgroundColor: colors.surfaceMuted },
+  stepperValue: { ...type.h2, color: colors.textPrimary, minWidth: 32, textAlign: 'center' },
+  truckIcons: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.md },
 
   summaryTitle: { ...type.h3, color: colors.textPrimary, marginBottom: spacing.lg },
   routePoint: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },

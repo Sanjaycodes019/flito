@@ -5,13 +5,15 @@ const { requiresVerification } = require('./kycPolicy');
 const { describeArea } = require('./nepalLocations');
 const { roadDistance, roadDistancesTo } = require('./routing');
 const { busyDaysOf } = require('./tripSchedule');
+const { weightPerTruck } = require('./loadSlots');
 const { nepalDay, startOfNepalDay } = require('./nepalTime');
 const { formatKg } = require('../utils/format');
 
 // Which trucks can carry a load, and which suit it best.
 //
 // A truck is a candidate only when it can actually do the job: it is active,
-// its owner is verified and active, it carries at least the load's weight,
+// its owner is verified and active, it carries at least its share of the load
+// (the whole load, or an even part of it when the load needs several trucks),
 // both stops are inside its service area, and it isn't already booked on any
 // day the trip needs. Candidates are then scored out of 100 on five signals
 // (WEIGHTS), and the strongest become the reasons a shipper sees on each truck.
@@ -87,8 +89,11 @@ const unavailableReason = (truck, load) => {
   if (truck.status !== 'active') return `This truck is marked ${truck.status}`;
   const capacity = capacityOf(truck);
   if (!capacity) return "Add this truck's capacity to offer it";
-  if (load.weight && load.weight > capacity) {
-    return `Carries up to ${formatKg(capacity)}, and this load is ${formatKg(load.weight)}`;
+  const share = weightPerTruck(load);
+  if (share && share > capacity) {
+    return share === load.weight
+      ? `Carries up to ${formatKg(capacity)}, and this load is ${formatKg(load.weight)}`
+      : `Carries up to ${formatKg(capacity)}, and each truck on this load carries ${formatKg(share)}`;
   }
   const outsideArea = serviceAreaReason(truck, load);
   if (outsideArea) return outsideArea;
@@ -111,7 +116,8 @@ const driverIsReady = (driver) => Boolean(driver)
 const scoreTruck = ({
   load, capacity, owner, trips, distanceToPickupKm, askingPrice, lowestAsking, pricedCount, driverReady, insured, verifiedTruck,
 }) => {
-  const fill = load.weight ? load.weight / capacity : null;
+  const share = weightPerTruck(load);
+  const fill = share ? share / capacity : null;
   const reviews = owner.totalRatings || 0;
   const smoothedRating = ((owner.rating || 0) * reviews + PRIOR_RATING * PRIOR_REVIEWS) / (reviews + PRIOR_REVIEWS);
 
@@ -177,7 +183,8 @@ const findMatches = async (load) => {
   const filter = { status: 'active' };
   const busyDays = busyDaysOf(load);
   if (busyDays.length) filter.reservedDays = { $nin: busyDays };
-  if (load.weight) filter.$or = [{ capacity: { $gte: load.weight } }, { capacity: null }];
+  const share = weightPerTruck(load);
+  if (share) filter.$or = [{ capacity: { $gte: share } }, { capacity: null }];
 
   const trucks = await Truck.find(filter)
     .populate('ownerId', 'firstName lastName companyName rating totalRatings kycStatus status')
@@ -229,7 +236,7 @@ const findMatches = async (load) => {
           completedTrips: trips,
         },
         distanceToPickupKm,
-        fillPercent: load.weight ? Math.round((load.weight / capacity) * 100) : null,
+        fillPercent: share ? Math.round((share / capacity) * 100) : null,
         askingPrice,
         driverReady,
         score,

@@ -3,8 +3,9 @@ import { View } from 'react-native';
 import { colors, spacing, type, themedStyles } from '../theme/tokens';
 import { BrandMark, ProfileButton } from '../components/navigation/DesktopNav';
 import NotificationBell from '../components/navigation/NotificationBell';
-import LanguageToggle from '../components/common/LanguageToggle';
+import QuickToggles from '../components/common/QuickToggles';
 import { ADMIN_SECTIONS } from '../admin/sections';
+import { ADMIN_RECORD_ROUTES } from '../admin/records';
 import { ROLE_NAV } from './roleNav';
 
 // Admin sections are top-level places, reached from the bottom bar or the
@@ -16,16 +17,16 @@ const ADMIN_ROUTES = ADMIN_SECTIONS.flatMap((section) => [section.route, section
 // top-level places, so on a phone they lead with the FLITO mark, not a back arrow.
 const NAV_ROUTES = Object.values(ROLE_NAV).flat().map((item) => item.route);
 
-// Right side of the header. On a laptop the sidebar carries the language switch
-// and account, so it is empty. On a phone or tablet: the language switch and
-// your avatar, which opens Profile. On a phone the switch shows only where the
-// header has no title (Home), since the FLITO mark, a title, the switch, the
+// Right side of the header. On a laptop the sidebar carries the language + light/dark pill
+// and account, so it is empty. On a phone or tablet: the language + light/dark pill and
+// your avatar, which opens Profile. On a phone the pill shows only where the
+// header has no title (Home), since the FLITO mark, a title, the pill, the
 // bell and the avatar don't all fit across one.
 const HeaderRight = ({ isDesktop, isPhone, hasTitle }) => {
   if (isDesktop) return null;
   return (
     <View style={styles.headerRight}>
-      {(!isPhone || !hasTitle) && <LanguageToggle compact />}
+      {(!isPhone || !hasTitle) && <QuickToggles />}
       <NotificationBell />
       <ProfileButton />
     </View>
@@ -51,8 +52,11 @@ const stackScreenOptions = ({ isDesktop, isPhone = false, isAdmin = false, activ
     // The FLITO mark leads a first screen on a phone or tablet; on a laptop it is in the sidebar.
     ...(isRoot && !isDesktop ? { headerLeft: () => <BrandMark /> } : {}),
     // On a laptop the admin pages are a console with its own sidebar (brand, sections,
-    // account), so the generic top bar would only repeat it.
-    ...(isDesktop && (ADMIN_ROUTES.includes(route.name) || (isAdmin && route.name === rootScreen)) ? { headerShown: false } : {}),
+    // account), so the generic top bar would only repeat it. A record's page has
+    // its own breadcrumb back to its list.
+    ...(isDesktop && (ADMIN_ROUTES.includes(route.name) || ADMIN_RECORD_ROUTES.includes(route.name) || (isAdmin && route.name === rootScreen))
+      ? { headerShown: false }
+      : {}),
     ...(hasTitle ? {} : { headerTitle: '' }),
   };
 };

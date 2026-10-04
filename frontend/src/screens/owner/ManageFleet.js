@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
+import RecordCard, { Fact, Pill, ActionRow } from '../../components/common/RecordCard';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import SelectField from '../../components/common/SelectField';
@@ -777,16 +778,6 @@ const ReviewRow = ({ label, value }) => {
   );
 };
 
-const DetailRow = ({ icon, label, value, muted }) => (
-  <View style={styles.detailRow}>
-    <View style={styles.detailLabelRow}>
-      <Icon name={icon} size={iconSize.xs} color={colors.textMuted} style={styles.detailIcon} />
-      <Text style={styles.detailLabel}>{label}</Text>
-    </View>
-    <Text style={[styles.detailValue, muted && styles.detailMuted]}>{value}</Text>
-  </View>
-);
-
 // Getting a truck verified by an admin: its papers, and sending them for review.
 const verificationCopy = (status, t) => {
   const table = {
@@ -983,52 +974,99 @@ const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSet
         ? t('trucks:fleet.card.tipRateMissing')
         : null;
 
-  return (
-    <Card>
-      <View style={styles.row}>
-        <View style={styles.regRow}>
-          <Text style={styles.reg}>{truck.registrationNumber}</Text>
-          {truck.verified && <VerifiedBadge size={20} label={t('trucks:fleet.verification.verifiedTruckLabel')} />}
-        </View>
-        <StatusBadge status={truck.status} />
-      </View>
-      <Text style={styles.meta}>
-        {[
-          truckTypeLabel(truck.truckType, t),
-          bodyTypeLabel(truck.bodyType, t),
-          truck.capacity ? formatKg(truck.capacity) : null,
-          truck.makeModel,
-          truck.year ? String(truck.year) : null,
-        ].filter(Boolean).join(' · ')}
-      </Text>
+  const driverReady = driver?.kycStatus === 'approved';
 
-      <DetailRow
-        icon="pickup"
-        label={t('trucks:fleet.baseLabel')}
-        value={base ? `${base}${serviceAreaNote(truck.serviceArea, t) ? `, ${serviceAreaNote(truck.serviceArea, t)}` : ''}` : t('trucks:fleet.card.notSet')}
-        muted={!base}
-      />
-      <DetailRow icon="price" label={t('trucks:fleet.card.pricingLabel')} value={pricing || t('trucks:fleet.card.noRateFallback')} muted={!pricing} />
-      <DetailRow icon="checkmark" label={t('trucks:fleet.card.featuresLabel')} value={featureNames.length ? featureNames.join(', ') : t('trucks:fleet.card.noFeaturesListed')} muted={!featureNames.length} />
-      <DetailRow
+  return (
+    <RecordCard
+      icon="truck"
+      title={truck.registrationNumber}
+      titleAddon={truck.verified ? <VerifiedBadge size={20} label={t('trucks:fleet.verification.verifiedTruckLabel')} /> : null}
+      subtitle={[
+        truckTypeLabel(truck.truckType, t),
+        bodyTypeLabel(truck.bodyType, t),
+        truck.capacity ? formatKg(truck.capacity) : null,
+        truck.makeModel,
+        truck.year ? String(truck.year) : null,
+      ].filter(Boolean).join(' · ')}
+      badges={(
+        <>
+          <StatusBadge status={truck.status} />
+          {papers.length ? (
+            papers.map(([name, status]) => (
+              <Pill key={name} tone={status.tone} icon="document">{t('trucks:fleet.card.paperLine', { name, status: status.text })}</Pill>
+            ))
+          ) : (
+            <Pill icon="document">{t('trucks:fleet.card.papersNotAdded')}</Pill>
+          )}
+        </>
+      )}
+      footer={assigning ? (
+        <View>
+          <Input
+            label={t('trucks:fleet.card.driverPhoneLabel')}
+            value={driverPhone}
+            onChangeText={setDriverPhone}
+            keyboardType="phone-pad"
+            placeholder="+9779841234567"
+            icon="phone"
+          />
+          <ActionRow>
+            <Button
+              key="assign"
+              title={t('trucks:fleet.card.assignButton')}
+              icon="checkmark"
+              onPress={() => { setAssigning(false); onAssignDriver(driverPhone); }}
+              loading={busy}
+            />
+            {driver ? (
+              <Button key="unassign" title={t('trucks:fleet.card.unassignButton')} icon="close" variant="destructive" onPress={() => { setAssigning(false); onAssignDriver(''); }} loading={busy} />
+            ) : null}
+            <Button key="cancel" title={t('trucks:fleet.cancelButton')} variant="ghost" onPress={() => setAssigning(false)} />
+          </ActionRow>
+        </View>
+      ) : (
+        <ActionRow>
+          <Button key="edit" title={t('trucks:fleet.card.editDetailsButton')} icon="edit" variant="secondary" size="sm" onPress={onEdit} />
+          <Button
+            key="driver"
+            title={driver ? t('trucks:fleet.card.changeDriverButton') : t('trucks:fleet.card.assignDriverButton')}
+            icon="driver"
+            variant="tertiary"
+            size="sm"
+            onPress={() => setAssigning(true)}
+          />
+          <Button
+            key="status"
+            title={truck.status === 'active' ? t('trucks:fleet.card.markInMaintenanceButton') : t('trucks:fleet.card.markActiveButton')}
+            icon="settings"
+            variant="tertiary"
+            size="sm"
+            onPress={() => onSetStatus(truck.status === 'active' ? 'maintenance' : 'active')}
+            loading={busy}
+          />
+          <Button key="remove" title={t('trucks:fleet.removeButton')} icon="trash" variant="destructive" size="sm" onPress={onDelete} />
+        </ActionRow>
+      )}
+    >
+      <Fact icon="pickup" label={t('trucks:fleet.baseLabel')} lines={2} tone={base ? undefined : 'warning'}>
+        {base ? `${base}${serviceAreaNote(truck.serviceArea, t) ? `, ${serviceAreaNote(truck.serviceArea, t)}` : ''}` : t('trucks:fleet.card.notSet')}
+      </Fact>
+      <Fact icon="price" label={t('trucks:fleet.card.pricingLabel')} lines={2} tone={pricing ? undefined : 'warning'}>
+        {pricing || t('trucks:fleet.card.noRateFallback')}
+      </Fact>
+      <Fact icon="checkmark" label={t('trucks:fleet.card.featuresLabel')} lines={2}>
+        {featureNames.length ? featureNames.join(', ') : t('trucks:fleet.card.noFeaturesListed')}
+      </Fact>
+      <Fact
         icon="driver"
         label={t('trucks:fleet.card.driverLabel')}
         // Unverified drivers can be on a truck but can't be put on a booking yet.
-        value={driver
-          ? `${driver.firstName} ${driver.lastName}${driver.kycStatus === 'approved' ? '' : t('trucks:fleet.card.driverNotVerifiedSuffix')}`
+        tone={driver && !driverReady ? 'warning' : undefined}
+      >
+        {driver
+          ? `${driver.firstName} ${driver.lastName}${driverReady ? '' : t('trucks:fleet.card.driverNotVerifiedSuffix')}`
           : t('trucks:fleet.card.driverUnassigned')}
-        muted={!driver}
-      />
-
-      <View style={styles.papers}>
-        {papers.length ? (
-          papers.map(([name, status]) => (
-            <StatusPill key={name} label={t('trucks:fleet.card.paperLine', { name, status: status.text })} tone={status.tone} />
-          ))
-        ) : (
-          <StatusPill label={t('trucks:fleet.card.papersNotAdded')} />
-        )}
-      </View>
+      </Fact>
 
       {tip && (
         <View style={styles.tip}>
@@ -1038,56 +1076,7 @@ const TruckCard = ({ truck, tree, busy, onChanged, onEdit, onAssignDriver, onSet
       )}
 
       <TruckVerification truck={truck} onChanged={onChanged} />
-
-      {assigning ? (
-        <View style={styles.assign}>
-          <Input
-            label={t('trucks:fleet.card.driverPhoneLabel')}
-            value={driverPhone}
-            onChangeText={setDriverPhone}
-            keyboardType="phone-pad"
-            placeholder="+9779841234567"
-            icon="phone"
-          />
-          <View style={styles.actionsRow}>
-            <Button
-              title={t('trucks:fleet.card.assignButton')}
-              icon="checkmark"
-              onPress={() => { setAssigning(false); onAssignDriver(driverPhone); }}
-              loading={busy}
-              style={styles.actionButton}
-            />
-            {driver && (
-              <Button title={t('trucks:fleet.card.unassignButton')} icon="close" variant="destructive" onPress={() => { setAssigning(false); onAssignDriver(''); }} loading={busy} style={styles.actionButton} />
-            )}
-            <Button title={t('trucks:fleet.cancelButton')} variant="ghost" onPress={() => setAssigning(false)} style={styles.actionButton} />
-          </View>
-        </View>
-      ) : (
-        <View style={styles.actionsRow}>
-          <Button title={t('trucks:fleet.card.editDetailsButton')} icon="edit" variant="secondary" onPress={onEdit} style={styles.actionButton} />
-          <Button
-            title={driver ? t('trucks:fleet.card.changeDriverButton') : t('trucks:fleet.card.assignDriverButton')}
-            icon="driver"
-            variant="tertiary"
-            onPress={() => setAssigning(true)}
-            style={styles.actionButton}
-          />
-        </View>
-      )}
-
-      <View style={styles.actionsRow}>
-        <Button
-          title={truck.status === 'active' ? t('trucks:fleet.card.markInMaintenanceButton') : t('trucks:fleet.card.markActiveButton')}
-          icon="settings"
-          variant="tertiary"
-          onPress={() => onSetStatus(truck.status === 'active' ? 'maintenance' : 'active')}
-          loading={busy}
-          style={styles.actionButton}
-        />
-        <Button title={t('trucks:fleet.removeButton')} icon="trash" variant="destructive" onPress={onDelete} style={styles.actionButton} />
-      </View>
-    </Card>
+    </RecordCard>
   );
 };
 
@@ -1162,8 +1151,6 @@ const styles = themedStyles(() => ({
   formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.xl },
   formAction: { minWidth: 140 },
 
-  regRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
-  reg: { ...type.h3, color: colors.textPrimary, flexShrink: 1 },
   warning: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1189,38 +1176,15 @@ const styles = themedStyles(() => ({
   paperHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.xs },
   paperTitle: { ...type.bodyMedium, color: colors.textPrimary, flexShrink: 1 },
   paperActions: { marginTop: spacing.xs },
-  meta: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.sm,
-    marginTop: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-  },
-  detailLabelRow: { flexDirection: 'row', alignItems: 'center' },
-  detailIcon: { marginRight: spacing.xs },
-  detailLabel: { ...type.small, color: colors.textMuted },
-  detailValue: { ...type.smallMedium, color: colors.textPrimary, flexShrink: 1, textAlign: 'right' },
-  detailMuted: { color: colors.textMuted, fontWeight: '400' },
-  papers: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
   tip: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
-    marginTop: spacing.sm,
     padding: spacing.sm,
     borderRadius: radius.md,
     backgroundColor: colors.infoMuted,
   },
   tipText: { ...type.small, color: colors.infoText, flex: 1 },
-  assign: { marginTop: spacing.sm },
-  // Two buttons side by side when both fit (tablet and up); on a phone each
-  // gets its own full-width row, so a long Nepali label stays readable.
-  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, marginTop: spacing.sm },
-  actionButton: { flexGrow: 1, flexBasis: 160 },
 }));
 
 export default ManageFleet;

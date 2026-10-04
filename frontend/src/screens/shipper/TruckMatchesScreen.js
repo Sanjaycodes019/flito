@@ -4,12 +4,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import Grid from '../../components/common/Grid';
+import CardGrid, { useCardColumns } from '../../components/common/CardGrid';
 import Spinner from '../../components/common/Spinner';
 import EmptyState from '../../components/common/EmptyState';
 import StatusBadge from '../../components/common/StatusBadge';
 import TruckMatchCard from '../../components/loads/TruckMatchCard';
 import OfferPriceModal from '../../components/loads/OfferPriceModal';
+import TruckSlots from '../../components/loads/TruckSlots';
 import Icon from '../../theme/icons';
 import { colors, spacing, type, iconSize, themedStyles } from '../../theme/tokens';
 import useScreenLayout from '../../hooks/useScreenLayout';
@@ -17,6 +18,7 @@ import api from '../../services/api';
 import socketService from '../../services/socket';
 import { formatCurrency, formatKg, formatTrip, getErrorMessage } from '../../utils/helpers';
 import { dayLabel } from '../../utils/nepalDate';
+import { openSlotsOf, trucksNeededOf, weightPerTruck } from '../../utils/loadSlots';
 import { notify } from '../../utils/alert';
 
 const SORT_VALUES = ['best', 'price', 'distance', 'rating'];
@@ -51,6 +53,8 @@ const TruckMatchesScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { loadId } = route.params;
   const layout = useScreenLayout('narrow', 'wide');
+  // Match cards are tall, so two across at most.
+  const matchColumns = Math.min(useCardColumns(), 2);
   const [data, setData] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,13 +74,22 @@ const TruckMatchesScreen = ({ route, navigation }) => {
 
   useFocusEffect(useCallback(() => { fetchMatches(); }, [fetchMatches]));
 
-  // An owner replying moves the list on without a manual refresh; an owner
-  // accepting books the load, so the shipper goes straight to the booking.
+  // An owner replying moves the list on without a manual refresh. An owner
+  // accepting books a truck: a one-truck load goes straight to its booking, a
+  // load that still needs trucks stays here, and a full one opens the load.
   useEffect(() => {
     const onChanged = () => fetchMatches();
-    const onAccepted = ({ quote, booking }) => {
+    const onAccepted = ({ quote, booking, load: slots }) => {
       if (String(quote?.loadId?._id || quote?.loadId) !== String(loadId)) return;
-      notify(t('loads:truckMatches.truckBookedTitle'), t('loads:truckMatches.truckBookedMessage'), () => navigation.replace('BookingDetail', { bookingId: booking._id }));
+      const needed = slots?.trucksNeeded || 1;
+      if (needed === 1) {
+        notify(t('loads:truckMatches.truckBookedTitle'), t('loads:truckMatches.truckBookedMessage'), () => navigation.replace('BookingDetail', { bookingId: booking._id }));
+      } else if (slots.trucksBooked >= needed) {
+        notify(t('loads:truckMatches.truckBookedTitle'), t('loads:loadDetail.allTrucksBookedMessage', { count: needed }), () => navigation.replace('LoadDetail', { loadId }));
+      } else {
+        fetchMatches();
+        notify(t('loads:truckMatches.truckBookedTitle'), t('loads:loadDetail.offerAcceptedSlotsMessage', { booked: slots.trucksBooked, needed }));
+      }
     };
     socketService.on('new-quote', onChanged);
     socketService.on('quote-updated', onChanged);
@@ -86,7 +99,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
       socketService.off('quote-updated', onChanged);
       socketService.off('quote-accepted', onAccepted);
     };
-  }, [loadId, fetchMatches, navigation]);
+  }, [loadId, fetchMatches, navigation, t]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -117,6 +130,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
 
   const { load, matches, takingOffers, openRequests, maxOpenRequests } = data;
   const sorted = sortMatches(matches, sort);
+  const multi = trucksNeededOf(load) > 1;
   const openLoad = () => navigation.navigate('LoadDetail', { loadId });
 
   return (
@@ -133,6 +147,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
           </View>
           <StatusBadge status={load.status} />
         </View>
+        {multi ? <TruckSlots load={load} /> : null}
 
         <View style={styles.routeRow}>
           <Icon name="pickup" size={iconSize.sm} color={colors.accentText} />
@@ -150,9 +165,11 @@ const TruckMatchesScreen = ({ route, navigation }) => {
 
         <View style={[styles.summaryFooter, !layout.isPhone && styles.summaryFooterWide]}>
           <Text style={styles.summaryHint}>
-            {takingOffers
-              ? t('loads:truckMatches.askUpToTrucksHint', { max: maxOpenRequests })
-              : t('loads:truckMatches.noLongerTakingOffers')}
+            {!takingOffers
+              ? t('loads:truckMatches.noLongerTakingOffers')
+              : multi
+                ? t('loads:truckMatches.askForTrucksHint', { count: openSlotsOf(load), max: maxOpenRequests })
+                : t('loads:truckMatches.askUpToTrucksHint', { max: maxOpenRequests })}
           </Text>
           <Button title={t('loads:truckMatches.viewLoadAndOffersButton')} icon="document" variant="tertiary" size="sm" onPress={openLoad} />
         </View>
@@ -170,7 +187,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
         <EmptyState
           icon="truck"
           title={t('loads:truckMatches.noTrucksAvailableTitle')}
-          message={t('loads:truckMatches.noTrucksAvailableMessage', { weight: formatKg(load.weight), day: dayLabel(load.pickupDay) || t('loads:truckMatches.thisDate') })}
+          message={t('loads:truckMatches.noTrucksAvailableMessage', { weight: formatKg(weightPerTruck(load)), day: dayLabel(load.pickupDay) || t('loads:truckMatches.thisDate') })}
           actionLabel={t('loads:truckMatches.viewLoadButton')}
           onAction={openLoad}
         />
@@ -193,7 +210,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          <Grid columns={layout.isDesktop ? 2 : 1}>
+          <CardGrid columns={matchColumns}>
             {sorted.map((match, index) => (
               <TruckMatchCard
                 key={String(match.truck._id)}
@@ -207,7 +224,7 @@ const TruckMatchesScreen = ({ route, navigation }) => {
                 onViewOffer={openLoad}
               />
             ))}
-          </Grid>
+          </CardGrid>
         </>
       )}
 

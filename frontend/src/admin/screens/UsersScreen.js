@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { Text } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
-import { colors, type, themedStyles } from '../../theme/tokens';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 import { notify, confirmAction } from '../../utils/alert';
 import api from '../../services/api';
 import ResourceScreen from '../components/ResourceScreen';
-import AdminCard, { Fact, PillRow, ActionRow } from '../components/AdminCard';
+import AdminCard, { Fact, Pill, ActionRow, VerificationPill } from '../components/AdminCard';
 import { refreshAdminStats } from '../useAdminStats';
-import { displayName } from '../format';
+import { displayName, formatPhone } from '../format';
+import { openAdminRecord } from '../records';
 
 // What an admin can do to a user given where they stand now. An admin's own
 // account is left out (the server refuses it, and locking yourself out helps
@@ -38,6 +38,7 @@ const FILTER_GROUPS = [
 
 const UserCard = ({ user, list }) => {
   const { t } = useTranslation();
+  const navigation = useNavigation();
   const myId = useSelector((state) => state.auth.user?._id);
   const [busy, setBusy] = useState(false);
   const name = displayName(user) || t('admin:usersList.unnamed');
@@ -83,18 +84,26 @@ const UserCard = ({ user, list }) => {
   return (
     <AdminCard
       person={name}
+      imageUrl={user.avatarUrl}
       title={name}
       subtitle={[t(`admin:roles.${user.role}`, user.role), user.companyName].filter(Boolean).join(' · ')}
-      right={<StatusBadge status={user.status} />}
+      badges={(
+        <>
+          <StatusBadge status={user.status} />
+          {user.role !== 'admin' ? <VerificationPill status={user.kycStatus} /> : null}
+          {user.totalRatings ? <Pill icon="star" tone="warning">{`${user.rating.toFixed(1)} · ${t('admin:usersList.rating', { count: user.totalRatings })}`}</Pill> : null}
+        </>
+      )}
+      onPress={() => openAdminRecord(navigation, 'user', user._id)}
       footer={actions || canResetPin ? (
         <ActionRow>
           {canResetPin && (
             <Button
+              key="pin"
               title={t('admin:userActions.resetPin.button')}
               icon="lock"
               variant="tertiary"
               size="sm"
-              style={styles.action}
               loading={busy}
               onPress={resetPin}
             />
@@ -106,7 +115,6 @@ const UserCard = ({ user, list }) => {
               icon={item.icon}
               variant={item.variant}
               size="sm"
-              style={styles.action}
               loading={busy}
               onPress={() => change(item)}
             />
@@ -115,22 +123,11 @@ const UserCard = ({ user, list }) => {
       ) : null}
     >
       <Fact icon="email">{user.email}</Fact>
-      <Fact icon="phone">{user.phone}</Fact>
-      <Fact icon="calendar">{t('admin:usersList.joined', { date: formatDate(user.createdAt) })}</Fact>
-      <PillRow>
-        <StatusBadge status={user.kycStatus} />
-        {user.totalRatings ? (
-          <Text style={styles.rating}>★ {user.rating.toFixed(1)} · {t('admin:usersList.rating', { count: user.totalRatings })}</Text>
-        ) : null}
-      </PillRow>
+      <Fact icon="phone">{formatPhone(user.phone)}</Fact>
+      <Fact icon="calendar" label={t('admin:cards.joined')}>{formatDate(user.createdAt)}</Fact>
     </AdminCard>
   );
 };
-
-const styles = themedStyles(() => ({
-  rating: { ...type.small, color: colors.textMuted },
-  action: { flexGrow: 1, flexBasis: 120 },
-}));
 
 const UsersScreen = () => (
   <ResourceScreen

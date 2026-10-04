@@ -133,5 +133,7 @@ const truckSchema = new mongoose.Schema(
 truckSchema.index({ ownerId: 1, registrationNumber: 1 }, { unique: true });
 truckSchema.index({ status: 1, capacity: 1 });
 truckSchema.index({ verificationStatus: 1, verificationSubmittedAt: 1 });
+// The trucks a driver is assigned to.
+truckSchema.index({ assignedDriverId: 1 });
 
 module.exports = mongoose.model('Truck', truckSchema);

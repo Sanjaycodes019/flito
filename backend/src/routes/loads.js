@@ -16,6 +16,8 @@ router.get('/:id', loadsController.getLoad);
 router.get('/:id/quotes', requireRole('shipper'), loadsController.listQuotesForLoad);
 router.patch('/:id/cancel', requireRole('shipper'), loadsController.cancelLoad);
 router.patch('/:id/relist', requireRole('shipper'), validateRelist, loadsController.relistLoad);
+// "Enough trucks": stop looking once some of the trucks are booked.
+router.patch('/:id/close', requireRole('shipper'), loadsController.closeLoad);
 
 // Choosing a truck: the shipper's ranked matches, and a request to one of them.
 router.get('/:id/matches', requireRole('shipper'), loadsController.listTruckMatches);

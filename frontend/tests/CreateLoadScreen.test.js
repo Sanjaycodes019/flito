@@ -112,6 +112,26 @@ describe('posting a load', () => {
     expect(api.post).not.toHaveBeenCalled();
   });
 
+  it('splits a heavy load across as many trucks as the shipper picks', async () => {
+    const screen = renderForm();
+
+    fireEvent.changeText(await screen.findByLabelText('Goods Type'), 'Cement bags');
+    next(screen);
+    fireEvent.changeText(await screen.findByLabelText('Weight (kg)'), '90000');
+    expect(screen.getByText('How many trucks?')).toBeTruthy();
+    expect(screen.getByLabelText('One truck fewer').props.accessibilityState.disabled).toBe(true);
+
+    // Too heavy for one truck: it says to add trucks rather than moving on.
+    next(screen);
+    expect(await screen.findByText('One truck carries up to 60,000 kg. Add more trucks below.')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('One more truck'));
+    fireEvent.press(screen.getByLabelText('One more truck'));
+    expect(screen.getByText('Each truck carries about 30,000 kg')).toBeTruthy();
+    next(screen);
+    expect(await screen.findByText('Where should we pick it up?')).toBeTruthy();
+  });
+
   it('will not leave an address step until it is complete', async () => {
     const screen = renderForm();
 
@@ -152,6 +172,7 @@ describe('posting a load', () => {
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/loads', {
       goodsType: 'Cement bags',
       weight: 6000,
+      trucksNeeded: 1,
       pickupDate: addDays(nepalDay(), 1),
       pickupLocation: { provinceId: 'NP03', districtId: 'NP0327', localLevelId: 'NP0327101', ward: 16, tole: 'Balaju' },
       dropoffLocation: { provinceId: 'NP04', districtId: 'NP0439', localLevelId: 'NP0439101', ward: 6, tole: 'Lakeside' },
