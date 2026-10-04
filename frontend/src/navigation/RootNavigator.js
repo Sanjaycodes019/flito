@@ -9,6 +9,7 @@ import { navigationRef } from './navigationRef';
 import { colors } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeProvider';
 import { adminLinkingScreens } from '../admin/navigation';
+import { publicLinkingScreens } from '../public/pages';
 
 // Keeps screen transitions, tab bars, and the native back-swipe backdrop on
 // FLITO's own palette instead of React Navigation's default white/blue.
@@ -45,25 +46,16 @@ let lastNavigationState;
 // returning undefined keeps each out of the address bar, browser history and
 // server logs: a Google ID token is a credential, and an email address is
 // personal data.
-const linking = {
+//
+// The two sets of screens share some addresses. / is the landing page when
+// signed out and the dashboard when signed in, and the information pages
+// (/about, /terms, ...) keep the same address either way, so a shared /terms
+// link opens the Terms for whoever follows it. The config is built for the
+// side that is showing.
+export const buildLinking = (signedIn) => ({
   prefixes: ['flito://'],
   config: {
-    screens: {
-      // Signed out (AuthNavigator)
-      ChooseLanguage: 'language',
-      Login: 'login',
-      PinLogin: 'driver-login',
-      Signup: {
-        path: 'signup',
-        stringify: { googleIdToken: () => undefined, googleProfile: () => undefined },
-      },
-      AdminAccess: 'admin-access',
-      ForgotPassword: 'forgot-password',
-      ResetPassword: {
-        path: 'reset-password',
-        stringify: { email: () => undefined },
-      },
-
+    screens: signedIn ? {
       // Signed in (TabNavigator)
       HomeTab: {
         path: '',
@@ -96,9 +88,39 @@ const linking = {
           LanguageSettings: 'settings/language',
           AppearanceSettings: 'settings/appearance',
           SecuritySettings: 'settings/security',
+          ...publicLinkingScreens({ signedIn: true }),
         },
       },
+    } : {
+      // Signed out (AuthNavigator)
+      Landing: '',
+      ChooseLanguage: 'language',
+      Login: 'login',
+      PinLogin: 'driver-login',
+      Signup: {
+        path: 'signup',
+        stringify: { googleIdToken: () => undefined, googleProfile: () => undefined },
+      },
+      AdminAccess: 'admin-access',
+      ForgotPassword: 'forgot-password',
+      ResetPassword: {
+        path: 'reset-password',
+        stringify: { email: () => undefined },
+      },
+      ...publicLinkingScreens({ signedIn: false }),
     },
+  },
+});
+
+const LINKING = { signedIn: buildLinking(true), signedOut: buildLinking(false) };
+
+// "Terms of Service · FLITO" in the browser tab; the landing page and Home
+// already carry the name.
+const documentTitle = {
+  formatter: (options) => {
+    const title = options?.title;
+    if (!title || title === 'FLITO' || title.startsWith('FLITO')) return title || 'FLITO';
+    return `${title} · FLITO`;
   },
 };
 
@@ -115,7 +137,8 @@ const RootNavigator = () => {
 
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme}
-      linking={linking}
+      linking={token ? LINKING.signedIn : LINKING.signedOut}
+      documentTitle={documentTitle}
       fallback={<Spinner />}
       initialState={Platform.OS === 'web' ? undefined : lastNavigationState}
       onStateChange={(state) => { lastNavigationState = state; }}

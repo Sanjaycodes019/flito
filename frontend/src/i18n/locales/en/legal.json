@@ -1,0 +1,384 @@
+{
+  "terms": {
+    "hero": {
+      "eyebrow": "Legal",
+      "title": "Terms of Service",
+      "lead": "The agreement between you and FLITO when you use the FLITO app or website. We've written it in plain language. Please read it before you post a load, send an offer or take a job."
+    },
+    "readMinutes": 15,
+    "summaryTitle": "The short version",
+    "summary": [
+      { "icon": "handshake", "text": "FLITO is a marketplace. The deal for each trip is between the shipper and the truck owner. We don't own trucks, employ drivers or take charge of goods." },
+      { "icon": "verified", "text": "Owners and drivers must pass identity checks before they can make offers or take jobs. A verified badge means we checked documents, not that we guarantee someone's work." },
+      { "icon": "law", "text": "You must follow Nepal's laws: legal goods, roadworthy and insured trucks, licensed drivers, loads within legal limits." },
+      { "icon": "cash", "text": "Prices are agreed between shipper and owner. Using FLITO is free today, and payment currently happens directly between you." },
+      { "icon": "prohibited", "text": "Fake loads, false documents, banned goods or abuse can get your account suspended or closed." }
+    ],
+    "sections": [
+      {
+        "id": "about",
+        "title": "About these terms",
+        "body": [
+          "These Terms of Service (\"Terms\") are an agreement between you and FLITO (\"FLITO\", \"we\", \"us\"). They apply whenever you use the FLITO mobile app, the FLITO website or any other FLITO service (together, the \"Service\").",
+          "By creating an account, or by using the Service, you agree to these Terms and to our Privacy Policy. If you do not agree, please do not use FLITO.",
+          "If you use FLITO for a business, you confirm that you are allowed to accept these Terms for that business, and \"you\" includes the business."
+        ]
+      },
+      {
+        "id": "eligibility",
+        "title": "Who can use FLITO",
+        "body": ["To use FLITO you must:"],
+        "list": [
+          "be at least 18 years old and able to make a binding agreement under the laws of Nepal",
+          "give true, current and complete information, including your real name and your own phone number",
+          "use only one account for yourself, unless we agree otherwise",
+          "not have had a FLITO account closed by us for breaking these Terms"
+        ]
+      },
+      {
+        "id": "accounts",
+        "title": "Your account",
+        "body": [
+          "You can sign in with a phone number and 4-digit PIN, an email address and password, or a Google account. Keep your PIN, password and any code we email you secret. You are responsible for what happens on your account.",
+          "A truck owner can add drivers to their fleet by phone number. An owner who does this confirms that the driver has agreed to be added, and is responsible for keeping their drivers' details correct.",
+          "If you think someone else has used your account, change your password or PIN straight away and contact us."
+        ]
+      },
+      {
+        "id": "service",
+        "title": "What FLITO does, and doesn't do",
+        "body": [
+          "FLITO helps shippers find trucks and helps truck owners find loads. We provide the app, the matching, the identity and truck checks, the booking records, location sharing and delivery proof.",
+          "FLITO is not a transport company. We do not own or operate trucks, we do not employ the drivers who use FLITO, and we never take possession of anyone's goods. When a shipper and an owner agree a booking, the contract for that trip is between them. FLITO is not a party to it."
+        ]
+      },
+      {
+        "id": "verification",
+        "title": "Verification",
+        "body": [
+          "Truck owners must verify their identity before they can send offers, and drivers before they can be assigned to a booking. Shippers may verify too. Owners also add details and papers for each truck.",
+          "To verify, you upload an identity document (a citizenship card, national ID, passport or driving license) and any documents your role needs, such as a PAN document for owners and a driving license for drivers. Our team checks them by hand.",
+          "A verified badge means our team reviewed the documents and they appeared genuine and matched the account. It is not a guarantee of anyone's honesty, skill or the condition of a truck on a given day. Use your own judgement too.",
+          "We may refuse or remove a verification, or ask for more documents. Uploading false, altered or someone else's documents will lead to your account being closed, and we may report it to the authorities."
+        ]
+      },
+      {
+        "id": "bookings",
+        "title": "Loads, offers and bookings",
+        "list": [
+          "Shippers must describe each load truthfully: the type of goods, a realistic weight, the pickup and drop-off addresses and the pickup day.",
+          "A load takes offers until the end of its pickup day (Nepal time), and for at least 12 hours after it is posted. After that it expires.",
+          "Verified owners can send an offer for a load, naming the truck that will carry it. The shipper can accept, refuse or counter. Shipper and owner take turns until one side accepts or the offer closes.",
+          "An offer stays open for 48 hours, and each counter-offer restarts that time. An offer never lasts longer than its load.",
+          "When either side accepts a price, a booking is made at that price. This is a binding agreement between the shipper and the owner. Other open offers on that load then close.",
+          "After a booking is made, the owner assigns a verified driver and the truck. The shipper, owner and driver can then see each other's phone numbers to arrange the trip."
+        ]
+      },
+      {
+        "id": "trip",
+        "title": "Doing the trip",
+        "body": ["Truck owners agree to:"],
+        "list": [
+          "send only trucks that are roadworthy, registered, insured as the law requires and carrying valid papers and any route permits",
+          "assign drivers who hold a valid license for that class of vehicle",
+          "never load a truck beyond its legal weight limit",
+          "carry the goods with reasonable care from loading until delivery"
+        ],
+        "after": [
+          "Shippers agree to have the goods ready, packed for the road and accompanied by any invoices, bills or permits the law requires for goods in transit, and to make sure someone is at the drop-off to receive and sign for them.",
+          "Drivers agree to update each step (arrived, picked up, delivered) only when it really happens, and to take delivery photos and the receiver's signature honestly."
+        ]
+      },
+      {
+        "id": "prohibited",
+        "title": "Banned goods and conduct",
+        "body": ["You must not use FLITO to move:"],
+        "list": [
+          "weapons, ammunition or explosives",
+          "narcotics or any illegal drugs",
+          "wildlife, animal parts, or protected plants or timber without the required permits",
+          "stolen goods, counterfeit goods, or goods hidden from customs or tax authorities",
+          "hazardous chemicals or fuel without the required permits and a truck fit to carry them",
+          "people, since FLITO is only for goods"
+        ],
+        "after": [
+          "You must also not: post fake loads or offers; impersonate anyone; harass, threaten or cheat other users; use another user's phone number for anything other than their booking; copy data from FLITO by automated means; or try to break, overload or get around the security of the Service."
+        ]
+      },
+      {
+        "id": "prices",
+        "title": "Prices and payment",
+        "body": [
+          "FLITO does not set prices. Each price is agreed between the shipper and the owner through offers and counter-offers.",
+          "Joining FLITO, posting loads and sending offers is free today. If we ever introduce fees, we will tell you clearly in the app and on our website before they apply, and they will never apply to a booking already made.",
+          "At present, the shipper pays the owner directly, by cash or transfer as they agree. Agree when and how payment will be made before the goods are loaded. When paying in the app becomes available, extra terms for it will be shown before you use it.",
+          "Each user is responsible for their own taxes, including issuing bills or receipts where the law requires."
+        ]
+      },
+      {
+        "id": "cancellations",
+        "title": "Cancellations",
+        "body": [
+          "The shipper or the owner can cancel a booking while it is pending or confirmed, before the goods are loaded. Once the booking is in transit it can no longer be cancelled in the app and the trip must be completed. Drivers cannot cancel a booking.",
+          "Any payment for a cancellation is a matter between the shipper and the owner. We may limit or suspend accounts that cancel bookings again and again, especially at the last minute."
+        ]
+      },
+      {
+        "id": "liability-goods",
+        "title": "Loss, damage and delay",
+        "body": [
+          "The owner is responsible for the goods from loading until delivery, in line with the law and what the shipper and owner agreed. FLITO is not responsible for loss of, damage to or delay of goods, or for anything that happens on the road.",
+          "We recommend that shippers insure valuable goods. The photos, signature and status records kept on each booking can be used as evidence if something goes wrong, and we will share them with both sides on request."
+        ]
+      },
+      {
+        "id": "ratings",
+        "title": "Ratings and reviews",
+        "body": [
+          "After a booking is completed, the shipper and the owner can rate each other once. Ratings must be honest and based on the real trip. We may remove ratings or reviews that are abusive, fake or unrelated to the trip."
+        ]
+      },
+      {
+        "id": "location",
+        "title": "Location, photos and signatures",
+        "body": [
+          "While a booking is in transit, the assigned driver can share their location with the shipper and the owner on that booking. Delivery photos and the receiver's signature are kept on the booking as proof. Our Privacy Policy explains how we handle this information."
+        ]
+      },
+      {
+        "id": "content",
+        "title": "Your content and ours",
+        "body": [
+          "You keep ownership of the photos, documents and text you upload. You give FLITO permission to store them, show them to the people who need to see them (for example, delivery photos to the people on that booking, documents to our verification team) and use them to run the Service, keep it safe and settle disputes.",
+          "The FLITO name, logo, app and website belong to FLITO. You may not copy or use them without our written permission."
+        ]
+      },
+      {
+        "id": "suspension",
+        "title": "Suspending and closing accounts",
+        "body": [
+          "You can stop using FLITO at any time, and ask us to close your account from the Contact page.",
+          "We may suspend or close an account, or remove a load or offer, if we reasonably believe it breaks these Terms or the law, puts other people at risk, or if the law requires it. Where we can, we will tell you why. Bookings already under way should still be completed safely."
+        ]
+      },
+      {
+        "id": "availability",
+        "title": "Changes to the Service",
+        "body": [
+          "We are improving FLITO all the time and may add, change or remove features. We try to keep FLITO running at all times, but it may sometimes be unavailable, for example during maintenance or when mobile networks are weak. We do not promise that it will always be available or free of errors."
+        ]
+      },
+      {
+        "id": "liability",
+        "title": "Our responsibility to you",
+        "body": [
+          "We provide the Service \"as is\". To the extent the law allows, FLITO is not responsible for indirect losses, lost profit or lost business, or for the acts of shippers, owners or drivers.",
+          "To the extent the law allows, FLITO's total responsibility to you for any claim is limited to the fees you paid FLITO in the 12 months before the claim.",
+          "Nothing in these Terms takes away rights you have under the laws of Nepal that cannot be taken away by agreement, including your rights as a consumer."
+        ]
+      },
+      {
+        "id": "disputes",
+        "title": "Disputes between users",
+        "body": [
+          "If something goes wrong on a trip, first try to settle it directly with the other side. We can share the booking's records with both of you and may help you talk it through, but we do not decide disputes between users. Crimes should be reported to the police."
+        ]
+      },
+      {
+        "id": "law",
+        "title": "Law and courts",
+        "body": [
+          "These Terms are governed by the laws of Nepal. Any dispute with FLITO that cannot be settled by talking to us will be decided by the courts of Nepal."
+        ]
+      },
+      {
+        "id": "changes",
+        "title": "Changes to these terms",
+        "body": [
+          "We may update these Terms as FLITO grows or the law changes. When we make an important change, we will tell you in the app before it takes effect. If you keep using FLITO after that, you accept the new Terms. The date at the top always shows the latest version."
+        ]
+      },
+      {
+        "id": "contact",
+        "title": "Contact us",
+        "body": [
+          "Questions about these Terms? Reach us from the Contact page in the app or on our website."
+        ]
+      }
+    ]
+  },
+
+  "privacy": {
+    "hero": {
+      "eyebrow": "Legal",
+      "title": "Privacy Policy",
+      "lead": "What information FLITO collects, why we need it, who can see it, and the choices you have. We collect only what a trip needs, and we never sell your data."
+    },
+    "readMinutes": 12,
+    "summaryTitle": "The short version",
+    "summary": [
+      { "icon": "database", "text": "We collect what you give us (your name, phone, documents, loads, trucks) and what a trip creates (offers, location during the trip, delivery photos and signatures)." },
+      { "icon": "phone", "text": "Your phone number is shown only to the people on your bookings. Your ID documents are seen only by FLITO's verification team." },
+      { "icon": "gps", "text": "A driver's location is shared only while a booking is in transit, only with that booking's shipper and owner, and only the latest position is kept." },
+      { "icon": "lockCheck", "text": "Passwords and PINs are stored only as one-way hashes. We never sell your data or use it for advertising." },
+      { "icon": "accountCheck", "text": "You can see and correct your details in the app, and ask us for a copy or to delete your account." }
+    ],
+    "sections": [
+      {
+        "id": "scope",
+        "title": "Who we are and what this covers",
+        "body": [
+          "This Privacy Policy explains how FLITO (\"we\", \"us\") handles personal information when you use the FLITO app, website and services. FLITO decides how and why this information is used.",
+          "We handle personal information in line with Nepal's Privacy Act, 2075 (2018) and the other laws of Nepal that apply to us."
+        ]
+      },
+      {
+        "id": "you-give",
+        "title": "Information you give us",
+        "list": [
+          "Account details: your name, phone number, email address, the role you chose (shipper, truck owner or driver) and, for owners, a company name.",
+          "Sign-in details: your password and PIN. We store only a one-way hash of each, never the password or PIN itself.",
+          "Your profile photo, if you add one.",
+          "Your address: province, district, municipality, ward and tole.",
+          "Verification documents: photos of your citizenship card, national ID, passport or driving license, and for owners a PAN document and, optionally, company registration.",
+          "Truck details: registration number, type, capacity, base, service areas, and photos of the bluebook and insurance papers.",
+          "Loads: the goods, weight, pickup and drop-off addresses and points on the map, dates and any photos you add.",
+          "Offers, counter-offers, bookings, ratings and reviews.",
+          "Anything you send us when you contact us."
+        ]
+      },
+      {
+        "id": "we-collect",
+        "title": "Information created as you use FLITO",
+        "list": [
+          "Trip location: while a booking is in transit and the assigned driver has sharing turned on, their phone's location is sent to us and shown to that booking's shipper and owner. We keep only the latest position on the booking, not a history of the route.",
+          "Address detection: if you tap \"Use current location\" when filling in an address, your position is sent once to our server, which works out your province, district, municipality and ward from FLITO's own map data.",
+          "Delivery proof: photos taken at pickup and drop-off, the receiver's signature, and when they were taken.",
+          "Booking progress: when a booking is made, confirmed, picked up, delivered or cancelled.",
+          "Notifications: a push notification token for your device, so we can tell you about offers and trips.",
+          "Technical information: your device or browser type, app version, and logs of errors and requests that help us keep FLITO working and secure."
+        ]
+      },
+      {
+        "id": "google",
+        "title": "Signing in with Google",
+        "body": [
+          "If you sign in with Google, Google tells us your name, your email address, whether Google has verified that email, and your Google account ID. We use these only to create and sign in to your FLITO account. We do not get access to your Gmail, contacts or other Google data."
+        ]
+      },
+      {
+        "id": "use",
+        "title": "How we use your information",
+        "list": [
+          "to create your account and let you sign in",
+          "to show loads to the right trucks and trucks to the right loads, including the road distance between places",
+          "to verify identities and trucks, and show the verified badge",
+          "to make bookings work: sharing contact details, trip progress, location and delivery proof with the people on the booking",
+          "to send you notifications and emails about your account, offers and trips, including verification and password-reset codes",
+          "to keep FLITO safe: preventing fraud, enforcing our Terms and investigating reports",
+          "to answer your questions and fix problems",
+          "to understand how FLITO is used so we can improve it",
+          "to meet our legal obligations"
+        ],
+        "after": [
+          "We do not sell your personal information, and we do not use it for advertising."
+        ]
+      },
+      {
+        "id": "visibility",
+        "title": "Who can see what",
+        "list": [
+          "Other FLITO users see your name, company name (if any), rating and whether you are verified, on your loads, offers and trucks.",
+          "Your phone number is shown only to the shipper, owner and driver on a booking you are part of, and is hidden again if the booking is cancelled. It never appears on loads or offers.",
+          "A driver's trip location, delivery photos and the receiver's signature are seen only by the people on that booking.",
+          "Your verification documents are seen only by FLITO's verification team. Other users see only the verified badge.",
+          "Your truck owner can see the details of the drivers in their fleet and the jobs assigned to them.",
+          "FLITO's administrators can see account and booking information when they need to, for example to review documents, help you, or investigate a report."
+        ]
+      },
+      {
+        "id": "providers",
+        "title": "Services that help us run FLITO",
+        "body": ["We use trusted service providers to run FLITO. They handle information only for us and only as needed for their service:"],
+        "list": [
+          "MongoDB Atlas, our database, which stores account, load and booking information",
+          "Cloudinary, which stores photos and documents you upload",
+          "Brevo, which sends our emails, such as verification and password-reset codes",
+          "Google, if you choose to sign in with Google",
+          "Expo, which delivers push notifications to your phone",
+          "Render and Vercel, which host our server and website",
+          "OpenStreetMap, whose map tiles your device loads to show maps, and an OSRM routing server, which receives the coordinates of a load's pickup and drop-off to calculate the road distance, without any personal details"
+        ],
+        "after": [
+          "Some of these providers store information on servers outside Nepal. We choose providers that protect information with strong security.",
+          "We may also share information when the law requires it, for example in response to a valid request from the police or a court, or to protect someone's safety."
+        ]
+      },
+      {
+        "id": "retention",
+        "title": "How long we keep it",
+        "body": [
+          "We keep your information while your account is open. If you close your account, we delete or anonymise your personal information within a reasonable time, except where we need to keep it longer, for example booking records needed to settle a dispute, prevent fraud or meet legal and tax obligations.",
+          "Email codes expire after 15 minutes. Only the latest trip location is kept on a booking. Old profile photos are deleted when you replace or remove them."
+        ]
+      },
+      {
+        "id": "security",
+        "title": "How we protect it",
+        "list": [
+          "Information travels between your device and FLITO over encrypted connections (HTTPS).",
+          "Passwords, PINs and email codes are stored only as one-way hashes.",
+          "Repeated wrong sign-in attempts are limited, and five wrong PINs lock PIN login for a while.",
+          "Verification documents are visible only to FLITO's verification team.",
+          "On your phone, your sign-in session is kept in the device's secure storage."
+        ],
+        "after": [
+          "No system is perfectly secure. If you think your account or information is at risk, contact us straight away."
+        ]
+      },
+      {
+        "id": "rights",
+        "title": "Your rights and choices",
+        "list": [
+          "See and correct your details at any time in Profile, Edit profile and Address.",
+          "Ask us for a copy of the personal information we hold about you.",
+          "Ask us to delete your account and personal information, subject to what we must keep (see \"How long we keep it\").",
+          "Turn location sharing off during a trip at any time, from the job screen.",
+          "Turn notifications off in your phone's settings.",
+          "Choose your language, calendar and theme in Settings."
+        ],
+        "after": [
+          "To make a request, contact us from the Contact page. We may ask you to confirm it's really you before we act on it."
+        ]
+      },
+      {
+        "id": "storage",
+        "title": "Cookies and storage on your device",
+        "body": [
+          "The FLITO website does not use advertising or tracking cookies. To keep you signed in and remember your choices, it stores your sign-in session, language, calendar and theme in your browser's local storage. On Android the app keeps your sign-in session in the phone's secure storage. Signing out removes the session."
+        ]
+      },
+      {
+        "id": "children",
+        "title": "Children",
+        "body": [
+          "FLITO is for people aged 18 and over. We do not knowingly collect information from anyone younger. If you believe a child has an account, please contact us and we will close it."
+        ]
+      },
+      {
+        "id": "changes",
+        "title": "Changes to this policy",
+        "body": [
+          "We will update this policy when FLITO or the law changes. When we make an important change, we will tell you in the app before it takes effect. The date at the top always shows the latest version."
+        ]
+      },
+      {
+        "id": "contact",
+        "title": "Contact us",
+        "body": [
+          "For any question about your privacy, or to make a request, reach us from the Contact page in the app or on our website."
+        ]
+      }
+    ]
+  }
+}

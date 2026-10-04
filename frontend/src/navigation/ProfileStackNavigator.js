@@ -15,6 +15,7 @@ import { useSelector } from 'react-redux';
 import useBreakpoint from '../hooks/useBreakpoint';
 import { AdminProfile } from '../admin/navigation';
 import stackScreenOptions from './stackScreenOptions';
+import { renderPublicScreens } from '../public/screens';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +41,9 @@ const ProfileStackNavigator = () => {
       <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} options={{ title: t('navigation:profileStack.appearanceSettings') }} />
       <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} options={{ title: t('navigation:profileStack.securitySettings') }} />
       <Stack.Screen name="SetPin" component={SetPinScreen} options={{ title: t('navigation:profileStack.setPin') }} />
+      {/* About, help and legal pages, opened from Settings; inside the app they
+          use its own header and navigation, not the public site's. */}
+      {renderPublicScreens(Stack, t)}
     </Stack.Navigator>
   );
 };

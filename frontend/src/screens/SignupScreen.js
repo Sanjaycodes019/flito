@@ -18,6 +18,7 @@ import { authService } from '../services/auth';
 import { ROLES } from '../utils/constants';
 import { isValidEmail, isValidPhone, getErrorMessage, pinProblemKey, toNepalPhone } from '../utils/helpers';
 import { notify } from '../utils/alert';
+import useOpenPage from '../public/useOpenPage';
 
 const getRoleOptions = (t) => [
   { value: ROLES.SHIPPER, label: t('auth:signup.roleShipperLabel'), desc: t('auth:signup.roleShipperDesc'), icon: 'load' },
@@ -50,9 +51,12 @@ const RoleOption = ({ option, selected, onSelect, stacked }) => (
   </Pressable>
 );
 
-// Required before any account is created, by email or by Google.
+// Required before any account is created, by email or by Google. The two
+// document names are links: tapping one opens it on top of this form (which
+// keeps what was typed) instead of ticking the box.
 const TermsCheckbox = ({ checked, onToggle }) => {
   const { t } = useTranslation();
+  const { openPage } = useOpenPage();
   return (
     <Pressable
       onPress={onToggle}
@@ -71,8 +75,11 @@ const TermsCheckbox = ({ checked, onToggle }) => {
         color={checked ? colors.primaryText : colors.textMuted}
       />
       <Text style={styles.termsText}>
-        {t('auth:signup.termsPrefix')}<Text style={styles.termsStrong}>{t('auth:signup.termsOfService')}</Text>{t('auth:signup.termsAnd')}
-        <Text style={styles.termsStrong}>{t('auth:signup.privacyPolicy')}</Text>{t('auth:signup.termsSuffix')}
+        {t('auth:signup.termsPrefix')}
+        <Text style={styles.termsLink} onPress={() => openPage('terms')} accessibilityRole="link">{t('auth:signup.termsOfService')}</Text>
+        {t('auth:signup.termsAnd')}
+        <Text style={styles.termsLink} onPress={() => openPage('privacy')} accessibilityRole="link">{t('auth:signup.privacyPolicy')}</Text>
+        {t('auth:signup.termsSuffix')}
       </Text>
     </Pressable>
   );
@@ -95,7 +102,10 @@ const SignupScreen = ({ navigation, route }) => {
       ? { idToken: route.params.googleIdToken, profile: route.params.googleProfile || {} }
       : null
   ));
-  const [role, setRole] = useState(ROLES.SHIPPER);
+  // A "Join as a truck owner" link arrives with the role already chosen.
+  const [role, setRole] = useState(() => (
+    [ROLES.SHIPPER, ROLES.OWNER, ROLES.DRIVER].includes(route?.params?.role) ? route.params.role : ROLES.SHIPPER
+  ));
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
@@ -517,7 +527,7 @@ const styles = themedStyles(() => ({
   googleBannerEmail: { fontWeight: '700', color: colors.textPrimary },
   termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.lg },
   termsText: { ...type.small, color: colors.textSecondary, flex: 1, paddingTop: 2 },
-  termsStrong: { fontWeight: '600', color: colors.textPrimary },
+  termsLink: { fontWeight: '600', color: colors.textLink, textDecorationLine: 'underline' },
   pinHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.md },
   pinGap: { height: spacing.lg },
   problem: { ...type.small, color: colors.errorText, textAlign: 'center', marginTop: spacing.sm },

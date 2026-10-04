@@ -13,6 +13,8 @@ import kycEn from './locales/en/kyc.json';
 import profileEn from './locales/en/profile.json';
 import adminEn from './locales/en/admin.json';
 import notificationsEn from './locales/en/notifications.json';
+import siteEn from './locales/en/site.json';
+import legalEn from './locales/en/legal.json';
 
 import commonNe from './locales/ne/common.json';
 import navigationNe from './locales/ne/navigation.json';
@@ -25,6 +27,8 @@ import kycNe from './locales/ne/kyc.json';
 import profileNe from './locales/ne/profile.json';
 import adminNe from './locales/ne/admin.json';
 import notificationsNe from './locales/ne/notifications.json';
+import siteNe from './locales/ne/site.json';
+import legalNe from './locales/ne/legal.json';
 
 export const LANGUAGE_STORAGE_KEY = 'language';
 export const SUPPORTED_LANGUAGES = ['en', 'ne'];
@@ -38,6 +42,7 @@ export const FIRST_RUN_LANGUAGE = 'ne';
 const NAMESPACES = [
   'common', 'navigation', 'auth', 'home', 'loads',
   'bookings', 'trucks', 'kyc', 'profile', 'admin', 'notifications',
+  'site', 'legal',
 ];
 
 const resources = {
@@ -53,6 +58,8 @@ const resources = {
     profile: profileEn,
     admin: adminEn,
     notifications: notificationsEn,
+    site: siteEn,
+    legal: legalEn,
   },
   ne: {
     common: commonNe,
@@ -66,6 +73,8 @@ const resources = {
     profile: profileNe,
     admin: adminNe,
     notifications: notificationsNe,
+    site: siteNe,
+    legal: legalNe,
   },
 };
 

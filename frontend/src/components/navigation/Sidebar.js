@@ -7,6 +7,7 @@ import Icon from '../../theme/icons';
 import Avatar from '../common/Avatar';
 import { BrandMark } from './DesktopNav';
 import QuickToggles from '../common/QuickToggles';
+import QuickLinks from '../../public/components/QuickLinks';
 import { logout } from '../../redux/slices/authSlice';
 import { authService } from '../../services/auth';
 import socketService from '../../services/socket';
@@ -156,6 +157,7 @@ export const SidebarFrame = ({ tagIcon, tag, group, action, current, children })
 
     <View style={styles.accountWrap}>
       <AccountCard current={current} />
+      <QuickLinks small align="left" style={styles.quickLinks} />
     </View>
   </View>
 );
@@ -197,6 +199,7 @@ const styles = themedStyles(() => ({
   list: { flex: 1, minHeight: 0 },
   listContent: { gap: spacing.xxs },
   accountWrap: { flexShrink: 0, paddingTop: spacing.md },
+  quickLinks: { marginTop: spacing.sm, paddingHorizontal: spacing.xs },
   item: {
     flexDirection: 'row',
     alignItems: 'center',

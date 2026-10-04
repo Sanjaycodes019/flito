@@ -1,0 +1,989 @@
+{
+  "pages": {
+    "landing": {
+      "label": "Home",
+      "title": "FLITO · Truck booking for Nepal"
+    },
+    "howItWorks": {
+      "label": "How it works",
+      "hint": "Step by step for shippers, owners and drivers"
+    },
+    "safety": {
+      "label": "Safety & trust",
+      "hint": "Verification, tracking and proof of delivery"
+    },
+    "about": {
+      "label": "About us",
+      "hint": "Who we are and what FLITO does"
+    },
+    "mission": {
+      "label": "Our mission",
+      "hint": "Why we started FLITO"
+    },
+    "help": {
+      "label": "Help center",
+      "hint": "Answers to common questions"
+    },
+    "contact": {
+      "label": "Contact us",
+      "hint": "Reach the FLITO team"
+    },
+    "terms": {
+      "label": "Terms of Service",
+      "hint": "The rules for using FLITO"
+    },
+    "privacy": {
+      "label": "Privacy Policy",
+      "hint": "What we collect and why"
+    }
+  },
+  "nav": {
+    "logIn": "Log in",
+    "signUp": "Sign up free",
+    "driverLogin": "Driver? Log in with phone & PIN",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "explore": "Explore FLITO",
+    "preferences": "Language & appearance"
+  },
+  "footer": {
+    "tagline": "Freight & Load Interchange for Truck Operations",
+    "about": "FLITO connects people who need goods moved with verified truck owners and drivers across Nepal, so trucks earn on the way back instead of driving home empty.",
+    "madeIn": "Made in Nepal, for Nepal's roads",
+    "groups": {
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal",
+      "getStarted": "Get started"
+    },
+    "auth": {
+      "signupShipper": "Join as a shipper",
+      "signupOwner": "Join as a truck owner",
+      "driverLogin": "Driver login",
+      "login": "Log in"
+    },
+    "copyright": "© {{year}} FLITO. All rights reserved.",
+    "backToTop": "Back to top"
+  },
+  "related": {
+    "title": "More about FLITO"
+  },
+  "settingsGroups": {
+    "support": "Help & support",
+    "about": "About FLITO",
+    "legal": "Legal"
+  },
+  "quickLinks": {
+    "label": "About FLITO and legal pages"
+  },
+  "cta": {
+    "title": "Your next load is a few taps away.",
+    "lead": "Join free as a shipper or a truck owner. Drivers are added by the owner they drive for.",
+    "signUp": "Create a free account",
+    "logIn": "Log in",
+    "helpCenter": "Open the help center",
+    "contact": "Contact us"
+  },
+  "legal": {
+    "contents": "On this page",
+    "print": "Print or save as PDF",
+    "updated": "Last updated {{date}}",
+    "effective": "In effect from {{date}}",
+    "readTime": "About {{minutes}} minutes to read"
+  },
+  "landing": {
+    "hero": {
+      "eyebrow": "Truck booking for Nepal",
+      "title": "Every truck full,\nboth ways.",
+      "lead": "FLITO connects people who need goods moved with verified truck owners and drivers across Nepal. Post a load, compare offers, book a truck and follow it to the door, while trucks earn on the trip home instead of driving back empty.",
+      "shipper": "Post a load",
+      "owner": "I own trucks",
+      "driver": "Driver? Log in with your phone number",
+      "trust": [
+        "Free to join",
+        "Verified IDs and trucks",
+        "नेपाली and English"
+      ]
+    },
+    "preview": {
+      "label": "Example",
+      "goods": "Cement · 300 bags",
+      "from": "Hetauda",
+      "to": "Pokhara",
+      "pickup": "Pickup Asoj 20",
+      "weight": "15 tonnes",
+      "truck": "10-wheel truck",
+      "offersTitle": "3 offers",
+      "offers": [
+        {
+          "who": "Truck owner · Butwal",
+          "price": "Rs 46,000",
+          "note": "Verified"
+        },
+        {
+          "who": "Truck owner · Hetauda",
+          "price": "Rs 44,500",
+          "note": "Verified"
+        },
+        {
+          "who": "Your counter-offer",
+          "price": "Rs 42,000",
+          "note": "Waiting for reply"
+        }
+      ],
+      "accept": "Accept",
+      "returnFilled": "Return trip filled",
+      "tracking": "In transit · near Mugling"
+    },
+    "problem": {
+      "eyebrow": "The empty return",
+      "title": "One truck. Two trips. Only one of them paid.",
+      "lead": "A truck that carries goods from the Terai up to the hills often has nothing to carry back. The driver still buys diesel, pays tolls and spends a long day on the road, for an empty trip.",
+      "cards": [
+        {
+          "icon": "owner",
+          "title": "Owners lose a day's earnings",
+          "body": "An empty return eats into the profit from the loaded trip, and waiting at a truck yard for a return load can take days."
+        },
+        {
+          "icon": "shipper",
+          "title": "Shippers pay for both ways",
+          "body": "When a truck expects to come back empty, the price of the trip has to cover the return too."
+        },
+        {
+          "icon": "leaf",
+          "title": "Empty kilometres cost everyone",
+          "body": "Every empty trip burns diesel and adds a truck to busy hill roads without moving anything."
+        }
+      ],
+      "answerTitle": "What FLITO changes",
+      "answer": "FLITO shows truck owners the loads going their way, including the way home, and lets shippers find trucks that are already headed there. More trips carry goods both ways, so prices can be fairer for everyone."
+    },
+    "how": {
+      "eyebrow": "How it works",
+      "title": "Simple for every kind of user",
+      "lead": "Whether you send goods, own trucks or drive one, FLITO takes a few steps.",
+      "tabsLabel": "Choose who you are",
+      "seeGuide": "See the full step-by-step guide"
+    },
+    "features": {
+      "eyebrow": "What's inside",
+      "title": "Everything a trip needs, in one app",
+      "lead": "Built around how freight is really arranged in Nepal: by phone, by trust and by the day.",
+      "items": [
+        {
+          "icon": "counterOffer",
+          "title": "Fair prices through offers",
+          "body": "Owners send a price, shippers can counter. Every offer and counter-offer stays on record."
+        },
+        {
+          "icon": "verified",
+          "title": "Verified people and trucks",
+          "body": "IDs, licenses and truck bluebooks are checked by the FLITO team. Look for the verified badge."
+        },
+        {
+          "icon": "truck",
+          "title": "Trucks that fit the load",
+          "body": "FLITO suggests trucks by type, capacity and the days they are free, nearest first."
+        },
+        {
+          "icon": "gps",
+          "title": "Live trip tracking",
+          "body": "The driver shares their location during the trip, so you always know where your goods are."
+        },
+        {
+          "icon": "signature",
+          "title": "Proof of delivery",
+          "body": "Photos at pickup and drop-off, and the receiver signs on the driver's phone."
+        },
+        {
+          "icon": "phone",
+          "title": "Call in one tap",
+          "body": "Shipper, owner and driver can call each other straight from the booking."
+        },
+        {
+          "icon": "language",
+          "title": "Nepali first, English too",
+          "body": "The whole app works in Nepali and English, with dates in BS or AD."
+        },
+        {
+          "icon": "location",
+          "title": "Addresses that make sense here",
+          "body": "Province, district, municipality, ward and tole: the way people really give directions."
+        }
+      ]
+    },
+    "nepal": {
+      "eyebrow": "Built for Nepal",
+      "title": "From the Terai to the hills",
+      "lead": "FLITO is made for how goods really move here: through border towns and industrial corridors, up hill highways and on to markets in every district.",
+      "facts": [
+        {
+          "value": "7",
+          "label": "provinces"
+        },
+        {
+          "value": "77",
+          "label": "districts"
+        },
+        {
+          "value": "753",
+          "label": "local levels in the address book"
+        },
+        {
+          "value": "BS + AD",
+          "label": "both calendars, your choice"
+        }
+      ],
+      "routesTitle": "On the roads goods travel every day",
+      "routes": [
+        "Mahendra (East–West) Highway, Mechi to Mahakali",
+        "Tribhuvan Highway, Birgunj to Hetauda and on to Kathmandu",
+        "Narayanghat–Mugling road and the Prithvi Highway to Pokhara",
+        "Siddhartha Highway, Bhairahawa to Butwal and Pokhara",
+        "B.P. Highway, Bardibas to Dhulikhel",
+        "Koshi Highway, Biratnagar to Dharan and the eastern hills"
+      ],
+      "hubsTitle": "Trade and border points",
+      "hubs": [
+        "Birgunj",
+        "Bhairahawa",
+        "Biratnagar",
+        "Kakarbhitta",
+        "Nepalgunj",
+        "Dhangadhi",
+        "Rasuwagadhi"
+      ]
+    },
+    "stories": {
+      "eyebrow": "On the road with FLITO",
+      "title": "How a trip plays out",
+      "lead": "Three everyday journeys, start to finish.",
+      "note": "These are examples that show how FLITO is used. They are not stories of real customers.",
+      "items": [
+        {
+          "icon": "owner",
+          "tag": "Truck owner · Butwal ↔ Kathmandu",
+          "title": "The trip home that paid for itself",
+          "body": "An owner from Butwal delivers rice to Kathmandu. Before heading back, they open FLITO, find a load of furniture going to Butwal and send an offer. The shipper accepts, and the return trip pays for its own diesel."
+        },
+        {
+          "icon": "shipper",
+          "tag": "Shipper · Hetauda → Pokhara",
+          "title": "Cement for a new house",
+          "body": "A family building a house in Pokhara needs 300 bags of cement from Hetauda. They post the load, get three offers by evening, counter the highest and book a verified 10-wheel truck. They watch it climb towards Mugling on the map."
+        },
+        {
+          "icon": "driver",
+          "tag": "Driver · Biratnagar → Dharan",
+          "title": "A whole job on one screen",
+          "body": "A driver who has never used email logs in with a phone number and PIN. One job, one big button at each stop: arrived, loaded, delivered. A photo of the goods, the receiver signs on the phone, and the job is done."
+        }
+      ]
+    },
+    "trust": {
+      "eyebrow": "Safety & trust",
+      "title": "Trust is built into every booking",
+      "lead": "You are handing your goods, or your truck, to someone you may never have met. FLITO makes sure you know who they are.",
+      "points": [
+        "Owners and drivers are checked against their ID before they can make offers or take jobs",
+        "Trucks are checked against their bluebook and papers",
+        "Phone numbers are shown only to the people on a booking",
+        "Every step of the trip, from arrival to delivery, is shown to everyone on the booking as it happens",
+        "Shippers and owners rate each other after every trip"
+      ],
+      "link": "How we keep trips safe"
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Asked before the first booking",
+      "link": "See all questions in the help center"
+    },
+    "cta": {
+      "title": "Ready when your next load is.",
+      "lead": "Create a free account in about two minutes. No email needed: a phone number and PIN are enough."
+    }
+  },
+  "roles": {
+    "shipper": {
+      "label": "Shipper",
+      "tagline": "I need goods moved",
+      "steps": [
+        {
+          "icon": "load",
+          "title": "Post your load",
+          "body": "Say what you are sending, how much it weighs, where it is going and when. Add photos if they help. It takes about two minutes."
+        },
+        {
+          "icon": "quote",
+          "title": "Get offers",
+          "body": "Verified truck owners heading that way send you a price. Accept one, turn it down or send a counter-offer."
+        },
+        {
+          "icon": "truckDelivery",
+          "title": "Book and track",
+          "body": "Accepting an offer makes the booking. Call the driver in one tap and follow the truck on the map."
+        },
+        {
+          "icon": "signature",
+          "title": "Confirm delivery",
+          "body": "The driver photographs the goods and your receiver signs on the phone. Then rate the trip."
+        }
+      ]
+    },
+    "owner": {
+      "label": "Truck owner",
+      "tagline": "I have trucks to fill",
+      "steps": [
+        {
+          "icon": "truck",
+          "title": "Add your trucks",
+          "body": "Register each truck as it appears on its bluebook: type, capacity, where it is based and the areas it serves."
+        },
+        {
+          "icon": "verified",
+          "title": "Get verified",
+          "body": "Upload your ID, your PAN and each truck's papers. The FLITO team checks them before you can send offers."
+        },
+        {
+          "icon": "counterOffer",
+          "title": "Find loads and send offers",
+          "body": "See loads that fit your trucks, including loads for the return trip, and send your price."
+        },
+        {
+          "icon": "driver",
+          "title": "Assign a driver",
+          "body": "When a shipper accepts, pick the driver for the job. It appears on their phone right away."
+        }
+      ]
+    },
+    "driver": {
+      "label": "Driver",
+      "tagline": "I drive for an owner",
+      "steps": [
+        {
+          "icon": "phone",
+          "title": "Log in with your phone",
+          "body": "Your truck owner adds you with your phone number. Log in with it and a 4-digit PIN. No email needed."
+        },
+        {
+          "icon": "jobs",
+          "title": "See your job",
+          "body": "Pickup, drop-off, the goods and the shipper's number, all on one screen."
+        },
+        {
+          "icon": "checklist",
+          "title": "One button at each stop",
+          "body": "Tap when you arrive, when you have loaded and when you have delivered. The shipper sees each step."
+        },
+        {
+          "icon": "camera",
+          "title": "Prove the delivery",
+          "body": "Take a photo of the goods and get the receiver's signature on the phone. Job done."
+        }
+      ]
+    }
+  },
+  "howItWorks": {
+    "hero": {
+      "eyebrow": "Step by step",
+      "title": "How FLITO works",
+      "lead": "From posting a load to the receiver's signature, here is what happens at every step, for every kind of user."
+    },
+    "rolesTitle": "Your steps",
+    "needTitle": "What you need",
+    "needs": {
+      "shipper": [
+        "A phone number or an email address",
+        "The pickup and drop-off addresses",
+        "What you are sending and roughly how much it weighs"
+      ],
+      "owner": [
+        "Your citizenship, national ID, passport or driving license",
+        "Your PAN document",
+        "Each truck's bluebook details and photos",
+        "Your drivers' phone numbers"
+      ],
+      "driver": [
+        "A phone number your truck owner has added",
+        "A 4-digit PIN you choose",
+        "Your driving license, for verification"
+      ]
+    },
+    "lifecycle": {
+      "eyebrow": "A booking's life",
+      "title": "What every status means",
+      "lead": "Everyone on a booking sees the same status, and each change sends a notification.",
+      "items": [
+        {
+          "status": "pending",
+          "title": "Pending",
+          "body": "An offer was accepted and the booking was made. The owner now assigns a driver and truck."
+        },
+        {
+          "status": "confirmed",
+          "title": "Confirmed",
+          "body": "A driver and truck are assigned and the pickup is planned. Everyone can call each other."
+        },
+        {
+          "status": "in_transit",
+          "title": "In transit",
+          "body": "The goods are loaded and on the road. The driver's location is shared while the trip lasts."
+        },
+        {
+          "status": "completed",
+          "title": "Completed",
+          "body": "Delivered, with photos and the receiver's signature. Shipper and owner rate each other."
+        },
+        {
+          "status": "cancelled",
+          "title": "Cancelled",
+          "body": "The shipper or the owner cancelled before the goods were loaded. Phone numbers are hidden again."
+        }
+      ]
+    },
+    "offers": {
+      "eyebrow": "Offers & prices",
+      "title": "How prices are agreed",
+      "lead": "There are no fixed rates on FLITO. The price is whatever the shipper and the owner agree.",
+      "points": [
+        {
+          "icon": "quote",
+          "title": "An owner offers a price",
+          "body": "Only verified owners can send offers. Each one names the truck that will do the job."
+        },
+        {
+          "icon": "counterOffer",
+          "title": "Take turns to counter",
+          "body": "Either side can counter. You take turns, so nobody bids against themselves."
+        },
+        {
+          "icon": "timer",
+          "title": "Offers don't wait forever",
+          "body": "An offer stays open for 48 hours, and a counter-offer restarts the clock. A load takes offers until the end of its pickup day."
+        },
+        {
+          "icon": "truckBooked",
+          "title": "One acceptance books it",
+          "body": "When either side accepts, the booking is made and the other offers on that load close."
+        }
+      ]
+    },
+    "cancel": {
+      "title": "Changing your mind",
+      "body": "A shipper or an owner can cancel a booking while it is pending or confirmed, before the goods are loaded. Once a truck is on the road, the trip has to be finished. Drivers cannot cancel a booking; they call the owner."
+    }
+  },
+  "safety": {
+    "hero": {
+      "eyebrow": "Safety & trust",
+      "title": "Know who is moving your goods",
+      "lead": "Every booking on FLITO is between people whose identity has been checked, in trucks whose papers have been checked, with a record of every step."
+    },
+    "pillars": [
+      {
+        "icon": "idCard",
+        "title": "Checked identities",
+        "body": "Owners and drivers upload a citizenship card, national ID, passport or driving license. The FLITO team checks the name and photo before they can make offers or take jobs. Verified people carry a badge."
+      },
+      {
+        "icon": "truck",
+        "title": "Checked trucks",
+        "body": "Owners add each truck's registration number, bluebook, and insurance if they have it. A verified truck carries the same badge."
+      },
+      {
+        "icon": "phone",
+        "title": "Numbers only where needed",
+        "body": "Phone numbers are shown only to the shipper, owner and driver on a booking, and hidden again if it is cancelled."
+      },
+      {
+        "icon": "gps",
+        "title": "Location only during the trip",
+        "body": "Only the assigned driver can share a location, and only while the booking is in transit. The shipper and owner see it; nobody else."
+      },
+      {
+        "icon": "camera",
+        "title": "Proof at both ends",
+        "body": "Photos at pickup and drop-off, and the receiver's signature on the driver's phone, are kept on the booking."
+      },
+      {
+        "icon": "star",
+        "title": "Ratings after every trip",
+        "body": "Shippers and owners rate each other once a job is done, so good work is seen."
+      }
+    ],
+    "account": {
+      "eyebrow": "Your account",
+      "title": "Keeping your account safe",
+      "points": [
+        "Passwords and PINs are stored only as one-way hashes, never as plain text",
+        "Five wrong PINs lock PIN login for a while, and each lock lasts longer than the last",
+        "Email codes expire after 15 minutes, work once and stop after 5 wrong tries",
+        "Never share your PIN, password or an email code, not even with someone who says they are from FLITO",
+        "FLITO will never ask you to pay into a personal account to unlock a load"
+      ]
+    },
+    "tips": {
+      "eyebrow": "Good practice",
+      "title": "Safety tips for each role",
+      "shipper": [
+        "Book owners with the verified badge and good ratings",
+        "Describe the goods honestly, with the real weight",
+        "Pack fragile goods well and photograph them before loading",
+        "Make sure someone is at the drop-off to sign"
+      ],
+      "owner": [
+        "Send only trucks that are roadworthy, insured and have valid papers",
+        "Assign drivers who hold a valid license for that truck",
+        "Check the goods match the load description before loading",
+        "Keep your drivers' phone numbers up to date"
+      ],
+      "driver": [
+        "Never drive tired, and rest on long hill routes",
+        "Keep within the truck's legal load limit",
+        "Tap each step only when it really happens",
+        "Do not carry goods that are not on the booking"
+      ]
+    },
+    "prohibited": {
+      "eyebrow": "Not allowed",
+      "title": "Goods that cannot be moved through FLITO",
+      "lead": "These are banned on every booking. Anything else that needs a permit must travel with that permit.",
+      "items": [
+        "Weapons, ammunition and explosives",
+        "Narcotics and other illegal drugs",
+        "Wildlife, animal parts and protected plants or timber without permits",
+        "Stolen goods, or goods hidden from customs",
+        "Hazardous chemicals or fuel without the required permits and a suitable truck",
+        "People. FLITO is only for goods"
+      ]
+    },
+    "report": {
+      "title": "Something wrong?",
+      "body": "If a person, truck or booking does not seem right, contact the FLITO team with the booking details. We can suspend accounts that break the rules.",
+      "button": "Report a problem"
+    },
+    "emergency": {
+      "title": "In an emergency on the road",
+      "lead": "Call the emergency services first, then let the other people on the booking know.",
+      "numbers": [
+        {
+          "icon": "police",
+          "number": "100",
+          "label": "Nepal Police"
+        },
+        {
+          "icon": "ambulance",
+          "number": "102",
+          "label": "Ambulance"
+        },
+        {
+          "icon": "fireTruck",
+          "number": "101",
+          "label": "Fire service"
+        },
+        {
+          "icon": "road",
+          "number": "103",
+          "label": "Traffic police"
+        }
+      ],
+      "call": "Call {{number}}"
+    }
+  },
+  "about": {
+    "hero": {
+      "eyebrow": "About us",
+      "title": "We're making trucking in Nepal work better for everyone on the road",
+      "lead": "FLITO is a truck booking platform for Nepal. We connect the people who need goods moved with the truck owners and drivers who move them, and we make sure each side can trust the other."
+    },
+    "what": {
+      "title": "What FLITO is",
+      "body": [
+        "FLITO is a marketplace. Shippers post the goods they need moved. Truck owners whose trucks fit send offers. When a price is agreed, a booking is made, the owner assigns a driver, and everyone follows the trip to delivery.",
+        "We don't own trucks and we don't employ drivers. We build the tools and run the checks that let owners, drivers and shippers find each other and work together with confidence."
+      ]
+    },
+    "name": {
+      "title": "The name",
+      "body": "FLITO stands for Freight & Load Interchange for Truck Operations: a place where freight and loads change hands between the people who have them and the trucks that can carry them."
+    },
+    "who": {
+      "eyebrow": "Who it's for",
+      "title": "Three kinds of people, one trip"
+    },
+    "roles": {
+      "shipper": "Traders, shops, factories, farmers' groups and families who need goods moved, once or every week.",
+      "owner": "People and companies with one truck or a fleet, who want fewer empty trips and steady work.",
+      "driver": "The people behind the wheel, added by their owner, with a simple job screen and a phone-and-PIN login."
+    },
+    "values": {
+      "eyebrow": "What we believe",
+      "title": "Our values",
+      "items": [
+        {
+          "icon": "fairness",
+          "title": "Fair prices",
+          "body": "Prices are agreed openly between shipper and owner, offer by offer, never set behind closed doors."
+        },
+        {
+          "icon": "verified",
+          "title": "Trust you can see",
+          "body": "A verified badge means our team has checked the ID or the truck's papers. We would rather go slower than verify carelessly."
+        },
+        {
+          "icon": "language",
+          "title": "Made for Nepal",
+          "body": "Nepali first, BS dates, ward-level addresses and phone-and-PIN login, because that is how people here work."
+        },
+        {
+          "icon": "care",
+          "title": "Simple for everyone",
+          "body": "Big text, big buttons and one job per screen, so a first-time smartphone user can use FLITO as easily as anyone."
+        }
+      ]
+    },
+    "status": {
+      "eyebrow": "Where we are",
+      "title": "Honest about what's next",
+      "lead": "FLITO is a young platform and is improving every month. Here is what works today and what we are building.",
+      "nowTitle": "Working today",
+      "now": [
+        "Posting loads, offers and counter-offers",
+        "Identity and truck verification",
+        "Bookings with live tracking, delivery photos and signatures",
+        "Fleets with drivers on phone-and-PIN login",
+        "The full app in Nepali and English, on the web and Android"
+      ],
+      "nextTitle": "Coming next",
+      "next": [
+        "Paying for trips in the app through Nepali digital wallets",
+        "Regular routes, so owners can say where their trucks go every week",
+        "More help for drivers with weak signal on hill roads"
+      ]
+    },
+    "links": {
+      "mission": "Read why we started FLITO",
+      "contact": "Get in touch"
+    }
+  },
+  "mission": {
+    "hero": {
+      "eyebrow": "Our mission",
+      "title": "No truck in Nepal should drive home empty.",
+      "lead": "Our mission is to fill Nepal's trucks both ways: more income for the people who own and drive them, fairer prices for the people who need goods moved, and fewer empty kilometres on our roads."
+    },
+    "story": {
+      "eyebrow": "Why we started",
+      "title": "It started with a truck yard",
+      "paragraphs": [
+        "Spend an evening at any truck yard in Nepal and you will hear the same story. A truck came up full from the border or an industrial town. It unloaded in the city. Now the driver is waiting, calling contacts, asking around for anything going back. Sometimes a load turns up after a day or two. Often the truck simply goes home empty.",
+        "The same trip looks different from the other side. A shop in a hill town needs goods brought up. A trader has a load to send down to the Terai. They phone the people they know, take whatever price is offered and hope the truck turns up on time. Neither side can see the other, even when they are standing in the same town on the same day.",
+        "FLITO exists to put those two sides on one screen. When an owner can see the loads going their way, and a shipper can see the trucks already heading there, the empty trip becomes a paid one."
+      ]
+    },
+    "quote": "An empty truck isn't a lack of goods to move. It's a lack of information about where those goods are.",
+    "problems": {
+      "eyebrow": "The problem",
+      "title": "Who pays for an empty trip",
+      "items": [
+        {
+          "icon": "owner",
+          "title": "Truck owners",
+          "body": "A return trip with nothing on it still costs diesel, tolls, wear and a driver's wages. That cost comes out of the loaded trip's profit."
+        },
+        {
+          "icon": "shipper",
+          "title": "Shippers",
+          "body": "Prices have to cover the empty return, and without a way to compare, there is little room to ask for better."
+        },
+        {
+          "icon": "driver",
+          "title": "Drivers",
+          "body": "Days waiting in yards, away from family, for a load that may never come."
+        }
+      ]
+    },
+    "change": {
+      "eyebrow": "What changes",
+      "title": "What a full return trip means",
+      "items": [
+        {
+          "icon": "cash",
+          "title": "More from every truck",
+          "body": "A paid return trip can turn a thin margin into a real income for an owner with one or two trucks."
+        },
+        {
+          "icon": "fairness",
+          "title": "Fairer prices",
+          "body": "When trucks are not priced for an empty return, and offers can be compared, shippers pay a fairer rate."
+        },
+        {
+          "icon": "leaf",
+          "title": "Fewer empty kilometres",
+          "body": "Moving the same goods in fewer trips means less diesel burnt and less traffic on hill roads."
+        },
+        {
+          "icon": "verified",
+          "title": "Trust between strangers",
+          "body": "Checked IDs, checked trucks and a record of every trip let people work with someone they have never met."
+        }
+      ]
+    },
+    "commitments": {
+      "eyebrow": "Our promises",
+      "title": "What we commit to",
+      "items": [
+        "Be open about how FLITO works and what it costs, before anyone pays anything",
+        "Check every owner, driver and truck before they can take a job",
+        "Collect only the data a trip needs, and never sell it",
+        "Build for the least confident user first: Nepali first, big text, phone-and-PIN login",
+        "Listen to the drivers and owners who use FLITO every day, and change what doesn't work for them"
+      ]
+    }
+  },
+  "help": {
+    "hero": {
+      "eyebrow": "Help center",
+      "title": "How can we help?",
+      "lead": "Answers to the questions people ask most, from signing up to getting paid."
+    },
+    "searchLabel": "Search the help center",
+    "searchPlaceholder": "Search, e.g. PIN, offer, cancel",
+    "all": "All topics",
+    "results_one": "{{count}} answer",
+    "results_other": "{{count}} answers",
+    "noResults": "Nothing matched \"{{query}}\". Try a shorter word, or contact us.",
+    "stillNeed": {
+      "title": "Still need help?",
+      "body": "The FLITO team reads every message. Tell us your phone number or email and, if it's about a trip, the booking.",
+      "button": "Contact us"
+    },
+    "topics": [
+      {
+        "key": "account",
+        "icon": "person",
+        "title": "Account & login",
+        "items": [
+          {
+            "q": "Do I need an email address to use FLITO?",
+            "a": "No. You can sign up with just your phone number and a 4-digit PIN. You can also sign up with an email and password, or with your Google account."
+          },
+          {
+            "q": "I forgot my PIN. What do I do?",
+            "a": [
+              "If you are a driver, ask your truck owner: they can set a new PIN for you from their fleet page.",
+              "If you signed up yourself with a phone number, contact the FLITO team from the Contact page with the number on your account."
+            ]
+          },
+          {
+            "q": "I forgot my password.",
+            "a": "On the Log in page, tap \"Forgot password?\" and enter your email. We send a 6-digit code that works for 15 minutes. Enter it with your new password."
+          },
+          {
+            "q": "Can I change from Nepali to English?",
+            "a": "Yes, at any time. Tap the EN / ने switch at the top of the screen, or go to Settings → Language & region. You can also choose BS or AD dates there."
+          },
+          {
+            "q": "How do I switch to dark mode?",
+            "a": "Tap the sun or moon at the top of the screen, or go to Settings → Appearance and choose Light, Dark or Match device."
+          }
+        ]
+      },
+      {
+        "key": "loads",
+        "icon": "load",
+        "title": "Posting loads",
+        "items": [
+          {
+            "q": "How do I post a load?",
+            "a": "Tap \"Post a Load\" and follow the steps: what you are sending, how much it weighs, pickup and drop-off addresses, and the pickup day. Photos are optional but help owners give a good price."
+          },
+          {
+            "q": "How long does my load stay open?",
+            "a": "A load takes offers until the end of its pickup day, Nepal time, and for at least 12 hours after you post it. If no truck is booked by then, it expires and you can post it again."
+          },
+          {
+            "q": "Can I choose a truck myself?",
+            "a": "Yes. Open your load and tap \"Choose a Truck\". FLITO lists trucks that can carry it and are free on that day, nearest first. You can ask an owner for their truck directly."
+          },
+          {
+            "q": "Do I have to be verified to post a load?",
+            "a": "No. Shippers can post loads and book trucks without verification. Verifying your identity still helps owners trust your loads."
+          }
+        ]
+      },
+      {
+        "key": "offers",
+        "icon": "quote",
+        "title": "Offers & prices",
+        "items": [
+          {
+            "q": "How are prices decided?",
+            "a": "There are no fixed rates. Owners send a price, and the shipper can accept, refuse or counter. You take turns until one side accepts."
+          },
+          {
+            "q": "How long does an offer last?",
+            "a": "48 hours. A counter-offer restarts the 48 hours. An offer never lasts longer than its load."
+          },
+          {
+            "q": "Why can't I send an offer?",
+            "a": "Truck owners need a verified identity before sending offers. Go to Profile → Identity verification, upload your documents and wait for the FLITO team to approve them."
+          },
+          {
+            "q": "Does FLITO charge a fee?",
+            "a": "Joining FLITO, posting loads and sending offers is free today. If that ever changes, we will say so clearly in the app and on this site before any fee applies."
+          }
+        ]
+      },
+      {
+        "key": "trips",
+        "icon": "truckDelivery",
+        "title": "Bookings & tracking",
+        "items": [
+          {
+            "q": "When can I see the other person's phone number?",
+            "a": "Once a booking is made, the shipper, owner and driver on it can call each other in one tap. Numbers are never shown on loads or offers, and are hidden again if the booking is cancelled."
+          },
+          {
+            "q": "How does tracking work?",
+            "a": "While the booking is in transit, the driver can share their location from the job screen. The shipper and owner see the truck on the map. Sharing stops when the trip ends."
+          },
+          {
+            "q": "Can I cancel a booking?",
+            "a": "A shipper or owner can cancel while the booking is pending or confirmed, before loading. Once the goods are in transit, the trip must be finished. Drivers can't cancel; they call their owner."
+          },
+          {
+            "q": "How is a delivery confirmed?",
+            "a": "At the drop-off, the driver photographs the goods and the receiver signs on the driver's phone. Both are kept on the booking."
+          },
+          {
+            "q": "How do ratings work?",
+            "a": "After a booking is completed, the shipper rates the owner and the owner rates the shipper, once each, from 1 to 5 stars."
+          }
+        ]
+      },
+      {
+        "key": "verification",
+        "icon": "idCard",
+        "title": "Verification",
+        "items": [
+          {
+            "q": "Which documents do I need?",
+            "a": [
+              "Everyone verifies with one ID: a citizenship card (both sides), national ID (both sides), passport photo page or driving license.",
+              "Truck owners also add their PAN document. Drivers add their driving license. A company registration is optional for owners."
+            ]
+          },
+          {
+            "q": "How long does verification take?",
+            "a": "The FLITO team reviews documents in the order they arrive and checks each one by hand. You get a notification as soon as yours are approved, or told what to fix."
+          },
+          {
+            "q": "My documents were rejected. What now?",
+            "a": "Open Identity verification to see the reason, replace the document that needs fixing and submit again."
+          },
+          {
+            "q": "Why can't I change my name?",
+            "a": "Your name is matched to your identity documents, so it is locked while they are under review or approved."
+          }
+        ]
+      },
+      {
+        "key": "payments",
+        "icon": "cash",
+        "title": "Payments",
+        "items": [
+          {
+            "q": "How do I pay for a trip?",
+            "a": "For now, the shipper pays the truck owner directly, in the way you agree: cash or a transfer. Agree when and how before the truck is loaded."
+          },
+          {
+            "q": "Can I pay in the app?",
+            "a": "Not yet. Paying through Nepali digital wallets is coming. Until then, never pay anyone who asks you to send money to unlock a load or an account."
+          },
+          {
+            "q": "Where do drivers see their earnings?",
+            "a": "Drivers have an Earnings page that lists the trips they completed."
+          }
+        ]
+      }
+    ]
+  },
+  "contact": {
+    "hero": {
+      "eyebrow": "Contact us",
+      "title": "Talk to the FLITO team",
+      "lead": "Questions about an account, a load or a trip, or interested in working with us? We read every message."
+    },
+    "channels": {
+      "phone": {
+        "title": "Call support",
+        "body": "For urgent problems with a trip that is under way.",
+        "button": "Call {{phone}}"
+      },
+      "email": {
+        "title": "Email us",
+        "body": "For accounts, verification, feedback and anything else. Include your phone number or email so we can find your account.",
+        "button": "Email {{email}}"
+      },
+      "help": {
+        "title": "Help center",
+        "body": "Most questions are answered there, from PINs to cancellations.",
+        "button": "Browse answers"
+      },
+      "app": {
+        "title": "From the app",
+        "body": "Signed in? Open Settings → Help & support, so we can see which account is asking."
+      }
+    },
+    "noDirect": "Phone and email support details will be listed here soon. Until then, the help center has answers to the most common questions.",
+    "hours": {
+      "title": "How we reply",
+      "lines": [
+        "We answer messages in the order they arrive.",
+        "Problems with a trip that is under way come first."
+      ]
+    },
+    "topics": {
+      "title": "Write to us about",
+      "items": [
+        {
+          "icon": "person",
+          "title": "Your account",
+          "body": "Login, PIN, email changes, deleting your account"
+        },
+        {
+          "icon": "idCard",
+          "title": "Verification",
+          "body": "Documents, review status, a rejected document"
+        },
+        {
+          "icon": "truckDelivery",
+          "title": "A booking",
+          "body": "A problem on a trip, a cancellation, a dispute"
+        },
+        {
+          "icon": "privacy",
+          "title": "Your data",
+          "body": "A copy of your data, corrections, deletion"
+        },
+        {
+          "icon": "handshake",
+          "title": "Partnerships",
+          "body": "Fleets, transport associations, businesses that ship often"
+        },
+        {
+          "icon": "idea",
+          "title": "Feedback",
+          "body": "What works, what doesn't, what you'd like to see"
+        }
+      ]
+    },
+    "subjects": {
+      "general": "Question about FLITO",
+      "trip": "Problem with a booking"
+    },
+    "emergency": "In a road emergency, call 100 (Police) or 102 (Ambulance) first."
+  }
+}

@@ -24,7 +24,7 @@ const ChooseLanguageScreen = ({ navigation }) => {
   };
 
   return (
-    <AuthLayout title="भाषा छान्नुहोस्" subtitle="Choose your language">
+    <AuthLayout title="भाषा छान्नुहोस्" subtitle="Choose your language" showToggles={false}>
       {CHOICES.map(({ lng, label, hint }) => (
         <Pressable
           key={lng}

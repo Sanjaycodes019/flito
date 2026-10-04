@@ -133,3 +133,7 @@ export const KYC_ID_TYPE_LABELS = Object.fromEntries(KYC_ID_TYPE_OPTIONS.map((o)
 // FLITO's support phone number, shown as a Call button where people get
 // stuck (a forgotten PIN). Blank hides the button.
 export const SUPPORT_PHONE = process.env.EXPO_PUBLIC_SUPPORT_PHONE || '';
+
+// FLITO's support email, shown on the Contact and Help pages. Blank hides it,
+// the same as SUPPORT_PHONE, so the site never shows an address nobody reads.
+export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || '';

@@ -14,6 +14,7 @@ import { useCalendar } from '../../services/calendarPreference';
 import { useThemePreference } from '../../services/themePreference';
 import { ROLES } from '../../utils/constants';
 import { colors, spacing, type, iconSize, themedStyles } from '../../theme/tokens';
+import { PAGE_BY_KEY, SETTINGS_GROUPS } from '../../public/pages';
 
 const APP_VERSION = Constants?.expoConfig?.version;
 
@@ -68,15 +69,28 @@ const SettingsScreen = ({ navigation }) => {
         <SettingsRow icon="lock" label={t('profile:settings.rows.signIn')} onPress={() => navigation.navigate('SecuritySettings')} />
       </SettingsSection>
 
-      {!!APP_VERSION && (
-        <SettingsSection title={t('profile:settings.sections.about')}>
-          <SettingsRow icon="info" label={t('profile:settings.rows.version')} value={APP_VERSION} />
+      {/* Help, about and legal pages, each opening on top of Settings. */}
+      {SETTINGS_GROUPS.map((group) => (
+        <SettingsSection key={group.key} title={t(`site:settingsGroups.${group.key}`)}>
+          {group.items.map((key) => (
+            <SettingsRow
+              key={key}
+              icon={PAGE_BY_KEY[key].icon}
+              label={t(`site:pages.${key}.label`)}
+              onPress={() => navigation.navigate(PAGE_BY_KEY[key].route)}
+            />
+          ))}
+          {group.key === 'about' && !!APP_VERSION ? (
+            <SettingsRow icon="info" label={t('profile:settings.rows.version')} value={APP_VERSION} />
+          ) : null}
         </SettingsSection>
-      )}
+      ))}
 
       <SettingsSection title={t('profile:logout.title')}>
         <SettingsRow icon="logout" label={t('profile:rows.logOut')} destructive onPress={handleLogout} accessibilityLabel={t('profile:rows.logOutLabel')} />
       </SettingsSection>
+
+      <Text style={styles.copyright}>{t('site:footer.copyright', { year: new Date().getFullYear() })}</Text>
     </ScrollView>
   );
 };
@@ -89,6 +103,7 @@ const styles = themedStyles(() => ({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   name: { ...type.h3, color: colors.textPrimary, flexShrink: 1 },
   subtle: { ...type.small, color: colors.textMuted, marginTop: 2 },
+  copyright: { ...type.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.lg },
 }));
 
 export default SettingsScreen;

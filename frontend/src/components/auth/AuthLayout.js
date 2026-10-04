@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, Text, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Image, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import useBreakpoint from '../../hooks/useBreakpoint';
+import QuickToggles from '../common/QuickToggles';
+import QuickLinks from '../../public/components/QuickLinks';
+import useOpenPage from '../../public/useOpenPage';
 
 const LOGO = require('../../../assets/icon.png');
 
@@ -32,17 +35,28 @@ const getFeatures = (t) => [
 //
 // The FLITO logo mark and wordmark keep the true brand amber: WCAG contrast
 // minimums do not apply to logotype (see theme/tokens.js primaryText).
+// On the web the FLITO mark leads back to the public landing page; the
+// Android app has none.
+const HAS_LANDING = Platform.OS === 'web';
+
 const BrandPanel = () => {
   const { t } = useTranslation();
+  const { openAuth } = useOpenPage();
   const features = getFeatures(t);
 
   return (
     <View style={styles.brand}>
       <View style={styles.brandInner}>
-        <View style={styles.brandRow}>
+        <Pressable
+          onPress={HAS_LANDING ? () => openAuth('Landing') : undefined}
+          disabled={!HAS_LANDING}
+          accessibilityRole={HAS_LANDING ? 'link' : undefined}
+          accessibilityLabel="FLITO"
+          style={styles.brandRow}
+        >
           <Image source={LOGO} style={styles.brandLogo} resizeMode="contain" accessible={false} />
           <Text style={styles.brandWordmark}>FLITO</Text>
-        </View>
+        </Pressable>
         <Text style={styles.brandTagline}>{t('auth:layout.tagline')}</Text>
         <Text style={styles.brandHeadline} accessibilityRole="header">
           {t('auth:layout.headline')}
@@ -62,9 +76,12 @@ const BrandPanel = () => {
   );
 };
 
-const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
+// `showToggles` puts the language and light/dark switch above the form (the
+// language choice page turns it off: it is the language switch).
+const AuthLayout = ({ title, subtitle, children, maxWidth = 440, showToggles = true }) => {
   const { t } = useTranslation();
   const { isPhone, isDesktop } = useBreakpoint();
+  const { openAuth } = useOpenPage();
 
   const formColumn = (
     <ScrollView
@@ -73,6 +90,15 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.column, { maxWidth }]}>
+        <View style={styles.topRow}>
+          {HAS_LANDING && !isDesktop ? (
+            <Pressable onPress={() => openAuth('Landing')} accessibilityRole="link" hitSlop={8} style={styles.homeLink}>
+              <Icon name="back" size={iconSize.md} color={colors.textLink} />
+              <Text style={styles.homeLinkText}>FLITO</Text>
+            </Pressable>
+          ) : <View />}
+          {showToggles ? <QuickToggles /> : null}
+        </View>
         <View style={[styles.header, !isPhone && styles.headerWide]}>
           {/* One heading, not two: the logo mark alone sits above the page
               title (a "FLITO" wordmark beside it competed with the title on
@@ -86,6 +112,7 @@ const AuthLayout = ({ title, subtitle, children, maxWidth = 440 }) => {
         </View>
 
         <Card style={[styles.card, !isPhone && styles.cardWide]}>{children}</Card>
+        <QuickLinks style={styles.quickLinks} />
       </View>
     </ScrollView>
   );
@@ -147,6 +174,10 @@ const styles = themedStyles(() => ({
   titleWide: { fontSize: 28, lineHeight: 36 },
   subtitle: { ...type.body, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xs },
   card: { marginVertical: 0 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg, minHeight: 34 },
+  homeLink: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  homeLinkText: { ...type.smallMedium, color: colors.textLink },
+  quickLinks: { marginTop: spacing.xl },
   cardWide: { padding: spacing.xxl },
 }));
 
