@@ -6,6 +6,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const mongoose = require('mongoose');
 const pinoHttp = require('pino-http');
 
+const allowedOrigins = require('./config/allowedOrigins');
 const logger = require('./utils/logger');
 const { Sentry, sentryEnabled } = require('./config/sentry');
 
@@ -18,15 +19,11 @@ const errorHandler = require('./middleware/errorHandler');
 module.exports = function createApp({ io } = {}) {
   const app = express();
 
-  const allowedOrigins = [
-    process.env.FRONTEND_URL,   // production Vercel URL
-    'http://localhost:19006',   // Expo web dev
-    'http://localhost:8081',
-  ].filter(Boolean);
+  const origins = allowedOrigins();
 
   app.use(cors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      if (!origin || origins.includes(origin)) return cb(null, true);
       cb(new Error('Not allowed by CORS'));
     },
     credentials: true,

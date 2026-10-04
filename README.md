@@ -156,7 +156,7 @@ A standalone Android build (EAS) additionally needs an **Android** OAuth client 
 | `JWT_EXPIRE` | backend `.env`, Render | `7d` |
 | `NODE_ENV` | backend `.env`, Render | `development` / `production` |
 | `PORT` | backend `.env` | `5000` (Render injects its own, don't hardcode) |
-| `FRONTEND_URL` | backend `.env`, Render | `https://flito.vercel.app` (required in production) |
+| `FRONTEND_URL` | backend `.env`, Render | `https://flito.vercel.app` (required in production). Comma-separate several origins, e.g. a custom domain plus the vercel.app URL |
 | `BREVO_API_KEY` | backend `.env`, Render | Brevo API key for verification and reset emails (required in production) |
 | `BREVO_SENDER_EMAIL` | backend `.env`, Render | A sender address verified in Brevo (required in production) |
 | `BREVO_SENDER_NAME` | backend `.env`, Render | `FLITO` |
