@@ -9,8 +9,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://flito.onrender.com/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://flito.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://api.sanjay019.com.np/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://api.sanjay019.com.np"
       }
     },
     "production": {
@@ -18,8 +18,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://flito.onrender.com/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://flito.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://api.sanjay019.com.np/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://api.sanjay019.com.np"
       }
     }
   }
