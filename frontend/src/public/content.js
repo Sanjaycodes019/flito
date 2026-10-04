@@ -19,4 +19,4 @@ export const useContent = () => {
 
 // The day the Terms and Privacy Policy were last changed, as a Nepal day key.
 // Shown in the reader's own calendar (BS or AD). Update it with every change.
-export const LEGAL_UPDATED = '2026-10-04';
+export const LEGAL_UPDATED = '2026-10-05';

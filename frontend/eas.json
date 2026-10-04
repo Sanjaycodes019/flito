@@ -10,7 +10,9 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.sanjay019.com.np/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://api.sanjay019.com.np"
+        "EXPO_PUBLIC_SOCKET_URL": "https://api.sanjay019.com.np",
+        "EXPO_PUBLIC_SUPPORT_PHONE": "+9779766382090",
+        "EXPO_PUBLIC_SUPPORT_EMAIL": "guptagroups09@gmail.com"
       }
     },
     "production": {
@@ -19,7 +21,9 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.sanjay019.com.np/api",
-        "EXPO_PUBLIC_SOCKET_URL": "https://api.sanjay019.com.np"
+        "EXPO_PUBLIC_SOCKET_URL": "https://api.sanjay019.com.np",
+        "EXPO_PUBLIC_SUPPORT_PHONE": "+9779766382090",
+        "EXPO_PUBLIC_SUPPORT_EMAIL": "guptagroups09@gmail.com"
       }
     }
   }

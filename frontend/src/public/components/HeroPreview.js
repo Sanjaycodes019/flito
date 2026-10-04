@@ -68,27 +68,26 @@ const HeroPreview = () => {
         <View style={styles.divider} />
         <Text style={styles.offersTitle}>{t('site:landing.preview.offersTitle')}</Text>
 
-        {offers.map((offer, index) => {
-          const mine = index === offers.length - 1;
-          return (
-            <View key={offer.who} style={[styles.offer, mine && styles.offerMine]}>
-              <View style={[styles.avatar, mine && styles.avatarMine]}>
-                <Icon name={mine ? 'counterOffer' : 'owner'} size={iconSize.sm} color={mine ? colors.primaryText : colors.textSecondary} />
-              </View>
-              <View style={styles.offerText}>
-                <Text style={styles.offerWho} numberOfLines={1}>{offer.who}</Text>
-                <View style={styles.offerNote}>
-                  {!mine ? <Icon name="verified" size={12} color={colors.accentText} /> : <Icon name="time" size={12} color={colors.primaryText} />}
-                  <Text style={[styles.offerNoteText, mine && styles.offerNoteMine]} numberOfLines={1}>{offer.note}</Text>
-                </View>
-              </View>
-              <Text style={styles.price}>{offer.price}</Text>
-              {index === 1 && !compact ? (
-                <View style={styles.accept}><Text style={styles.acceptText}>{t('site:landing.preview.accept')}</Text></View>
-              ) : null}
+        {/* Each offer is one owner's price for one truck; a booked one has
+            filled one of the load's trucks, the rest wait for the shipper. */}
+        {offers.map((offer) => (
+          <View key={offer.who} style={[styles.offer, offer.booked && styles.offerBooked]}>
+            <View style={[styles.avatar, offer.booked && styles.avatarBooked]}>
+              <Icon name={offer.booked ? 'truckBooked' : 'owner'} size={iconSize.sm} color={offer.booked ? colors.accentText : colors.textSecondary} />
             </View>
-          );
-        })}
+            <View style={styles.offerText}>
+              <Text style={styles.offerWho} numberOfLines={1}>{offer.who}</Text>
+              <View style={styles.offerNote}>
+                <Icon name={offer.booked ? 'success' : 'verified'} size={12} color={colors.accentText} />
+                <Text style={styles.offerNoteText} numberOfLines={1}>{offer.note}</Text>
+              </View>
+            </View>
+            <Text style={styles.price}>{offer.price}</Text>
+            {offer.accept && !compact ? (
+              <View style={styles.accept}><Text style={styles.acceptText}>{t('site:landing.preview.accept')}</Text></View>
+            ) : null}
+          </View>
+        ))}
       </View>
 
       <View style={[styles.note, styles.noteTop, compact && styles.noteTopCompact]}>
@@ -165,14 +164,13 @@ const styles = themedStyles(() => ({
   offersTitle: { ...type.caption, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: spacing.sm },
 
   offer: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, borderRadius: radius.md },
-  offerMine: { backgroundColor: colors.primaryMuted, marginTop: spacing.xs },
+  offerBooked: { backgroundColor: colors.accentMuted, marginTop: spacing.xs },
   avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
-  avatarMine: { backgroundColor: colors.surface },
+  avatarBooked: { backgroundColor: colors.surface },
   offerText: { flex: 1, minWidth: 0 },
   offerWho: { ...type.smallMedium, color: colors.textPrimary },
   offerNote: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   offerNoteText: { fontSize: 13, lineHeight: 18, color: colors.accentText, fontWeight: '600' },
-  offerNoteMine: { color: colors.primaryText },
   price: { ...type.bodyMedium, color: colors.textPrimary },
   accept: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   acceptText: { fontSize: 13, fontWeight: '700', color: colors.textOnPrimary },

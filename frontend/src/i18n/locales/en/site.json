@@ -107,13 +107,13 @@
     },
     "preview": {
       "label": "Example",
-      "goods": "Cement · 300 bags",
+      "goods": "Cement · 600 bags",
       "from": "Hetauda",
       "to": "Pokhara",
       "pickup": "Pickup Asoj 20",
-      "weight": "15 tonnes",
-      "truck": "10-wheel truck",
-      "offersTitle": "3 offers",
+      "weight": "30 tonnes",
+      "truck": "2 trucks · 15 t each",
+      "offersTitle": "3 offers · 1 of 2 trucks booked",
       "offers": [
         {
           "who": "Truck owner · Butwal",
@@ -123,12 +123,14 @@
         {
           "who": "Truck owner · Hetauda",
           "price": "Rs 44,500",
-          "note": "Verified"
+          "note": "Verified",
+          "accept": true
         },
         {
-          "who": "Your counter-offer",
-          "price": "Rs 42,000",
-          "note": "Waiting for reply"
+          "who": "Truck owner · Narayanghat",
+          "price": "Rs 45,000",
+          "note": "Booked",
+          "booked": true
         }
       ],
       "accept": "Accept",
@@ -172,9 +174,9 @@
       "lead": "Built around how freight is really arranged in Nepal: by phone, by trust and by the day.",
       "items": [
         {
-          "icon": "counterOffer",
-          "title": "Fair prices through offers",
-          "body": "Owners send a price, shippers can counter. Every offer and counter-offer stays on record."
+          "icon": "quote",
+          "title": "Fair prices, no haggling",
+          "body": "Owners offer a price for each truck, or you ask a truck at your price. Compare the offers side by side and accept the ones that suit you."
         },
         {
           "icon": "verified",
@@ -184,7 +186,7 @@
         {
           "icon": "truck",
           "title": "Trucks that fit the load",
-          "body": "FLITO suggests trucks by type, capacity and the days they are free, nearest first."
+          "body": "FLITO suggests trucks by type, capacity and the days they are free, nearest first. A big load can go out on several trucks at once."
         },
         {
           "icon": "gps",
@@ -271,7 +273,7 @@
           "icon": "shipper",
           "tag": "Shipper · Hetauda → Pokhara",
           "title": "Cement for a new house",
-          "body": "A family building a house in Pokhara needs 300 bags of cement from Hetauda. They post the load, get three offers by evening, counter the highest and book a verified 10-wheel truck. They watch it climb towards Mugling on the map."
+          "body": "A family building a house in Pokhara needs 600 bags of cement from Hetauda, too much for one truck. They post the load for two trucks, get three offers by evening, accept the two best from verified owners, and watch both trucks climb towards Mugling on the map."
         },
         {
           "icon": "driver",
@@ -312,17 +314,17 @@
         {
           "icon": "load",
           "title": "Post your load",
-          "body": "Say what you are sending, how much it weighs, where it is going and when. Add photos if they help. It takes about two minutes."
+          "body": "Say what you are sending, how much it weighs, where it is going, when, and how many trucks it needs. Add photos if they help. It takes about two minutes."
         },
         {
           "icon": "quote",
           "title": "Get offers",
-          "body": "Verified truck owners heading that way send you a price. Accept one, turn it down or send a counter-offer."
+          "body": "Verified truck owners heading that way offer a price for each truck. Accept the ones you want, or pick a matched truck and ask its owner at your own price."
         },
         {
           "icon": "truckDelivery",
           "title": "Book and track",
-          "body": "Accepting an offer makes the booking. Call the driver in one tap and follow the truck on the map."
+          "body": "Each accepted offer is a booking for that truck. Call the driver in one tap and follow the truck on the map."
         },
         {
           "icon": "signature",
@@ -346,9 +348,9 @@
           "body": "Upload your ID, your PAN and each truck's papers. The FLITO team checks them before you can send offers."
         },
         {
-          "icon": "counterOffer",
+          "icon": "quote",
           "title": "Find loads and send offers",
-          "body": "See loads that fit your trucks, including loads for the return trip, and send your price."
+          "body": "See loads that fit your trucks, including loads for the return trip, and offer a price for each truck you can send."
         },
         {
           "icon": "driver",
@@ -438,34 +440,34 @@
         {
           "status": "cancelled",
           "title": "Cancelled",
-          "body": "The shipper or the owner cancelled before the goods were loaded. Phone numbers are hidden again."
+          "body": "The shipper or the owner cancelled before the goods were loaded. The truck's place on the load opens again, and phone numbers are hidden."
         }
       ]
     },
     "offers": {
       "eyebrow": "Offers & prices",
       "title": "How prices are agreed",
-      "lead": "There are no fixed rates on FLITO. The price is whatever the shipper and the owner agree.",
+      "lead": "There are no fixed rates on FLITO, and no haggling back and forth: every offer is accepted or declined at its price.",
       "points": [
         {
           "icon": "quote",
           "title": "An owner offers a price",
-          "body": "Only verified owners can send offers. Each one names the truck that will do the job."
+          "body": "Only verified owners can offer: one price for each truck they can send, and never more trucks than the load still needs."
         },
         {
-          "icon": "counterOffer",
-          "title": "Take turns to counter",
-          "body": "Either side can counter. You take turns, so nobody bids against themselves."
+          "icon": "shipper",
+          "title": "Or the shipper names a price",
+          "body": "A shipper can pick a matched truck and ask its owner to carry the load at the shipper's price. The owner accepts or declines."
         },
         {
           "icon": "timer",
           "title": "Offers don't wait forever",
-          "body": "An offer stays open for 48 hours, and a counter-offer restarts the clock. A load takes offers until the end of its pickup day."
+          "body": "An offer stays open for 48 hours, and never longer than its load. A load takes offers until the end of its pickup day."
         },
         {
           "icon": "truckBooked",
-          "title": "One acceptance books it",
-          "body": "When either side accepts, the booking is made and the other offers on that load close."
+          "title": "Each acceptance books a truck",
+          "body": "Every accepted offer is its own booking. When all the trucks a load needs are booked, or the shipper taps Enough Trucks, the other offers close."
         }
       ]
     },
@@ -649,7 +651,7 @@
       "lead": "FLITO is a young platform and is improving every month. Here is what works today and what we are building.",
       "nowTitle": "Working today",
       "now": [
-        "Posting loads, offers and counter-offers",
+        "Posting loads, with offers for one truck or up to ten",
         "Identity and truck verification",
         "Bookings with live tracking, delivery photos and signatures",
         "Fleets with drivers on phone-and-PIN login",
@@ -800,12 +802,16 @@
             "a": "Tap \"Post a Load\" and follow the steps: what you are sending, how much it weighs, pickup and drop-off addresses, and the pickup day. Photos are optional but help owners give a good price."
           },
           {
+            "q": "Can my load go on more than one truck?",
+            "a": "Yes. When you post it, choose how many trucks it needs, up to 10. The weight is shared equally, every accepted truck is its own booking with its own driver and delivery proof, and you can tap Enough Trucks once you have what you need."
+          },
+          {
             "q": "How long does my load stay open?",
             "a": "A load takes offers until the end of its pickup day, Nepal time, and for at least 12 hours after you post it. If no truck is booked by then, it expires and you can post it again."
           },
           {
             "q": "Can I choose a truck myself?",
-            "a": "Yes. Open your load and tap \"Choose a Truck\". FLITO lists trucks that can carry it and are free on that day, nearest first. You can ask an owner for their truck directly."
+            "a": "Yes. Open your load and tap \"Choose a Truck\". FLITO lists trucks that can carry it and are free on that day, nearest first, and you can ask an owner to carry it at your price."
           },
           {
             "q": "Do I have to be verified to post a load?",
@@ -820,11 +826,11 @@
         "items": [
           {
             "q": "How are prices decided?",
-            "a": "There are no fixed rates. Owners send a price, and the shipper can accept, refuse or counter. You take turns until one side accepts."
+            "a": "There are no fixed rates. An owner offers a price for each truck, or a shipper asks a matched truck at their own price. The other side accepts or declines it at that price, with no back-and-forth."
           },
           {
             "q": "How long does an offer last?",
-            "a": "48 hours. A counter-offer restarts the 48 hours. An offer never lasts longer than its load."
+            "a": "48 hours, and never longer than its load."
           },
           {
             "q": "Why can't I send an offer?",

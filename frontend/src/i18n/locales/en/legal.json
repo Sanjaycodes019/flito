@@ -8,11 +8,26 @@
     "readMinutes": 15,
     "summaryTitle": "The short version",
     "summary": [
-      { "icon": "handshake", "text": "FLITO is a marketplace. The deal for each trip is between the shipper and the truck owner. We don't own trucks, employ drivers or take charge of goods." },
-      { "icon": "verified", "text": "Owners and drivers must pass identity checks before they can make offers or take jobs. A verified badge means we checked documents, not that we guarantee someone's work." },
-      { "icon": "law", "text": "You must follow Nepal's laws: legal goods, roadworthy and insured trucks, licensed drivers, loads within legal limits." },
-      { "icon": "cash", "text": "Prices are agreed between shipper and owner. Using FLITO is free today, and payment currently happens directly between you." },
-      { "icon": "prohibited", "text": "Fake loads, false documents, banned goods or abuse can get your account suspended or closed." }
+      {
+        "icon": "handshake",
+        "text": "FLITO is a marketplace. The deal for each trip is between the shipper and the truck owner. We don't own trucks, employ drivers or take charge of goods."
+      },
+      {
+        "icon": "verified",
+        "text": "Owners and drivers must pass identity checks before they can make offers or take jobs. A verified badge means we checked documents, not that we guarantee someone's work."
+      },
+      {
+        "icon": "law",
+        "text": "You must follow Nepal's laws: legal goods, roadworthy and insured trucks, licensed drivers, loads within legal limits."
+      },
+      {
+        "icon": "cash",
+        "text": "Prices are agreed between shipper and owner. Using FLITO is free today, and payment currently happens directly between you."
+      },
+      {
+        "icon": "prohibited",
+        "text": "Fake loads, false documents, banned goods or abuse can get your account suspended or closed."
+      }
     ],
     "sections": [
       {
@@ -27,7 +42,9 @@
       {
         "id": "eligibility",
         "title": "Who can use FLITO",
-        "body": ["To use FLITO you must:"],
+        "body": [
+          "To use FLITO you must:"
+        ],
         "list": [
           "be at least 18 years old and able to make a binding agreement under the laws of Nepal",
           "give true, current and complete information, including your real name and your own phone number",
@@ -68,16 +85,18 @@
         "list": [
           "Shippers must describe each load truthfully: the type of goods, a realistic weight, the pickup and drop-off addresses and the pickup day.",
           "A load takes offers until the end of its pickup day (Nepal time), and for at least 12 hours after it is posted. After that it expires.",
-          "Verified owners can send an offer for a load, naming the truck that will carry it. The shipper can accept, refuse or counter. Shipper and owner take turns until one side accepts or the offer closes.",
-          "An offer stays open for 48 hours, and each counter-offer restarts that time. An offer never lasts longer than its load.",
-          "When either side accepts a price, a booking is made at that price. This is a binding agreement between the shipper and the owner. Other open offers on that load then close.",
+          "Verified owners can offer to carry a load, at one price for each truck they will send. A shipper can also ask the owner of a matched truck to carry it at the shipper's price. The other side accepts or declines an offer at its price; offers are not bargained over.",
+          "An offer stays open for 48 hours, and never longer than its load.",
+          "When an offer is accepted, a booking is made for that truck at that price. This is a binding agreement between the shipper and the owner. A load can need up to 10 trucks, its weight shared equally, and each accepted truck is its own booking. When every truck the load needs is booked, or the shipper says they have enough, the other open offers close.",
           "After a booking is made, the owner assigns a verified driver and the truck. The shipper, owner and driver can then see each other's phone numbers to arrange the trip."
         ]
       },
       {
         "id": "trip",
         "title": "Doing the trip",
-        "body": ["Truck owners agree to:"],
+        "body": [
+          "Truck owners agree to:"
+        ],
         "list": [
           "send only trucks that are roadworthy, registered, insured as the law requires and carrying valid papers and any route permits",
           "assign drivers who hold a valid license for that class of vehicle",
@@ -92,7 +111,9 @@
       {
         "id": "prohibited",
         "title": "Banned goods and conduct",
-        "body": ["You must not use FLITO to move:"],
+        "body": [
+          "You must not use FLITO to move:"
+        ],
         "list": [
           "weapons, ammunition or explosives",
           "narcotics or any illegal drugs",
@@ -109,7 +130,7 @@
         "id": "prices",
         "title": "Prices and payment",
         "body": [
-          "FLITO does not set prices. Each price is agreed between the shipper and the owner through offers and counter-offers.",
+          "FLITO does not set prices. Each price is agreed between the shipper and the owner, offer by offer.",
           "Joining FLITO, posting loads and sending offers is free today. If we ever introduce fees, we will tell you clearly in the app and on our website before they apply, and they will never apply to a booking already made.",
           "At present, the shipper pays the owner directly, by cash or transfer as they agree. Agree when and how payment will be made before the goods are loaded. When paying in the app becomes available, extra terms for it will be shown before you use it.",
           "Each user is responsible for their own taxes, including issuing bills or receipts where the law requires."
@@ -119,7 +140,7 @@
         "id": "cancellations",
         "title": "Cancellations",
         "body": [
-          "The shipper or the owner can cancel a booking while it is pending or confirmed, before the goods are loaded. Once the booking is in transit it can no longer be cancelled in the app and the trip must be completed. Drivers cannot cancel a booking.",
+          "The shipper or the owner can cancel a booking while it is pending or confirmed, before the goods are loaded. The cancelled truck's place on the load opens again, so the shipper can find another truck while there is time. Once the booking is in transit it can no longer be cancelled in the app and the trip must be completed. Drivers cannot cancel a booking.",
           "Any payment for a cancellation is a matter between the shipper and the owner. We may limit or suspend accounts that cancel bookings again and again, especially at the last minute."
         ]
       },
@@ -207,7 +228,6 @@
       }
     ]
   },
-
   "privacy": {
     "hero": {
       "eyebrow": "Legal",
@@ -217,11 +237,26 @@
     "readMinutes": 12,
     "summaryTitle": "The short version",
     "summary": [
-      { "icon": "database", "text": "We collect what you give us (your name, phone, documents, loads, trucks) and what a trip creates (offers, location during the trip, delivery photos and signatures)." },
-      { "icon": "phone", "text": "Your phone number is shown only to the people on your bookings. Your ID documents are seen only by FLITO's verification team." },
-      { "icon": "gps", "text": "A driver's location is shared only while a booking is in transit, only with that booking's shipper and owner, and only the latest position is kept." },
-      { "icon": "lockCheck", "text": "Passwords and PINs are stored only as one-way hashes. We never sell your data or use it for advertising." },
-      { "icon": "accountCheck", "text": "You can see and correct your details in the app, and ask us for a copy or to delete your account." }
+      {
+        "icon": "database",
+        "text": "We collect what you give us (your name, phone, documents, loads, trucks) and what a trip creates (offers, location during the trip, delivery photos and signatures)."
+      },
+      {
+        "icon": "phone",
+        "text": "Your phone number is shown only to the people on your bookings. Your ID documents are seen only by FLITO's verification team."
+      },
+      {
+        "icon": "gps",
+        "text": "A driver's location is shared only while a booking is in transit, only with that booking's shipper and owner, and only the latest position is kept."
+      },
+      {
+        "icon": "lockCheck",
+        "text": "Passwords and PINs are stored only as one-way hashes. We never sell your data or use it for advertising."
+      },
+      {
+        "icon": "accountCheck",
+        "text": "You can see and correct your details in the app, and ask us for a copy or to delete your account."
+      }
     ],
     "sections": [
       {
@@ -243,7 +278,7 @@
           "Verification documents: photos of your citizenship card, national ID, passport or driving license, and for owners a PAN document and, optionally, company registration.",
           "Truck details: registration number, type, capacity, base, service areas, and photos of the bluebook and insurance papers.",
           "Loads: the goods, weight, pickup and drop-off addresses and points on the map, dates and any photos you add.",
-          "Offers, counter-offers, bookings, ratings and reviews.",
+          "Offers, bookings, ratings and reviews.",
           "Anything you send us when you contact us."
         ]
       },
@@ -299,7 +334,9 @@
       {
         "id": "providers",
         "title": "Services that help us run FLITO",
-        "body": ["We use trusted service providers to run FLITO. They handle information only for us and only as needed for their service:"],
+        "body": [
+          "We use trusted service providers to run FLITO. They handle information only for us and only as needed for their service:"
+        ],
         "list": [
           "MongoDB Atlas, our database, which stores account, load and booking information",
           "Cloudinary, which stores photos and documents you upload",
