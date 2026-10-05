@@ -22,6 +22,8 @@ const publicUser = (user) => ({
   // the PIN hash was selected; never the hash itself.
   hasPin: Boolean(user.pin),
   companyName: user.companyName,
+  // How many ways an owner has to be paid, so the profile can prompt for one.
+  payoutMethodCount: user.role === 'owner' ? (user.payoutMethods || []).length : undefined,
   // With province, district and local-level names filled in, or null until
   // the user has added a complete address.
   address: describeAddress(user.address),

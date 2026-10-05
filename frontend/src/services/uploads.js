@@ -163,16 +163,19 @@ const appendAsset = async (form, field, asset, index) => {
 
 // Sends `assets` as multipart `field`, plus any plain `fields` (for example a
 // document type). Plain fields go first so the server sees them before files.
-export const uploadFiles = async (path, assets, { field = 'photos', fields = {} } = {}) => {
+// `method` is 'post' unless an update needs 'patch'.
+export const uploadFiles = async (path, assets, { field = 'photos', fields = {}, method = 'post' } = {}) => {
   const form = new FormData();
-  Object.entries(fields).forEach(([key, value]) => form.append(key, String(value)));
+  Object.entries(fields)
+    .filter(([, value]) => value !== undefined && value !== null)
+    .forEach(([key, value]) => form.append(key, String(value)));
 
   // Sequential so files keep the order they were picked in.
   for (let i = 0; i < assets.length; i += 1) {
     await appendAsset(form, field, assets[i], i);
   }
 
-  const { data } = await api.post(path, form, {
+  const { data } = await api[method](path, form, {
     timeout: UPLOAD_TIMEOUT_MS,
     // The browser must set the multipart boundary itself.
     headers: isWeb ? undefined : { 'Content-Type': 'multipart/form-data' },

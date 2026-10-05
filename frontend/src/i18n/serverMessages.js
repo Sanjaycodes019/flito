@@ -225,6 +225,32 @@ const SERVER_MESSAGES_NE = {
   DUPLICATE_VALUE: () => 'यो मान पहिले नै प्रयोगमा छ',
   CORS_NOT_ALLOWED: () => 'CORS द्वारा अनुमति छैन',
   INTERNAL_SERVER_ERROR: () => 'सर्भरमा समस्या भयो',
+
+  // ── Payment details and payments ─────────────────────────────────────
+  VALIDATION_PAYOUT_KIND: () => 'बैंक, eSewa वा Khalti छान्नुहोस्',
+  VALIDATION_PAYOUT_BANK: () => 'सूचीबाट बैंक छान्नुहोस्',
+  VALIDATION_PAYOUT_TEXT_LENGTH: ({ min, max }) => `यो ${min} देखि ${max} अक्षरको हुनुपर्छ`,
+  VALIDATION_PAYOUT_ACCOUNT_NUMBER: () => 'खाता नम्बर ६ देखि २४ अंकको हुनुपर्छ',
+  VALIDATION_PAYOUT_WALLET_ID: () => 'वालेटको १० अंकको मोबाइल नम्बर लेख्नुहोस्, जस्तै 9841234567',
+  PAYOUT_NAME_REQUIRED: () => 'खातावालाको नाम लेख्नुहोस्',
+  PAYOUT_BANK_REQUIRED: () => 'बैंक छान्नुहोस्',
+  PAYOUT_BANK_NAME_REQUIRED: () => 'बैंकको नाम लेख्नुहोस्',
+  PAYOUT_ACCOUNT_OR_QR_REQUIRED: () => 'खाता नम्बर, QR को फोटो वा दुवै थप्नुहोस्',
+  PAYOUT_WALLET_ID_REQUIRED: () => 'वालेटको मोबाइल नम्बर लेख्नुहोस्',
+  PAYOUT_LIMIT: ({ max }) => `बढीमा ${max} वटा खाता राख्न मिल्छ। पहिले एउटा हटाउनुहोस्।`,
+  PAYOUT_NOT_FOUND: () => 'त्यो भुक्तानी विवरण फेला परेन',
+  PAYOUT_KIND_LOCKED: () => 'बैंकलाई वालेटमा बदल्न मिल्दैन, नयाँ थप्नुहोस्',
+  VALIDATION_PAYMENT_AMOUNT: () => 'रकम पूरा रुपैयाँमा लेख्नुहोस्',
+  VALIDATION_PAYMENT_METHOD: () => 'कसरी तिर्नुभयो छान्नुहोस्',
+  VALIDATION_PAYMENT_PAYOUT_METHOD: () => 'त्यो खाता फेला परेन',
+  VALIDATION_PAYMENT_TEXT_LENGTH: ({ max }) => `बढीमा ${max} अक्षर लेख्न मिल्छ`,
+  PAYMENTS_NOT_PARTY: () => 'यो बुकिङको भुक्तानी ढुवानी गराउने र ट्रक मालिकले मात्र हेर्न सक्छन्',
+  PAYMENTS_BOOKING_CANCELLED: () => 'यो बुकिङ रद्द भएकाले तिर्नुपर्ने केही छैन',
+  PAYMENTS_MORE_THAN_DUE: ({ due }) => (due ? `यो बुकिङमा रु. ${Number(due).toLocaleString('en-IN')} मात्र तिर्न बाँकी छ` : 'यो बुकिङमा तिर्न बाँकी केही छैन'),
+  PAYMENTS_ACCOUNT_NOT_FOUND: () => 'त्यो खाता अब ट्रक मालिकको सूचीमा छैन',
+  PAYMENTS_OWNER_ONLY: () => 'पैसा आयो कि आएन ट्रक मालिकले मात्र पुष्टि गर्न सक्नुहुन्छ',
+  PAYMENTS_NOT_FOUND: () => 'भुक्तानी फेला परेन',
+  PAYMENTS_ALREADY_ANSWERED: () => 'यो भुक्तानीको जवाफ पहिले नै दिइसकिएको छ',
 };
 
 export const translateServerMessage = (code, extra) => {

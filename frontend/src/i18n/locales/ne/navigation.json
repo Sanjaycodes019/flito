@@ -33,7 +33,8 @@
     "languageSettings": "भाषा र क्षेत्र",
     "appearanceSettings": "रूप",
     "securitySettings": "साइन-इन र सुरक्षा",
-    "setPin": "लग इन PIN"
+    "setPin": "लग इन PIN",
+    "paymentMethods": "भुक्तानी विवरण"
   },
   "menu": "मेनु"
 }

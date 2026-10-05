@@ -15,6 +15,7 @@ import adminEn from './locales/en/admin.json';
 import notificationsEn from './locales/en/notifications.json';
 import siteEn from './locales/en/site.json';
 import legalEn from './locales/en/legal.json';
+import paymentsEn from './locales/en/payments.json';
 
 import commonNe from './locales/ne/common.json';
 import navigationNe from './locales/ne/navigation.json';
@@ -29,6 +30,7 @@ import adminNe from './locales/ne/admin.json';
 import notificationsNe from './locales/ne/notifications.json';
 import siteNe from './locales/ne/site.json';
 import legalNe from './locales/ne/legal.json';
+import paymentsNe from './locales/ne/payments.json';
 
 export const LANGUAGE_STORAGE_KEY = 'language';
 export const SUPPORTED_LANGUAGES = ['en', 'ne'];
@@ -42,7 +44,7 @@ export const FIRST_RUN_LANGUAGE = 'ne';
 const NAMESPACES = [
   'common', 'navigation', 'auth', 'home', 'loads',
   'bookings', 'trucks', 'kyc', 'profile', 'admin', 'notifications',
-  'site', 'legal',
+  'site', 'legal', 'payments',
 ];
 
 const resources = {
@@ -60,6 +62,7 @@ const resources = {
     notifications: notificationsEn,
     site: siteEn,
     legal: legalEn,
+    payments: paymentsEn,
   },
   ne: {
     common: commonNe,
@@ -75,6 +78,7 @@ const resources = {
     notifications: notificationsNe,
     site: siteNe,
     legal: legalNe,
+    payments: paymentsNe,
   },
 };
 

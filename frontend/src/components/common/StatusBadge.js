@@ -30,6 +30,10 @@ const STATUS_STYLE = themed(() => ({
   banned: { tint: colors.errorMuted, text: colors.errorText, icon: 'error' },
   maintenance: { tint: colors.warningMuted, text: colors.warningText, icon: 'warning' },
   inactive: { tint: colors.surfaceMuted, text: colors.textMuted, icon: 'info' },
+  // Payments
+  reported: { tint: colors.warningMuted, text: colors.warningText, icon: 'time' },
+  disputed: { tint: colors.errorMuted, text: colors.errorText, icon: 'warning' },
+  partial: { tint: colors.infoMuted, text: colors.infoText, icon: 'wallet' },
 }));
 
 // Label text falls back to the raw status string (never guessed per-status

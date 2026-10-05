@@ -500,7 +500,7 @@ EAS builds run on Expo's servers and never see your local `.env`: the API, socke
 
 Deliberate scope cuts and open items, not oversights:
 
-- **No payments in the app.** The shipper pays the owner directly (cash or transfer). A `Payment` model and eSewa/Khalti settings exist, but no gateway is wired up; it needs a merchant account.
+- **No payment gateway yet.** FLITO doesn't move money. Owners add their bank accounts (with the bank's QR) and eSewa/Khalti wallets under Profile → Payment details; the shipper pays them directly, records the payment on the booking, and the owner confirms it arrived. eSewa/Khalti settings exist for a gateway later, which needs a merchant account. Bank and wallet logos come from each bank's official site (`frontend/assets/banks/SOURCES.md`).
 - **Phone numbers aren't confirmed by SMS.** Phone + PIN sign-up trusts the number typed; identity verification is what ties an account to a real person. `src/services/sms.js` and `otpStore.js` are kept, unused, for a later SMS feature.
 - **The Terms and Privacy Policy need legal review.** They describe the product as built but name no registered company; have a lawyer in Nepal review them before launch.
 - **Email needs Brevo in production.** Without `BREVO_API_KEY`/`BREVO_SENDER_EMAIL`, codes are only logged, and production refuses to boot.

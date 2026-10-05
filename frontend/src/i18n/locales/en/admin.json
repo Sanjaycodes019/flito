@@ -333,7 +333,8 @@
       "methods": {
         "khalti": "Khalti",
         "esewa": "eSewa",
-        "cash": "Cash"
+        "cash": "Cash",
+        "bank": "Bank"
       },
       "people": "People",
       "noDriver": "No driver yet",

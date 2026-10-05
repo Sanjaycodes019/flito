@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { PAYMENT_METHODS } = require('../config/banks');
 
 const bookingSchema = new mongoose.Schema(
   {
@@ -46,13 +47,16 @@ const bookingSchema = new mongoose.Schema(
     },
     amountPending: Number,
 
+    // How the last confirmed payment was made.
     paymentMethod: {
       type: String,
-      enum: ['khalti', 'esewa', 'cash'],
+      enum: PAYMENT_METHODS,
     },
+    // pending until money is confirmed, partial while some is still due,
+    // completed once confirmed payments reach the total.
     paymentStatus: {
       type: String,
-      enum: ['pending', 'completed'],
+      enum: ['pending', 'partial', 'completed'],
       default: 'pending',
     },
 

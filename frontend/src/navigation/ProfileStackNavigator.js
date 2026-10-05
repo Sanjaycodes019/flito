@@ -11,6 +11,7 @@ import LanguageSettingsScreen from '../screens/settings/LanguageSettingsScreen';
 import AppearanceSettingsScreen from '../screens/settings/AppearanceSettingsScreen';
 import SecuritySettingsScreen from '../screens/settings/SecuritySettingsScreen';
 import SetPinScreen from '../screens/settings/SetPinScreen';
+import PaymentMethodsScreen from '../screens/owner/PaymentMethodsScreen';
 import { useSelector } from 'react-redux';
 import useBreakpoint from '../hooks/useBreakpoint';
 import { AdminProfile } from '../admin/navigation';
@@ -36,6 +37,7 @@ const ProfileStackNavigator = () => {
       <Stack.Screen name="Kyc" component={KycScreen} options={{ title: t('navigation:profileStack.kyc') }} />
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ title: t('navigation:profileStack.verifyEmail') }} />
       <Stack.Screen name="Address" component={AddressScreen} options={{ title: t('navigation:profileStack.address') }} />
+      <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: t('navigation:profileStack.paymentMethods') }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('navigation:profileStack.settings') }} />
       <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} options={{ title: t('navigation:profileStack.languageSettings') }} />
       <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} options={{ title: t('navigation:profileStack.appearanceSettings') }} />

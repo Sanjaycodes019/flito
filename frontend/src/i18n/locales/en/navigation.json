@@ -33,7 +33,8 @@
     "languageSettings": "Language & Region",
     "appearanceSettings": "Appearance",
     "securitySettings": "Sign-in & Security",
-    "setPin": "Login PIN"
+    "setPin": "Login PIN",
+    "paymentMethods": "Payment details"
   },
   "menu": "Menu"
 }

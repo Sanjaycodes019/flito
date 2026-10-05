@@ -7,6 +7,7 @@ const {
 const { fail: respond } = require('../utils/respond');
 const { isValidPin, isGuessablePin } = require('../services/pin');
 const { MAX_TRUCKS_PER_LOAD } = require('../services/loadSlots');
+const { BANK_CODES, PAYOUT_KINDS, PAYMENT_METHODS } = require('../config/banks');
 
 const PHONE_REGEX = /^\+977\d{10}$/;
 const EMAIL_AUTH_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -571,7 +572,126 @@ const validatePushToken = (req, res, next) => {
   next();
 };
 
+// ── Payments ──────────────────────────────────────────────────────────────
+
+// A Nepali mobile number, which is what an eSewa or Khalti ID is: 98, 97 or
+// 96 and eight more digits, written without +977.
+const WALLET_ID_REGEX = /^9[678]\d{8}$/;
+// Bank account numbers in Nepal are 6 to 24 digits, a few banks add letters.
+const ACCOUNT_NUMBER_REGEX = /^[0-9A-Z]{6,24}$/;
+
+const normalizeWalletId = (value) => value.replace(/[\s-]/g, '').replace(/^\+?977/, '');
+const normalizeAccountNumber = (value) => value.replace(/[\s-]/g, '').toUpperCase();
+
+const PAYOUT_TEXT_LIMITS = {
+  accountName: [2, 80],
+  bankName: [2, 80],
+  branch: [0, 60],
+};
+
+// The fields of an owner's bank or wallet, cleaned. Runs after the multipart
+// body is parsed, so every value arrives as text. Whether a method is complete
+// (a bank needs an account number or a QR) is checked by the controller, which
+// knows what is already saved.
+const validatePayoutMethod = (req, res, next) => {
+  const fail = (message, code, extra) => respond(res, 400, code, message, extra);
+  const body = req.body || {};
+  const clean = {};
+
+  if (body.kind !== undefined) {
+    if (!PAYOUT_KINDS.includes(body.kind)) {
+      return fail(`kind must be one of: ${PAYOUT_KINDS.join(', ')}`, 'VALIDATION_PAYOUT_KIND');
+    }
+    clean.kind = body.kind;
+  }
+
+  for (const key of ['bankCode', 'bankName', 'branch', 'accountNumber', 'accountName', 'walletId']) {
+    if (body[key] === undefined) continue;
+    if (typeof body[key] !== 'string') return fail(`${key} must be text`, 'VALIDATION_FIELD_TEXT_TYPE', { field: key });
+    clean[key] = body[key].trim();
+  }
+
+  for (const [key, [min, max]] of Object.entries(PAYOUT_TEXT_LIMITS)) {
+    if (clean[key] === undefined) continue;
+    if (clean[key].length < min || clean[key].length > max) {
+      return fail(`${key} must be ${min} to ${max} characters`, 'VALIDATION_PAYOUT_TEXT_LENGTH', { field: key, min, max });
+    }
+  }
+  if (clean.bankCode !== undefined && !BANK_CODES.includes(clean.bankCode)) {
+    return fail('Choose a bank from the list', 'VALIDATION_PAYOUT_BANK');
+  }
+  if (clean.accountNumber) {
+    clean.accountNumber = normalizeAccountNumber(clean.accountNumber);
+    if (!ACCOUNT_NUMBER_REGEX.test(clean.accountNumber)) {
+      return fail('Account number must be 6 to 24 digits', 'VALIDATION_PAYOUT_ACCOUNT_NUMBER');
+    }
+  }
+  if (clean.walletId !== undefined) {
+    clean.walletId = normalizeWalletId(clean.walletId);
+    if (!WALLET_ID_REGEX.test(clean.walletId)) {
+      return fail('Enter the 10-digit mobile number of the wallet, like 9841234567', 'VALIDATION_PAYOUT_WALLET_ID');
+    }
+  }
+  clean.removeQr = body.removeQr === true || body.removeQr === 'true';
+
+  req.body = clean;
+  next();
+};
+
+const PAYMENT_TEXT_LIMITS = { transactionId: 60, note: 200 };
+
+// A payment a shipper reports or an owner records. Whether the amount fits
+// what is still due is checked by the controller against the booking.
+const validatePaymentRecord = (req, res, next) => {
+  const fail = (message, code, extra) => respond(res, 400, code, message, extra);
+  const body = req.body || {};
+  const clean = {};
+
+  const amount = Number(body.amount);
+  if (!Number.isInteger(amount) || amount < 1) {
+    return fail('Amount must be a whole number of rupees', 'VALIDATION_PAYMENT_AMOUNT');
+  }
+  clean.amount = amount;
+
+  if (!PAYMENT_METHODS.includes(body.method)) {
+    return fail(`method must be one of: ${PAYMENT_METHODS.join(', ')}`, 'VALIDATION_PAYMENT_METHOD');
+  }
+  clean.method = body.method;
+
+  if (body.payoutMethodId) {
+    if (!mongoose.isValidObjectId(body.payoutMethodId)) {
+      return fail('That account was not found', 'VALIDATION_PAYMENT_PAYOUT_METHOD');
+    }
+    clean.payoutMethodId = String(body.payoutMethodId);
+  }
+
+  for (const [key, max] of Object.entries(PAYMENT_TEXT_LIMITS)) {
+    if (body[key] === undefined || body[key] === '') continue;
+    if (typeof body[key] !== 'string') return fail(`${key} must be text`, 'VALIDATION_FIELD_TEXT_TYPE', { field: key });
+    const value = body[key].trim();
+    if (value.length > max) {
+      return fail(`${key} must be at most ${max} characters`, 'VALIDATION_PAYMENT_TEXT_LENGTH', { field: key, max });
+    }
+    if (value) clean[key] = value;
+  }
+
+  req.body = clean;
+  next();
+};
+
+const validatePaymentDispute = (req, res, next) => {
+  const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+  if (reason.length > 200) {
+    return respond(res, 400, 'VALIDATION_PAYMENT_TEXT_LENGTH', 'reason must be at most 200 characters', { field: 'reason', max: 200 });
+  }
+  req.body = { reason: reason || undefined };
+  next();
+};
+
 module.exports = {
+  validatePayoutMethod,
+  validatePaymentRecord,
+  validatePaymentDispute,
   isValidLat,
   isValidLng,
   validateCoordinates,

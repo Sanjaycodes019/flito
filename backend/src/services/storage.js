@@ -117,6 +117,26 @@ const uploadAvatar = async (file, { folder }) => {
   return { url, publicId: result.public_id };
 };
 
+// ── Payment images ───────────────────────────────────────────────────────
+
+// An owner's payment QR, or a shipper's screenshot of a transfer. One image,
+// downscaled like other photos and served with f_auto (see uploadAvatar), so
+// an iPhone's HEIC still shows, and stays scannable, on every device.
+const uploadPaymentImage = async (file, { folder }) => {
+  ensureConfigured();
+  const result = await streamUpload(
+    file.buffer,
+    { ...IMAGE_UPLOAD_OPTIONS, folder },
+    'That file could not be read as an image',
+  );
+  const url = cloudinary.url(result.public_id, {
+    secure: true,
+    version: result.version,
+    fetch_format: 'auto',
+  });
+  return { url, publicId: result.public_id };
+};
+
 // ── Private documents (KYC) ──────────────────────────────────────────────
 
 // Identity documents are stored as "authenticated" assets: their plain delivery
@@ -156,6 +176,7 @@ module.exports = {
   isConfigured,
   uploadImages,
   uploadAvatar,
+  uploadPaymentImage,
   uploadPrivateDocument,
   privateDocumentUrl,
   deleteAssets,

@@ -52,7 +52,10 @@
     "inactive": "निष्क्रिय",
     "arrived": "पुगियो",
     "picked_up": "उठाइयो",
-    "delivered": "डिलिभर भयो"
+    "delivered": "डिलिभर भयो",
+    "reported": "पुष्टि हुन बाँकी",
+    "disputed": "आएन",
+    "partial": "आंशिक तिरिएको"
   },
   "selectField": {
     "select": "छान्नुहोस्",

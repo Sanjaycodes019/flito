@@ -13,6 +13,7 @@ import DeliverySignatureSection from '../components/bookings/DeliverySignatureSe
 import LocationSharingToggle from '../components/bookings/LocationSharingToggle';
 import CallContactsCard from '../components/bookings/CallContactsCard';
 import DriverJobCard from '../components/bookings/DriverJobCard';
+import PaymentSection from '../components/bookings/PaymentSection';
 import TrackingMap from '../components/map/TrackingMap';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import useScreenLayout from '../hooks/useScreenLayout';
@@ -274,6 +275,14 @@ const BookingDetailScreen = ({ route }) => {
               />
               <Button title={t('bookings:detail.findAndAssign')} icon="search" onPress={handleAssignDriver} loading={busy} />
             </Card>
+          )}
+
+          {/* The driver isn't part of paying for the trip. */}
+          {(isShipper || isOwner) && (
+            <PaymentSection
+              bookingId={bookingId}
+              ownerName={booking.ownerId?.companyName || booking.ownerId?.firstName || t('bookings:detail.theOwner')}
+            />
           )}
 
           <DeliveryProofSection booking={booking} canUpload={canAddProof} onChanged={fetchBooking} />

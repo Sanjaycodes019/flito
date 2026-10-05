@@ -314,7 +314,12 @@ const UserDetailScreen = ({ route }) => {
               <InfoItem label={t('admin:detail.user.notifications')} value={user.pushEnabled ? t('admin:detail.user.pushOn') : t('admin:detail.user.pushOff')} />
               <InfoItem label={t('admin:detail.user.memberSinceLabel')} value={formatWhen(user.memberSince)} />
               {user.role === 'owner' || user.bank ? (
-                <InfoItem label={t('admin:detail.user.bank')} value={user.bank ? [user.bank.bankName, user.bank.account].filter(Boolean).join(' · ') : null} />
+                <InfoItem
+                  label={t('admin:detail.user.bank')}
+                  value={user.payoutMethods?.length
+                    ? user.payoutMethods.map((method) => [method.name, method.account, method.hasQr ? 'QR' : null].filter(Boolean).join(' ')).join(', ')
+                    : user.bank ? [user.bank.bankName, user.bank.account].filter(Boolean).join(' · ') : null}
+                />
               ) : null}
               {user.role !== 'admin' ? <InfoItem label={t('admin:detail.user.wallet')} value={formatCurrency(user.walletBalance)} /> : null}
             </InfoGrid>

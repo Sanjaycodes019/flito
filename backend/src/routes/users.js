@@ -3,12 +3,13 @@ const router = express.Router();
 
 const usersController = require('../controllers/usersController');
 const fleetDrivers = require('../controllers/fleetDriversController');
+const payoutMethods = require('../controllers/payoutMethodsController');
 const authMiddleware = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
 const {
-  validateProfileUpdate, validatePushToken, validateAddDriver, validateSetPin,
+  validateProfileUpdate, validatePushToken, validateAddDriver, validateSetPin, validatePayoutMethod,
 } = require('../middleware/validators');
-const { document, avatar } = require('../middleware/upload');
+const { document, avatar, qrCode } = require('../middleware/upload');
 
 // Admins don't verify their own identity through this flow.
 const VERIFYING_ROLES = ['shipper', 'owner', 'driver'];
@@ -42,6 +43,20 @@ router.post(
   document(),
   fleetDrivers.uploadLicense,
 );
+
+// How an owner takes payment: bank accounts and wallets, each with an
+// optional QR image in the multipart field "qr".
+router.get('/me/payout-methods', requireRole('owner'), payoutMethods.listPayoutMethods);
+router.post('/me/payout-methods', requireRole('owner'), qrCode(), validatePayoutMethod, payoutMethods.addPayoutMethod);
+router.patch(
+  '/me/payout-methods/:methodId',
+  requireRole('owner'),
+  qrCode(),
+  validatePayoutMethod,
+  payoutMethods.updatePayoutMethod,
+);
+router.post('/me/payout-methods/:methodId/primary', requireRole('owner'), payoutMethods.setPrimaryPayoutMethod);
+router.delete('/me/payout-methods/:methodId', requireRole('owner'), payoutMethods.deletePayoutMethod);
 
 router.get('/me/kyc', requireRole(...VERIFYING_ROLES), usersController.getMyKyc);
 // Status and storage are checked before any file bytes are accepted.

@@ -12,6 +12,7 @@ const { historyFor, recordAdminAction } = require('../../services/audit');
 const {
   paginationParams, paginationMeta, searchClause, enumFilter, idFilter, allOf, requireObjectId, fullName, PERSON_FIELDS, personSummary,
 } = require('./helpers');
+const { sortPayoutMethods, adminPayoutView } = require('../../services/payoutView');
 
 const FIELDS = 'firstName lastName email phone role status kycStatus companyName rating totalRatings createdAt avatar addedBy';
 const ROLES = ['shipper', 'owner', 'driver', 'admin'];
@@ -75,6 +76,7 @@ const adminUserView = (user) => ({
   bank: user.bankDetails?.bankName || user.bankDetails?.accountNumber
     ? { bankName: user.bankDetails.bankName || null, account: maskAccount(user.bankDetails.accountNumber) }
     : null,
+  payoutMethods: sortPayoutMethods(user.payoutMethods).map(adminPayoutView),
   walletBalance: user.walletBalance || 0,
   rating: user.rating || 0,
   totalRatings: user.totalRatings || 0,

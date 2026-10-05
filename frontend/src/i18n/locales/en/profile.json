@@ -23,7 +23,8 @@
       "company": "Add your company name",
       "address": "Add your address",
       "identityFix": "Fix your identity documents",
-      "identityVerify": "Verify your identity"
+      "identityVerify": "Verify your identity",
+      "payouts": "Add how shippers pay you"
     },
     "stepsDone": "{{done}} of {{total}} steps done"
   },
@@ -69,6 +70,10 @@
     "about": {
       "title": "About",
       "description": "Details people see on your profile"
+    },
+    "payouts": {
+      "title": "Getting paid",
+      "description": "The bank accounts and wallets shippers pay you into."
     }
   },
   "rows": {
@@ -92,7 +97,11 @@
     "setPin": "Set a login PIN",
     "changePin": "Change login PIN",
     "pinSet": "You can log in with your phone number",
-    "pinHint": "Log in with your phone number instead of email"
+    "pinHint": "Log in with your phone number instead of email",
+    "payouts": "Payment details",
+    "payoutCount_one": "{{count}} account",
+    "payoutCount_other": "{{count}} accounts",
+    "payoutsNone": "Not added"
   },
   "logout": {
     "title": "Log out",

@@ -45,13 +45,22 @@ const signatureUpload = multer({
 // One image in the multipart field "signature".
 const signature = () => signatureUpload.single('signature');
 
-const avatarUpload = multer({
+// One image at a time: a profile photo, a payment QR or a payment screenshot.
+const singleImageUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_IMAGE_BYTES, files: 1 },
   fileFilter: onlyTypes(IMAGE_TYPES, 'Only JPEG, PNG, WebP or HEIC images are allowed'),
 });
 
 // One image in the multipart field "avatar" (a profile photo).
-const avatar = () => avatarUpload.single('avatar');
+const avatar = () => singleImageUpload.single('avatar');
 
-module.exports = { photos, document, signature, avatar, MAX_IMAGE_BYTES, MAX_DOCUMENT_BYTES, MAX_SIGNATURE_BYTES };
+// One image in the multipart field "qr" (an owner's payment QR code).
+const qrCode = () => singleImageUpload.single('qr');
+
+// One image in the multipart field "proof" (a screenshot of a payment).
+const paymentProof = () => singleImageUpload.single('proof');
+
+module.exports = {
+  photos, document, signature, avatar, qrCode, paymentProof, MAX_IMAGE_BYTES, MAX_DOCUMENT_BYTES, MAX_SIGNATURE_BYTES,
+};

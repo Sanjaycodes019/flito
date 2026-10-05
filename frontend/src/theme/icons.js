@@ -79,6 +79,12 @@ const GLYPHS = {
   // Money
   price: 'currency-inr', // Rs. amounts, closest available currency glyph
   wallet: 'wallet-outline',
+  bank: 'bank-outline',
+  qr: 'qrcode',
+  qrScan: 'qrcode-scan',
+  receipt: 'receipt',
+  paymentCheck: 'cash-check',
+  shieldLock: 'shield-lock-outline',
   quote: 'file-document-edit-outline',
   counterOffer: 'swap-horizontal',
 

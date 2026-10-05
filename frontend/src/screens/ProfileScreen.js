@@ -98,6 +98,8 @@ const ProfileScreen = ({ navigation }) => {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
   const address = user?.address?.formatted;
   const goAddress = () => navigation.navigate('Address');
+  const goPayments = () => navigation.navigate('PaymentMethods');
+  const payoutCount = user?.payoutMethodCount || 0;
   const kycStatusKey = ['pending', 'approved', 'rejected'].includes(user?.kycStatus) ? user.kycStatus : 'not_submitted';
   const kycRow = {
     value: t(`profile:kyc.${kycStatusKey}.value`),
@@ -113,6 +115,7 @@ const ProfileScreen = ({ navigation }) => {
     },
     { key: 'phone', done: Boolean(user?.phone), label: t('profile:strength.steps.phone'), onPress: goEdit },
     isOwner && { key: 'company', done: Boolean(user?.companyName), label: t('profile:strength.steps.company'), onPress: goEdit },
+    isOwner && { key: 'payouts', done: payoutCount > 0, label: t('profile:strength.steps.payouts'), onPress: goPayments },
     { key: 'address', done: Boolean(address), label: t('profile:strength.steps.address'), onPress: goAddress },
     verifies && {
       key: 'identity',
@@ -150,6 +153,18 @@ const ProfileScreen = ({ navigation }) => {
         )}
         <SettingsRow icon="location" label={t('profile:rows.address')} value={address || t('profile:rows.notAdded')} valueMuted={!address} onPress={goAddress} />
       </SettingsSection>
+
+      {isOwner && (
+        <SettingsSection title={t('profile:sections.payouts.title')} description={t('profile:sections.payouts.description')}>
+          <SettingsRow
+            icon="bank"
+            label={t('profile:rows.payouts')}
+            value={payoutCount ? t('profile:rows.payoutCount', { count: payoutCount }) : t('profile:rows.payoutsNone')}
+            valueMuted={!payoutCount}
+            onPress={goPayments}
+          />
+        </SettingsSection>
+      )}
 
       <SettingsSection title={t('profile:sections.verification.title')} description={t('profile:sections.verification.description')}>
         {user?.email ? (

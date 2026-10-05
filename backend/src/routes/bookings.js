@@ -3,10 +3,13 @@ const router = express.Router();
 
 const bookingsController = require('../controllers/bookingsController');
 const deliveryProofController = require('../controllers/deliveryProofController');
+const paymentsController = require('../controllers/paymentsController');
 const authMiddleware = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
-const { validateRating, validateCoordinates } = require('../middleware/validators');
-const { photos, signature } = require('../middleware/upload');
+const {
+  validateRating, validateCoordinates, validatePaymentRecord, validatePaymentDispute,
+} = require('../middleware/validators');
+const { photos, signature, paymentProof } = require('../middleware/upload');
 
 router.use(authMiddleware);
 
@@ -32,5 +35,12 @@ router.post(
   signature(),
   deliveryProofController.addDeliverySignature,
 );
+
+// Payments between the shipper and the owner. A screenshot of the transfer
+// can come in the multipart field "proof".
+router.get('/:id/payments', paymentsController.listPayments);
+router.post('/:id/payments', paymentProof(), validatePaymentRecord, paymentsController.recordPayment);
+router.post('/:id/payments/:paymentId/confirm', paymentsController.confirmPayment);
+router.post('/:id/payments/:paymentId/dispute', validatePaymentDispute, paymentsController.disputePayment);
 
 module.exports = router;

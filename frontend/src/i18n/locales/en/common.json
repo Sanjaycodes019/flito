@@ -52,7 +52,10 @@
     "inactive": "inactive",
     "arrived": "arrived",
     "picked_up": "picked up",
-    "delivered": "delivered"
+    "delivered": "delivered",
+    "reported": "awaiting confirmation",
+    "disputed": "not received",
+    "partial": "partly paid"
   },
   "selectField": {
     "select": "Select",
