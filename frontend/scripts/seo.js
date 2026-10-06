@@ -77,6 +77,8 @@ const headTags = (seo, page, meta) => {
     `<meta name="description" content="${escapeHtml(meta.description)}" />`,
     '<meta name="robots" content="index, follow, max-image-preview:large" />',
     '<meta name="theme-color" content="#12161A" />',
+    `<meta name="author" content="${escapeHtml(seo.AUTHOR.name)}" />`,
+    `<link rel="author" href="${seo.AUTHOR.url}" />`,
     ...seo.SEO_LANGUAGES.map((lang) => `<link rel="alternate" hreflang="${lang}" href="${seo.pageUrl(page.path, lang)}" />`),
     `<link rel="alternate" hreflang="x-default" href="${seo.pageUrl(page.path)}" />`,
     '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
@@ -101,7 +103,7 @@ const headTags = (seo, page, meta) => {
 };
 
 // What a browser without JavaScript shows: the page's heading and opening
-// paragraph, and links to every public page.
+// paragraph, links to every public page, and who built the site.
 const noscript = (seo, page) => {
   const hero = heroOf(page.key);
   const links = seo.SEO_PAGES
@@ -113,6 +115,7 @@ const noscript = (seo, page) => {
     hero?.lead ? `<p>${escapeHtml(hero.lead)}</p>` : '',
     '<p>FLITO needs JavaScript to post loads and book trucks. Please turn it on to use the site.</p>',
     `<nav><ul>${links}</ul></nav>`,
+    `<p>Built by <a href="${seo.AUTHOR.url}" rel="author">${escapeHtml(seo.AUTHOR.name)}</a></p>`,
     '</noscript>',
   ].join('\n    ');
 };

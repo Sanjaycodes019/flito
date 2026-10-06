@@ -57,6 +57,10 @@ describe('the web build', () => {
     expect(html).toContain('<link rel="alternate" hreflang="en" href="https://flito.sanjay019.com.np/about?lang=en" />');
     expect(html).toContain('<meta property="og:image" content="https://flito.sanjay019.com.np/og-image.png" />');
     expect(html).toContain('"@type":"Organization"');
+    expect(html).toContain('<meta name="author" content="Sanjay Gupta" />');
+    expect(html).toContain('<link rel="author" href="https://guptasanjay.com.np" />');
+    expect(html).toContain('"author":{"@id":"https://guptasanjay.com.np/#person"}');
+    expect(html).toContain('<p>Built by <a href="https://guptasanjay.com.np" rel="author">Sanjay Gupta</a></p>');
     expect(html).toContain('<a href="/privacy">Privacy Policy</a>');
     expect(html).toContain('http-equiv=');
     expect(html).not.toContain('You need to enable JavaScript');

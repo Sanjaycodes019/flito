@@ -52,8 +52,9 @@ export const pageMeta = (text, key) => ({
   description: text(`site:pages.${key}.description`),
 });
 
-// Schema.org data for search engines: FLITO as an organisation, and the site,
-// with who made it.
+// Schema.org data for search engines: FLITO as an organisation, the site, and
+// who built it.
+const AUTHOR_ID = `${AUTHOR.url}/#person`;
 export const structuredData = (description) => ({
   '@context': 'https://schema.org',
   '@graph': [
@@ -73,7 +74,9 @@ export const structuredData = (description) => ({
       url: `${SITE_URL}/`,
       inLanguage: SEO_LANGUAGES,
       publisher: { '@id': `${SITE_URL}/#organization` },
-      creator: { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url },
+      creator: { '@id': AUTHOR_ID },
+      author: { '@id': AUTHOR_ID },
     },
+    { '@type': 'Person', '@id': AUTHOR_ID, name: AUTHOR.name, url: AUTHOR.url },
   ],
 });
