@@ -69,6 +69,19 @@ describe('the web build', () => {
     expect(sitemap).toContain('<loc>https://flito.sanjay019.com.np/help?lang=en</loc>');
   });
 
+  // Vercel can't read the page list, so vercel.json names the pages itself:
+  // /about is rewritten to about.html, and /about.html sent to /about.
+  // (cleanUrls would do it for every page, but it also redirects any .html
+  // address, which breaks the search engines' verification files.)
+  it('serves each page\'s HTML at its address on Vercel', () => {
+    const vercel = require('../vercel.json');
+    const pattern = `:page(${PUBLIC_PAGES.map((page) => page.path).join('|')})`;
+    expect(vercel.cleanUrls).toBeFalsy();
+    expect(vercel.rewrites[0]).toEqual({ source: `/${pattern}`, destination: '/:page.html' });
+    expect(vercel.redirects[0]).toMatchObject({ source: `/${pattern}.html`, destination: '/:page', permanent: true });
+    expect(vercel.rewrites[vercel.rewrites.length - 1]).toEqual({ source: '/(.*)', destination: '/index.html' });
+  });
+
   it('keeps crawlers out of accounts and points them to the sitemap', () => {
     const robots = renderRobots(seo);
     expect(robots).toContain('Disallow: /profile');

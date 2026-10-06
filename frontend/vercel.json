@@ -1,10 +1,20 @@
 {
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
-  "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:page(how-it-works|safety|about|mission|help|contact|terms|privacy).html",
+      "destination": "/:page",
+      "permanent": true
+    }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/:page(how-it-works|safety|about|mission|help|contact|terms|privacy)",
+      "destination": "/:page.html"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {

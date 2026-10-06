@@ -10,7 +10,8 @@
 //                    links, link-preview tags, the site's structured data, and
 //                    a plain-HTML summary in <noscript>
 //   <page>.html      the same for each public page (/about is about.html;
-//                    vercel.json's cleanUrls serves it without the .html)
+//                    vercel.json rewrites /about to it, and redirects
+//                    /about.html to /about)
 //   sitemap.xml      every public page, in each language
 //   robots.txt       what crawlers may visit, and where the sitemap is
 //
