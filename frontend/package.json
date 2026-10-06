@@ -7,7 +7,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
-    "build:web": "expo export --platform web",
+    "build:web": "expo export --platform web && node scripts/seo.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint .",

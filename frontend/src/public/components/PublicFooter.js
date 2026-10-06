@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Linking } from 'react-native';
+import { View, Text, Pressable, Linking, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { changeLanguage } from '../../i18n';
 import { SUPPORT_EMAIL, SUPPORT_PHONE } from '../../utils/constants';
 import { FOOTER_GROUPS } from '../pages';
+import { AUTHOR } from '../seo';
 import useOpenPage from '../useOpenPage';
 import useSiteStyle, { SITE_WIDTH, landmark } from '../siteStyle';
 import { SiteBrand } from './PublicNavbar';
 
-const FooterLink = ({ label, onPress, icon }) => {
+const FooterLink = ({ label, onPress, href, icon }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <Pressable
       onPress={onPress}
+      href={href}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       accessibilityRole="link"
@@ -29,22 +31,25 @@ const FooterLink = ({ label, onPress, icon }) => {
 
 // The public site's footer, on the dark Deep Asphalt band: the brand and what
 // FLITO is for, every page in four columns, real contact routes when they are
-// configured, then the copyright line and a language switch.
+// configured, then the copyright line and a language switch, and last the
+// maker's credit.
 const PublicFooter = ({ onBackToTop }) => {
   const { t, i18n } = useTranslation();
   const site = useSiteStyle();
-  const { openPage, openAuth } = useOpenPage();
+  const { pageLink, authLink } = useOpenPage();
   const year = new Date().getFullYear();
   const columns = site.isPhone ? 2 : 4;
+  // The name is the link, wherever the language puts it in the sentence.
+  const [creditBefore, creditAfter = ''] = t('site:footer.madeBy', { name: '\u0000' }).split('\u0000');
 
   const groups = FOOTER_GROUPS.map((group) => (
     <View key={group.key} style={[styles.group, { width: `${100 / columns}%` }]}>
       <Text style={styles.groupTitle} accessibilityRole="header" aria-level={2}>{t(`site:footer.groups.${group.key}`)}</Text>
       {(group.items || []).map((key) => (
-        <FooterLink key={key} label={t(`site:pages.${key}.label`)} onPress={() => openPage(key)} />
+        <FooterLink key={key} label={t(`site:pages.${key}.label`)} {...pageLink(key)} />
       ))}
       {(group.auth || []).map((item) => (
-        <FooterLink key={item.key} label={t(`site:footer.auth.${item.key}`)} onPress={() => openAuth(item.route, item.params)} />
+        <FooterLink key={item.key} label={t(`site:footer.auth.${item.key}`)} {...authLink(item.route, item.params)} />
       ))}
     </View>
   ));
@@ -54,7 +59,7 @@ const PublicFooter = ({ onBackToTop }) => {
       <View style={[styles.inner, { maxWidth: SITE_WIDTH + site.gutter * 2, paddingHorizontal: site.gutter }]}>
         <View style={[styles.top, site.isDesktop && styles.topWide]}>
           <View style={[styles.brandCol, site.isDesktop && styles.brandColWide]}>
-            <SiteBrand onPress={() => openAuth('Landing')} inverse />
+            <SiteBrand {...authLink('Landing')} inverse />
             <Text style={styles.tagline}>{t('site:footer.tagline')}</Text>
             <Text style={styles.about}>{t('site:footer.about')}</Text>
             <View style={styles.made}>
@@ -98,6 +103,20 @@ const PublicFooter = ({ onBackToTop }) => {
             {onBackToTop ? <FooterLink icon="arrowUp" label={t('site:footer.backToTop')} onPress={onBackToTop} /> : null}
           </View>
         </View>
+
+        <Text style={styles.credit}>
+          {creditBefore}
+          <Text
+            style={styles.creditLink}
+            accessibilityRole="link"
+            {...(Platform.OS === 'web'
+              ? { href: AUTHOR.url, hrefAttrs: { target: '_blank', rel: 'noopener' } }
+              : { onPress: () => Linking.openURL(AUTHOR.url).catch(() => {}) })}
+          >
+            {AUTHOR.name}
+          </Text>
+          {creditAfter}
+        </Text>
       </View>
     </View>
   );
@@ -142,6 +161,9 @@ const styles = themedStyles(() => ({
   langOptionOn: { backgroundColor: 'rgba(255, 159, 0, 0.16)' },
   langText: { ...type.smallMedium, color: colors.textInverseMuted },
   langTextOn: { color: colors.primary },
+
+  credit: { ...type.small, fontSize: 12, lineHeight: 17, color: colors.textInverseMuted, textAlign: 'center', marginTop: spacing.xl },
+  creditLink: { color: colors.textInverse, textDecorationLine: 'underline' },
 }));
 
 export default PublicFooter;

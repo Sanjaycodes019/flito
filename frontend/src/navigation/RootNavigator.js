@@ -9,7 +9,8 @@ import { navigationRef } from './navigationRef';
 import { colors } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeProvider';
 import { adminLinkingScreens } from '../admin/navigation';
-import { publicLinkingScreens } from '../public/pages';
+import { publicLinkingScreens, AUTH_PATHS } from '../public/pages';
+import { applyPageMeta } from '../public/pageMeta';
 
 // Keeps screen transitions, tab bars, and the native back-swipe backdrop on
 // FLITO's own palette instead of React Navigation's default white/blue.
@@ -95,12 +96,12 @@ export const buildLinking = (signedIn) => ({
       },
     } : {
       // Signed out (AuthNavigator)
-      Landing: '',
+      Landing: AUTH_PATHS.Landing,
       ChooseLanguage: 'language',
-      Login: 'login',
-      PinLogin: 'driver-login',
+      Login: AUTH_PATHS.Login,
+      PinLogin: AUTH_PATHS.PinLogin,
       Signup: {
-        path: 'signup',
+        path: AUTH_PATHS.Signup,
         stringify: { googleIdToken: () => undefined, googleProfile: () => undefined },
       },
       AdminAccess: 'admin-access',
@@ -143,7 +144,11 @@ const RootNavigator = () => {
       documentTitle={documentTitle}
       fallback={<Spinner />}
       initialState={Platform.OS === 'web' ? undefined : lastNavigationState}
-      onStateChange={(state) => { lastNavigationState = state; }}
+      onReady={() => applyPageMeta(navigationRef.getCurrentRoute()?.name)}
+      onStateChange={(state) => {
+        lastNavigationState = state;
+        applyPageMeta(navigationRef.getCurrentRoute()?.name);
+      }}
     >
       {token ? <TabNavigator /> : <AuthNavigator />}
     </NavigationContainer>

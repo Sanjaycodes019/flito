@@ -57,6 +57,10 @@ export const SETTINGS_GROUPS = [
 // The short row of links at the foot of the log in pages and the laptop sidebar.
 export const QUICK_LINKS = ['about', 'help', 'terms', 'privacy'];
 
+// Web addresses of the screens the public site links to that aren't pages:
+// the landing page and the ways in. Signed out only.
+export const AUTH_PATHS = { Landing: '', Login: 'login', Signup: 'signup', PinLogin: 'driver-login' };
+
 // Web addresses. Signed out the pages sit at the top of the Auth stack; signed
 // in they live in the Profile stack, so `exact` keeps them at /terms rather
 // than /profile/terms.

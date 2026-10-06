@@ -2,39 +2,48 @@
   "pages": {
     "landing": {
       "label": "Home",
-      "title": "FLITO · Truck booking for Nepal"
+      "title": "FLITO · Truck booking for Nepal",
+      "description": "Book verified trucks anywhere in Nepal. Post a load, compare offers from truck owners, track the trip and help trucks earn on the way home. Free to join."
     },
     "howItWorks": {
       "label": "How it works",
-      "hint": "Step by step for shippers, owners and drivers"
+      "hint": "Step by step for shippers, owners and drivers",
+      "description": "How FLITO works for shippers, truck owners and drivers in Nepal: post a load, get offers, book a truck, track the trip and confirm delivery."
     },
     "safety": {
       "label": "Safety & trust",
-      "hint": "Verification, tracking and proof of delivery"
+      "hint": "Verification, tracking and proof of delivery",
+      "description": "How FLITO keeps freight safe in Nepal: checked IDs and truck papers, live trip tracking, photo proof of delivery and ratings after every trip."
     },
     "about": {
       "label": "About us",
-      "hint": "Who we are and what FLITO does"
+      "hint": "Who we are and what FLITO does",
+      "description": "FLITO is a truck booking platform for Nepal that connects people who need goods moved with verified truck owners and drivers."
     },
     "mission": {
       "label": "Our mission",
-      "hint": "Why we started FLITO"
+      "hint": "Why we started FLITO",
+      "description": "Our mission is to fill Nepal's trucks both ways: more income for owners and drivers, fairer prices for shippers, fewer empty kilometres."
     },
     "help": {
       "label": "Help center",
-      "hint": "Answers to common questions"
+      "hint": "Answers to common questions",
+      "description": "Answers to common questions about FLITO: signing up, posting loads, offers and prices, trips, payments and fees."
     },
     "contact": {
       "label": "Contact us",
-      "hint": "Reach the FLITO team"
+      "hint": "Reach the FLITO team",
+      "description": "Contact the FLITO team about your account, a load or a trip, or about working with us."
     },
     "terms": {
       "label": "Terms of Service",
-      "hint": "The rules for using FLITO"
+      "hint": "The rules for using FLITO",
+      "description": "The terms for using FLITO, Nepal's truck booking app and website, written in plain language."
     },
     "privacy": {
       "label": "Privacy Policy",
-      "hint": "What we collect and why"
+      "hint": "What we collect and why",
+      "description": "What FLITO collects, why it is needed, who can see it and the choices you have. FLITO never sells your data."
     }
   },
   "nav": {
@@ -50,6 +59,7 @@
     "tagline": "Freight & Load Interchange for Truck Operations",
     "about": "FLITO connects people who need goods moved with verified truck owners and drivers across Nepal, so trucks earn on the way back instead of driving home empty.",
     "madeIn": "Made in Nepal, for Nepal's roads",
+    "madeBy": "Made by {{name}}",
     "groups": {
       "product": "Product",
       "company": "Company",

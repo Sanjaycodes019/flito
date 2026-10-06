@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { storage } from '../services/storage';
+import { LANG_PARAM } from '../public/seo';
 
 import commonEn from './locales/en/common.json';
 import navigationEn from './locales/en/navigation.json';
@@ -87,7 +88,28 @@ const resources = {
 let languageChosen = false;
 export const isLanguageChosen = () => languageChosen;
 
+// On the web an address can ask for a language (/about?lang=en), so each
+// language has its own address for search engines and shared links. It holds
+// for this visit; it isn't saved as the person's choice.
+const languageFromAddress = () => {
+  if (typeof window === 'undefined' || !window.location?.search) return null;
+  const lng = new URLSearchParams(window.location.search).get(LANG_PARAM);
+  return SUPPORTED_LANGUAGES.includes(lng) ? lng : null;
+};
+
+// The web page's language follows the app's, so browsers, screen readers and
+// search engines read it as Nepali or English.
+const syncDocumentLanguage = (lng) => {
+  if (typeof document !== 'undefined' && document.documentElement) document.documentElement.lang = lng;
+};
+i18n.on('languageChanged', syncDocumentLanguage);
+
 const resolveInitialLanguage = async () => {
+  const fromAddress = languageFromAddress();
+  if (fromAddress) {
+    languageChosen = true;
+    return fromAddress;
+  }
   const stored = await storage.getItem(LANGUAGE_STORAGE_KEY);
   if (SUPPORTED_LANGUAGES.includes(stored)) {
     languageChosen = true;
@@ -127,6 +149,13 @@ export const changeLanguage = async (lng) => {
   await i18n.changeLanguage(lng);
   await storage.setItem(LANGUAGE_STORAGE_KEY, lng);
   languageChosen = true;
+  // A language picked here outranks one asked for by the address, so drop
+  // ?lang= or a reload would switch back.
+  if (languageFromAddress() && typeof window !== 'undefined' && window.history?.replaceState) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete(LANG_PARAM);
+    window.history.replaceState(window.history.state, '', url.toString());
+  }
 };
 
 export default i18n;

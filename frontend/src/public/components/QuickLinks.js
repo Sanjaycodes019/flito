@@ -5,11 +5,12 @@ import { colors, spacing, type, themedStyles } from '../../theme/tokens';
 import { QUICK_LINKS } from '../pages';
 import useOpenPage from '../useOpenPage';
 
-const QuickLink = ({ label, onPress, small }) => {
+const QuickLink = ({ label, onPress, href, small }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <Pressable
       onPress={onPress}
+      href={href}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       accessibilityRole="link"
@@ -24,7 +25,7 @@ const QuickLink = ({ label, onPress, small }) => {
 // pages, and under the account card in the laptop sidebar.
 const QuickLinks = ({ small = false, align = 'center', style }) => {
   const { t } = useTranslation();
-  const { openPage } = useOpenPage();
+  const { pageLink } = useOpenPage();
   return (
     <View
       style={[styles.row, { justifyContent: align === 'center' ? 'center' : 'flex-start' }, style]}
@@ -33,7 +34,7 @@ const QuickLinks = ({ small = false, align = 'center', style }) => {
       {QUICK_LINKS.map((key, index) => (
         <React.Fragment key={key}>
           {index > 0 ? <Text style={styles.dot} accessible={false}>·</Text> : null}
-          <QuickLink label={t(`site:pages.${key}.label`)} onPress={() => openPage(key)} small={small} />
+          <QuickLink label={t(`site:pages.${key}.label`)} {...pageLink(key)} small={small} />
         </React.Fragment>
       ))}
     </View>

@@ -234,12 +234,13 @@ export const CheckList = ({ items, icon = 'success', tint = 'teal', style, dense
 };
 
 // An inline text link: underlined on hover, in the band's accent colour.
-export const TextLink = ({ label, onPress, icon = 'arrowRight', style, textStyle }) => {
+export const TextLink = ({ label, onPress, href, icon = 'arrowRight', style, textStyle }) => {
   const tone = useTone();
   const [hovered, setHovered] = useState(false);
   return (
     <Pressable
       onPress={onPress}
+      href={href}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       accessibilityRole="link"

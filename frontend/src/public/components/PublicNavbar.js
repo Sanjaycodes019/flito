@@ -7,7 +7,7 @@ import Button from '../../components/common/Button';
 import QuickToggles from '../../components/common/QuickToggles';
 import { colors, spacing, radius, shadow, type, iconSize, themedStyles } from '../../theme/tokens';
 import { PUBLIC_PAGES } from '../pages';
-import useOpenPage from '../useOpenPage';
+import useOpenPage, { linkTo, pageHref, authHref } from '../useOpenPage';
 import useSiteStyle, { SITE_WIDTH, landmark } from '../siteStyle';
 
 const LOGO = require('../../../assets/icon.png');
@@ -15,18 +15,19 @@ const NAV_PAGES = PUBLIC_PAGES.filter((page) => page.nav);
 
 // The FLITO mark, linking to the landing page. The wordmark keeps the true
 // brand amber: WCAG contrast minimums do not apply to logotype.
-export const SiteBrand = ({ onPress, inverse = false, size = 36 }) => (
-  <Pressable onPress={onPress} accessibilityRole="link" accessibilityLabel="FLITO" style={styles.brand} hitSlop={6}>
+export const SiteBrand = ({ onPress, href, inverse = false, size = 36 }) => (
+  <Pressable onPress={onPress} href={href} accessibilityRole="link" accessibilityLabel="FLITO" style={styles.brand} hitSlop={6}>
     <Image source={LOGO} style={{ width: size, height: size, borderRadius: radius.md }} resizeMode="contain" accessible={false} />
     <Text style={[styles.wordmark, inverse && styles.wordmarkInverse, size < 36 && styles.wordmarkSmall]}>FLITO</Text>
   </Pressable>
 );
 
-const NavLink = ({ label, active, onPress }) => {
+const NavLink = ({ label, active, onPress, href }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <Pressable
       onPress={onPress}
+      href={href}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       accessibilityRole="link"
@@ -55,7 +56,7 @@ const MenuSheet = ({ visible, onClose, pageKey }) => {
         <Pressable style={styles.menuBackdrop} onPress={onClose} accessibilityLabel={t('site:nav.closeMenu')} accessibilityRole="button" />
         <View style={[styles.menuSheet, site.windowWidth >= 600 && styles.menuSheetSide, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={styles.menuHead}>
-            <SiteBrand onPress={() => go(() => openAuth('Landing'))} />
+            <SiteBrand {...linkTo(authHref('Landing'), () => go(() => openAuth('Landing')))} />
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('site:nav.closeMenu')} style={styles.iconButton} hitSlop={8}>
               <Icon name="close" size={iconSize.lg} color={colors.textPrimary} />
             </Pressable>
@@ -68,7 +69,7 @@ const MenuSheet = ({ visible, onClose, pageKey }) => {
               return (
                 <Pressable
                   key={page.key}
-                  onPress={() => go(() => openPage(page.key))}
+                  {...linkTo(pageHref(page.key), () => go(() => openPage(page.key)))}
                   accessibilityRole="link"
                   aria-current={active ? 'page' : undefined}
                   style={({ pressed }) => [styles.menuRow, (active || pressed) && styles.menuRowActive]}
@@ -107,20 +108,20 @@ const MenuSheet = ({ visible, onClose, pageKey }) => {
 const PublicNavbar = ({ pageKey, elevated = false }) => {
   const { t } = useTranslation();
   const site = useSiteStyle();
-  const { openPage, openAuth } = useOpenPage();
+  const { openAuth, pageLink, authLink } = useOpenPage();
   const [menuOpen, setMenuOpen] = useState(false);
   const wide = site.isWideWindow;
 
   return (
     <View style={[styles.bar, elevated && styles.barElevated]} {...landmark('banner')}>
       <View style={[styles.inner, { maxWidth: SITE_WIDTH + site.gutter * 2, paddingHorizontal: site.gutter, height: wide ? 76 : 64 }]}>
-        <SiteBrand onPress={() => openAuth('Landing')} />
+        <SiteBrand {...authLink('Landing')} />
 
         {wide ? (
           <>
             <View style={styles.links} {...landmark('navigation')}>
               {NAV_PAGES.map((page) => (
-                <NavLink key={page.key} label={t(`site:pages.${page.key}.label`)} active={page.key === pageKey} onPress={() => openPage(page.key)} />
+                <NavLink key={page.key} label={t(`site:pages.${page.key}.label`)} active={page.key === pageKey} {...pageLink(page.key)} />
               ))}
             </View>
             <View style={styles.actions}>

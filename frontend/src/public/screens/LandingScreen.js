@@ -30,7 +30,7 @@ const FAQ_PICKS = [['offers', 3], ['account', 0], ['offers', 0], ['trips', 0], [
 const Hero = () => {
   const { t, list } = useContent();
   const site = useSiteStyle();
-  const { openAuth } = useOpenPage();
+  const { openAuth, authLink } = useOpenPage();
   const side = site.isDesktop;
   // The title's second line ("both ways.") is the promise, so it is in amber.
   const [titleStart, titleAccent] = t('site:landing.hero.title').split('\n');
@@ -56,7 +56,7 @@ const Hero = () => {
               <SiteButton title={t('site:landing.hero.shipper')} icon="load" onPress={() => openAuth('Signup', { role: 'shipper' })} />
               <SiteButton title={t('site:landing.hero.owner')} icon="truck" variant="outline" onPress={() => openAuth('Signup', { role: 'owner' })} />
             </View>
-            <TextLink label={t('site:landing.hero.driver')} icon="arrowRight" onPress={() => openAuth('PinLogin')} style={styles.driverLink} />
+            <TextLink label={t('site:landing.hero.driver')} icon="arrowRight" {...authLink('PinLogin')} style={styles.driverLink} />
 
             <View style={styles.trustRow}>
               {list('site:landing.hero.trust').map((item) => (
@@ -113,7 +113,7 @@ const Problem = () => {
 
 const HowItWorks = () => {
   const { t, list } = useContent();
-  const { openPage } = useOpenPage();
+  const { pageLink } = useOpenPage();
   const [role, setRole] = useState('shipper');
   return (
     <Section tone="surface" eyebrow={t('site:landing.how.eyebrow')} eyebrowIcon="guide" title={t('site:landing.how.title')} lead={t('site:landing.how.lead')}>
@@ -124,7 +124,7 @@ const HowItWorks = () => {
         tabs={ROLES.map((r) => ({ key: r.key, icon: r.icon, label: t(`site:roles.${r.key}.label`) }))}
       />
       <StepList steps={list(`site:roles.${role}.steps`)} />
-      <TextLink label={t('site:landing.how.seeGuide')} onPress={() => openPage('howItWorks')} style={styles.sectionLink} />
+      <TextLink label={t('site:landing.how.seeGuide')} {...pageLink('howItWorks')} style={styles.sectionLink} />
     </Section>
   );
 };
@@ -247,7 +247,7 @@ const VerifiedMock = () => {
 
 const Trust = () => {
   const { t, list } = useContent();
-  const { openPage } = useOpenPage();
+  const { pageLink } = useOpenPage();
   const site = useSiteStyle();
   const side = site.isDesktop;
   return (
@@ -256,7 +256,7 @@ const Trust = () => {
         <View style={side ? styles.splitText : null}>
           <SectionHeader eyebrow={t('site:landing.trust.eyebrow')} eyebrowIcon="verified" title={t('site:landing.trust.title')} lead={t('site:landing.trust.lead')} style={styles.headerTight} />
           <CheckList items={list('site:landing.trust.points')} />
-          <TextLink label={t('site:landing.trust.link')} onPress={() => openPage('safety')} style={styles.sectionLink} />
+          <TextLink label={t('site:landing.trust.link')} {...pageLink('safety')} style={styles.sectionLink} />
         </View>
         <View style={[side ? styles.splitCards : styles.mockStacked]}>
           <VerifiedMock />
@@ -268,7 +268,7 @@ const Trust = () => {
 
 const Faq = () => {
   const { t, list } = useContent();
-  const { openPage } = useOpenPage();
+  const { pageLink } = useOpenPage();
   const topics = list('site:help.topics');
   const items = FAQ_PICKS
     .map(([key, index]) => topics.find((topic) => topic.key === key)?.items?.[index])
@@ -276,7 +276,7 @@ const Faq = () => {
   return (
     <Section tone="surface" eyebrow={t('site:landing.faq.eyebrow')} eyebrowIcon="faq" title={t('site:landing.faq.title')} align="center" width={820}>
       <FaqList items={items} defaultOpenFirst />
-      <TextLink label={t('site:landing.faq.link')} onPress={() => openPage('help')} style={[styles.sectionLink, styles.centreLink]} />
+      <TextLink label={t('site:landing.faq.link')} {...pageLink('help')} style={[styles.sectionLink, styles.centreLink]} />
     </Section>
   );
 };
