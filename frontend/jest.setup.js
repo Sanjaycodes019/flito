@@ -62,10 +62,12 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => 'test-nonce' }));
 
 // react-native-svg has no meaningful behavior to exercise under Jest (it's
 // only used for static marks: the Google "G" and the public pages' route
-// art); a stub avoids loading its native view registration.
+// art and hero glow); a stub avoids loading its native view registration.
 jest.mock('react-native-svg', () => {
   const { View } = require('react-native');
-  return { __esModule: true, default: View, Svg: View, Path: View, Circle: View, G: View };
+  return {
+    __esModule: true, default: View, Svg: View, Path: View, Circle: View, G: View, Rect: View, Defs: View, RadialGradient: View, Stop: View,
+  };
 });
 
 // @expo/vector-icons pulls in expo-font/expo-asset, which reach for native

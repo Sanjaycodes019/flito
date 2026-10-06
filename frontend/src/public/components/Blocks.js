@@ -99,6 +99,7 @@ export const SectionHeader = ({ eyebrow, eyebrowIcon, title, lead, align = 'left
 };
 
 // A full-width band. `space` overrides the vertical padding; `width` the column.
+// `backdrop` is decoration drawn across the whole band, behind the content.
 export const Section = ({
   tone = 'plain',
   eyebrow,
@@ -113,13 +114,15 @@ export const Section = ({
   style,
   innerStyle,
   onLayout,
+  backdrop,
 }) => {
   const site = useSiteStyle();
   const palette = TONES[tone] || TONES.plain;
   const pad = space ?? site.sectionSpace;
   return (
     <ToneContext.Provider value={tone}>
-      <View style={[{ backgroundColor: palette.background, paddingVertical: pad }, style]} onLayout={onLayout}>
+      <View style={[{ backgroundColor: palette.background, paddingVertical: pad }, backdrop && styles.clipped, style]} onLayout={onLayout}>
+        {backdrop}
         <Container width={width} style={innerStyle}>
           {eyebrow || title || lead ? (
             <SectionHeader eyebrow={eyebrow} eyebrowIcon={eyebrowIcon} title={title} lead={lead} align={align} width={headerWidth} />
@@ -147,18 +150,23 @@ export const IconTile = ({ icon, tint = 'amber', size = 48, style }) => {
   );
 };
 
-// A bordered card in the band's own card colour. `onPress` makes it a link.
-export const SiteCard = ({ children, onPress, accessibilityLabel, style, padded = true }) => {
+// A bordered card in the band's own card colour. `onPress` makes it a link;
+// `hoverable` gives a plain card the same lift under a mouse, without making
+// it something to tab to or tap.
+export const SiteCard = ({ children, onPress, accessibilityLabel, style, padded = true, hoverable = false }) => {
   const tone = useTone();
   const [hovered, setHovered] = useState(false);
   const base = [
     styles.card,
     padded && styles.cardPadded,
     { backgroundColor: tone.card, borderColor: hovered ? colors.primaryText : tone.cardBorder },
-    hovered && shadow.level2,
+    hovered && [shadow.level2, styles.cardLifted],
     style,
   ];
-  if (!onPress) return <View style={base}>{children}</View>;
+  if (!onPress) {
+    const hover = hoverable ? { onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) } : null;
+    return <View style={base} {...hover}>{children}</View>;
+  }
   return (
     <Pressable
       onPress={onPress}
@@ -177,7 +185,7 @@ export const SiteCard = ({ children, onPress, accessibilityLabel, style, padded 
 export const FeatureCard = ({ icon, tint, title, body, children, onPress, style }) => {
   const tone = useTone();
   return (
-    <SiteCard onPress={onPress} accessibilityLabel={title} style={[styles.feature, style]}>
+    <SiteCard onPress={onPress} accessibilityLabel={title} style={[styles.feature, style]} hoverable>
       {icon ? <IconTile icon={icon} tint={tint} /> : null}
       <Text style={[styles.featureTitle, { color: tone.title }]}>{title}</Text>
       {body ? <Text style={[styles.featureBody, { color: tone.body }]}>{body}</Text> : null}
@@ -283,6 +291,10 @@ const styles = themedStyles(() => ({
   card: { borderWidth: 1, borderRadius: radius.xl },
   cardPadded: { padding: spacing.xxl },
   cardPressed: { opacity: 0.92 },
+  cardLifted: { transform: [{ translateY: -2 }] },
+  // A backdrop may run past the band's edges; this keeps the page from
+  // scrolling sideways.
+  clipped: { overflow: 'hidden' },
   feature: { flex: 1, gap: spacing.md },
   featureTitle: { ...type.h3, marginTop: spacing.xs },
   featureBody: { ...type.body },

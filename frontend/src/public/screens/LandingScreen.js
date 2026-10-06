@@ -4,6 +4,7 @@ import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import PublicLayout from '../components/PublicLayout';
 import RouteArt from '../components/RouteArt';
+import HeroGlow from '../components/HeroGlow';
 import HeroPreview from '../components/HeroPreview';
 import SiteButton from '../components/SiteButton';
 import CtaBand from '../components/CtaBand';
@@ -31,9 +32,12 @@ const Hero = () => {
   const site = useSiteStyle();
   const { openAuth } = useOpenPage();
   const side = site.isDesktop;
+  // The title's second line ("both ways.") is the promise, so it is in amber.
+  const [titleStart, titleAccent] = t('site:landing.hero.title').split('\n');
 
   return (
     <View style={[styles.hero, { paddingTop: site.isPhone ? spacing.huge : 72, paddingBottom: site.isPhone ? spacing.xxl : 72 }]}>
+      <HeroGlow />
       {/* Stacked, the hero is tall and narrow: filling it would blow the art
           up until a route pin sits on the buttons, so it stays a band along
           the bottom at its own size. */}
@@ -43,7 +47,8 @@ const Hero = () => {
           <View style={[styles.heroCopy, side && styles.heroCopySide]}>
             <Eyebrow icon="flag" label={t('site:landing.hero.eyebrow')} style={styles.heroEyebrow} />
             <Text style={[site.hero, styles.heroTitle]} accessibilityRole="header" aria-level={1}>
-              {site.isPhone ? t('site:landing.hero.title').replace('\n', ' ') : t('site:landing.hero.title')}
+              {titleStart}
+              {titleAccent ? <Text style={styles.heroAccent}>{site.isPhone ? ' ' : '\n'}{titleAccent}</Text> : null}
             </Text>
             <Text style={[site.lead, styles.heroLead]}>{t('site:landing.hero.lead')}</Text>
 
@@ -92,7 +97,7 @@ const Problem = () => {
         </View>
         <View style={[styles.problemCards, side && styles.splitCards]}>
           {list('site:landing.problem.cards').map((card, index) => (
-            <SiteCard key={card.title} style={styles.problemCard}>
+            <SiteCard key={card.title} style={styles.problemCard} hoverable>
               <IconTile icon={card.icon} tint={index === 2 ? 'teal' : 'amber'} />
               <View style={styles.problemText}>
                 <Text style={styles.cardTitle}>{card.title}</Text>
@@ -187,7 +192,7 @@ const Stories = () => {
     <Section tone="surface" eyebrow={t('site:landing.stories.eyebrow')} eyebrowIcon="story" title={t('site:landing.stories.title')} lead={t('site:landing.stories.lead')}>
       <Columns columns={site.isDesktop ? 3 : 1}>
         {list('site:landing.stories.items').map((story) => (
-          <SiteCard key={story.title} style={styles.story}>
+          <SiteCard key={story.title} style={styles.story} hoverable>
             <View style={styles.storyHead}>
               <IconTile icon={story.icon} size={40} />
               <Icon name="quoteMark" size={iconSize.xl} color={colors.primaryMuted} />
@@ -308,6 +313,7 @@ const styles = themedStyles(() => ({
   heroCopySide: { flex: 1.15 },
   heroEyebrow: { marginBottom: spacing.xl },
   heroTitle: { color: colors.textPrimary },
+  heroAccent: { color: colors.primaryText },
   heroLead: { color: colors.textSecondary, marginTop: spacing.xl, maxWidth: 620 },
   heroActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xxxl },
   heroActionsStacked: { flexDirection: 'column', alignItems: 'stretch' },

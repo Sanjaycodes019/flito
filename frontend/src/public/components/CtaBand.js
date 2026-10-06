@@ -6,6 +6,7 @@ import useOpenPage from '../useOpenPage';
 import useSiteStyle from '../siteStyle';
 import { Section, useTone } from './Blocks';
 import SiteButton from './SiteButton';
+import RouteArt from './RouteArt';
 
 const CtaCopy = ({ title, lead, centred }) => {
   const tone = useTone();
@@ -39,7 +40,7 @@ const CtaBand = ({ title, lead }) => {
   );
 
   return (
-    <Section tone="brand" space={site.isPhone ? 56 : 80}>
+    <Section tone="brand" space={site.isPhone ? 56 : 80} backdrop={<RouteArt variant="brand" />}>
       <View style={[styles.row, side && styles.rowSide]}>
         <CtaCopy title={title || t('site:cta.title')} lead={lead || t('site:cta.lead')} centred={!side} />
         <View style={[styles.actions, side ? styles.actionsSide : site.isPhone ? styles.actionsStacked : styles.actionsCentred]}>{actions}</View>
