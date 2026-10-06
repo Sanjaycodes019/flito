@@ -370,6 +370,8 @@ Routes marked `public` need no token; every other route needs `Authorization: Be
 | POST | `/api/bookings/:id/payments` | shipper/owner | Record a payment: `amount`, `method`, optional `payoutMethodId`, `transactionId`, `note`, screenshot (multipart `proof`). The shipper's waits for the owner; the owner's counts at once |
 | POST | `/api/bookings/:id/payments/:paymentId/confirm` | owner | The money arrived |
 | POST | `/api/bookings/:id/payments/:paymentId/dispute` | owner | It didn't, with an optional `reason` |
+| POST | `/api/bookings/:id/invoice-link` | shipper/owner | Once the trip is completed: the invoice number and a link, valid 10 minutes, to download it |
+| GET | `/api/bookings/:id/invoice.pdf?token=` | link | The one-page PDF invoice (no login header; the token from `invoice-link`) |
 
 **Trucks, profile, fleet and verification**
 

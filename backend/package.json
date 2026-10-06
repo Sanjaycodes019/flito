@@ -27,6 +27,7 @@
     "node": ">=18.x"
   },
   "dependencies": {
+    "@expo-google-fonts/noto-sans-devanagari": "^0.4.1",
     "@sentry/node": "^10.75.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
@@ -42,6 +43,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.0",
     "multer": "^2.3.0",
+    "pdfkit": "^0.20.2",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
     "socket.io": "^4.7.5"

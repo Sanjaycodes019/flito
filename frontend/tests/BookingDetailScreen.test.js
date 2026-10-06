@@ -6,6 +6,7 @@ import { renderWithProviders, fakeUser } from './testUtils';
 jest.mock('../src/services/api', () => ({
   __esModule: true,
   default: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn() },
+  API_BASE_URL: 'https://api.flito.test/api',
 }));
 
 const api = require('../src/services/api').default;
@@ -268,5 +269,42 @@ describe("owner picking one of their own drivers", () => {
 
     expect(await findByText('Gopal: license still being checked by FLITO')).toBeTruthy();
     expect(queryByLabelText('Assign Gopal')).toBeNull();
+  });
+});
+
+describe('the invoice for a completed trip', () => {
+  const shipper = fakeUser('shipper', { _id: 'shipper-id' });
+  const driver = fakeUser('driver', { _id: 'driver-id' });
+  const completed = baseBooking({
+    status: 'completed',
+    pickupStatus: 'picked_up',
+    dropoffStatus: 'delivered',
+    invoice: { number: 'FL/2083-84/00042', issuedAt: new Date().toISOString() },
+  });
+
+  it('lets the shipper download it as a PDF through a short-lived link', async () => {
+    const { Linking } = require('react-native');
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    api.post.mockResolvedValue({
+      data: { path: '/bookings/booking-1/invoice.pdf?token=abc', fileName: 'FLITO-Invoice-FL-2083-84-00042.pdf', invoice: completed.invoice },
+    });
+    const { findByText } = renderAs(shipper, completed);
+
+    expect(await findByText('FL/2083-84/00042')).toBeTruthy();
+    fireEvent.press(await findByText('Download invoice'));
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith(`/bookings/${BOOKING_ID}/invoice-link`));
+    await waitFor(() => expect(openURL).toHaveBeenCalledWith('https://api.flito.test/api/bookings/booking-1/invoice.pdf?token=abc'));
+  });
+
+  it('is not offered before delivery, or to the driver', async () => {
+    const before = renderAs(shipper, baseBooking({ status: 'in_transit' }));
+    await before.findByText('Cement bags');
+    expect(before.queryByText('Download invoice')).toBeNull();
+    before.unmount();
+
+    const asDriver = renderAs(driver, completed);
+    await asDriver.findByText('Cement bags');
+    expect(asDriver.queryByText('Download invoice')).toBeNull();
   });
 });

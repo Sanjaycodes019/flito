@@ -92,6 +92,15 @@ const bookingSchema = new mongoose.Schema(
       capturedAt: Date,
     },
 
+    // When the driver marked the trip delivered.
+    completedAt: Date,
+    // The owner's invoice to the shipper, numbered when the trip is completed
+    // ("FL/2083-84/00042", running per Nepali fiscal year). See services/invoice.
+    invoice: {
+      number: String,
+      issuedAt: Date,
+    },
+
     shipperRating: {
       rating: Number,
       review: String,

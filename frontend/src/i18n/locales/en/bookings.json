@@ -66,6 +66,16 @@
     "capture": "Capture Signature",
     "saveFailedTitle": "Could not save signature"
   },
+  "invoice": {
+    "title": "Invoice",
+    "pending": "Invoice being prepared",
+    "issued": "Issued {{date}}",
+    "format": "PDF, one page",
+    "hint": "The truck owner's bill for this trip, with the payments made so far. Keep it for your records.",
+    "download": "Download invoice",
+    "downloadAccessibilityLabel": "Download the invoice for this trip as a PDF",
+    "failedTitle": "Could not download the invoice"
+  },
   "locationSharing": {
     "title": "Live Location",
     "sharingHint": "The shipper and owner can see your position on the map.",

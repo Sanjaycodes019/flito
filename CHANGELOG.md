@@ -5,6 +5,7 @@ All notable changes to FLITO. Format follows [Keep a Changelog](https://keepacha
 ## [Unreleased]
 
 ### Added
+- Trip invoices: a completed trip gets an invoice number (`FL/2083-84/00042`, running per Nepali fiscal year), and the shipper and truck owner can download it as a one-page PDF with the route, truck, charges, amount in words, payments, balance due and the receiver's signature. Nepali names print correctly.
 - In-app notification feed with unread count, bell and screen, in English and Nepali.
 - Security headers (helmet), response compression, and stripping of Mongo operators from requests.
 - Structured JSON logging (pino) and optional Sentry error tracking.

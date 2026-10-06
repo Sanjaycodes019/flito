@@ -3,6 +3,7 @@ const User = require('../models/User');
 const { fail } = require('../utils/respond');
 const { releaseBooking } = require('../services/bookingRelease');
 const { chargeForBooking } = require('../services/commission');
+const { issueInvoice } = require('../services/invoice');
 
 const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 
@@ -201,6 +202,7 @@ exports.updateStatus = async (req, res, next) => {
     }
 
     if (status) booking.status = status;
+    if (status === 'completed') booking.completedAt = new Date();
     if (pickupStatus) booking.pickupStatus = pickupStatus;
     if (dropoffStatus) booking.dropoffStatus = dropoffStatus;
     await booking.save();
@@ -208,8 +210,12 @@ exports.updateStatus = async (req, res, next) => {
     // A finished or cancelled booking frees its truck, and a cancelled one its
     // slot on the load.
     if (['completed', 'cancelled'].includes(status)) await releaseBooking(booking, status);
-    // A delivered trip adds FLITO's fee to the owner's monthly bill.
-    if (status === 'completed') await chargeForBooking(booking);
+    // A delivered trip adds FLITO's fee to the owner's monthly bill, and gets
+    // its invoice number.
+    if (status === 'completed') {
+      await chargeForBooking(booking);
+      await issueInvoice(booking);
+    }
 
     const parties = [booking.shipperId, booking.ownerId, booking.driverId].filter(Boolean);
     parties.forEach((id) => req.io?.to(`user-${id}`).emit('booking-status-changed', { booking }));

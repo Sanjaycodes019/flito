@@ -4,12 +4,17 @@ const router = express.Router();
 const bookingsController = require('../controllers/bookingsController');
 const deliveryProofController = require('../controllers/deliveryProofController');
 const paymentsController = require('../controllers/paymentsController');
+const invoiceController = require('../controllers/invoiceController');
 const authMiddleware = require('../middleware/auth');
 const { requireRole } = require('../middleware/auth');
 const {
   validateRating, validateCoordinates, validatePaymentRecord, validatePaymentDispute,
 } = require('../middleware/validators');
 const { photos, signature, paymentProof } = require('../middleware/upload');
+
+// Opened straight from a browser, so it carries its own short-lived token
+// (from POST /:id/invoice-link) instead of the login header.
+router.get('/:id/invoice.pdf', invoiceController.downloadInvoice);
 
 router.use(authMiddleware);
 
@@ -19,6 +24,7 @@ router.patch('/:id/assign-driver', requireRole('owner'), bookingsController.assi
 router.patch('/:id/status', bookingsController.updateStatus);
 router.patch('/:id/location', requireRole('driver'), validateCoordinates, bookingsController.updateLocation);
 router.post('/:id/rate', validateRating, bookingsController.rateBooking);
+router.post('/:id/invoice-link', invoiceController.createInvoiceLink);
 
 // The driver check runs before any file bytes are accepted.
 router.post(

@@ -251,6 +251,9 @@ const SERVER_MESSAGES_NE = {
   PAYMENTS_OWNER_ONLY: () => 'पैसा आयो कि आएन ट्रक मालिकले मात्र पुष्टि गर्न सक्नुहुन्छ',
   PAYMENTS_NOT_FOUND: () => 'भुक्तानी फेला परेन',
   PAYMENTS_ALREADY_ANSWERED: () => 'यो भुक्तानीको जवाफ पहिले नै दिइसकिएको छ',
+  INVOICE_NOT_PARTY: () => 'यो यात्राको बिल ढुवानी गराउने र ट्रक मालिकले मात्र पाउन सक्छन्',
+  INVOICE_NOT_COMPLETED: () => 'सामान पुगेपछि बिल तयार हुन्छ',
+  INVOICE_NOT_READY: () => 'बिल तयार गर्न सकिएन। एकछिनपछि फेरि प्रयास गर्नुहोस्।',
 
   // ── FLITO fees ───────────────────────────────────────────────────────
   COMMISSION_OVERDUE: ({ amount }) => `नयाँ ट्रिप लिनुअघि म्याद नाघेको FLITO शुल्क रु. ${Number(amount || 0).toLocaleString('en-IN')} तिर्नुहोस्`,

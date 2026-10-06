@@ -14,6 +14,7 @@ import LocationSharingToggle from '../components/bookings/LocationSharingToggle'
 import CallContactsCard from '../components/bookings/CallContactsCard';
 import DriverJobCard from '../components/bookings/DriverJobCard';
 import PaymentSection from '../components/bookings/PaymentSection';
+import InvoiceCard from '../components/bookings/InvoiceCard';
 import TrackingMap from '../components/map/TrackingMap';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import useScreenLayout from '../hooks/useScreenLayout';
@@ -277,7 +278,9 @@ const BookingDetailScreen = ({ route }) => {
             </Card>
           )}
 
-          {/* The driver isn't part of paying for the trip. */}
+          {/* The driver isn't part of paying for the trip, or its invoice. */}
+          {(isShipper || isOwner) && booking.status === 'completed' && <InvoiceCard booking={booking} />}
+
           {(isShipper || isOwner) && (
             <PaymentSection
               bookingId={bookingId}
