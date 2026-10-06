@@ -18,10 +18,12 @@ import { StyleSheet } from 'react-native';
 import { FLITO_COLORS } from '../utils/colors';
 
 const lightColors = {
-  // Surfaces
-  background: FLITO_COLORS.background,
-  surface: FLITO_COLORS.bgLight,
-  surfaceMuted: FLITO_COLORS.bgGray,
+  // Surfaces. A step dimmer than the brand's white and Industrial Chalk
+  // (FLITO_COLORS.bgLight / .background), which glared on a full page: cards
+  // and bars sit on near-white, the page on a light grey of the same hue.
+  background: '#EBEEF1',
+  surface: '#F5F6F8',
+  surfaceMuted: '#EBEEF1',
   surfaceDark: FLITO_COLORS.bgDark,
   overlay: 'rgba(18, 22, 26, 0.6)', // tint of FLITO_COLORS.dark
 
@@ -70,13 +72,14 @@ const lightColors = {
   accent: FLITO_COLORS.accent,
   accentMuted: 'rgba(0, 210, 162, 0.14)',
   // FLITO_COLORS.accent (teal) as text/icon on a light surface, or white
-  // text on a solid accent surface, both fail AA; this darkened tone passes.
-  accentText: '#007E61',
+  // text on a solid accent surface, both fail AA; this darkened tone passes
+  // (~4.8:1 on the page background, ~5.1:1 on a card).
+  accentText: '#00775B',
   // Keyboard-focus ring color, used as a border on whatever surface is
-  // focused. The raw brand accent teal measures ~2:1 against a white card,
-  // under the 3:1 WCAG minimum for a focus indicator; this darkened tone
-  // (the same one used for accent text) reaches ~5:1.
-  focusRing: '#007E61',
+  // focused. The raw brand accent teal measures ~2:1 against a card, under
+  // the 3:1 WCAG minimum for a focus indicator; this darkened tone (the same
+  // one used for accent text) reaches ~5:1.
+  focusRing: '#00775B',
 
   // Semantic state. The saturated brand hues below stay exactly as chosen
   // (large surfaces: solid map markers, focus rings) but none of them are
