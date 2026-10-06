@@ -34,7 +34,10 @@ const Hero = () => {
 
   return (
     <View style={[styles.hero, { paddingTop: site.isPhone ? spacing.huge : 72, paddingBottom: site.isPhone ? spacing.xxl : 72 }]}>
-      <RouteArt />
+      {/* Stacked, the hero is tall and narrow: filling it would blow the art
+          up until a route pin sits on the buttons, so it stays a band along
+          the bottom at its own size. */}
+      {side ? <RouteArt /> : <View style={styles.heroArtBand}><RouteArt /></View>}
       <Container>
         <View style={[styles.heroRow, side && styles.heroRowSide]}>
           <View style={[styles.heroCopy, side && styles.heroCopySide]}>
@@ -157,11 +160,11 @@ const BuiltForNepal = () => {
         {list('site:landing.nepal.facts').map((fact) => <Fact key={fact.label} value={fact.value} label={fact.label} />)}
       </Columns>
       <View style={[styles.nepalLists, site.isDesktop && styles.nepalListsSide]}>
-        <View style={styles.nepalCol}>
+        <View style={[styles.nepalCol, site.isDesktop && styles.nepalColSide]}>
           <Text style={styles.darkSubhead}>{t('site:landing.nepal.routesTitle')}</Text>
           <CheckList items={list('site:landing.nepal.routes')} icon="road" dense />
         </View>
-        <View style={styles.nepalCol}>
+        <View style={[styles.nepalCol, site.isDesktop && styles.nepalColSide]}>
           <Text style={styles.darkSubhead}>{t('site:landing.nepal.hubsTitle')}</Text>
           <View style={styles.hubs}>
             {list('site:landing.nepal.hubs').map((hub) => (
@@ -298,6 +301,7 @@ const styles = themedStyles(() => ({
   // from scrolling sideways.
   clip: { overflow: 'hidden' },
   hero: { backgroundColor: colors.surface, overflow: 'hidden' },
+  heroArtBand: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 420 },
   heroRow: { gap: spacing.xxl },
   heroRowSide: { flexDirection: 'row', alignItems: 'center', gap: 56 },
   heroCopy: { maxWidth: 720 },
@@ -342,7 +346,10 @@ const styles = themedStyles(() => ({
   factLabel: { ...type.body },
   nepalLists: { marginTop: 56, gap: spacing.huge },
   nepalListsSide: { flexDirection: 'row', gap: 64 },
-  nepalCol: { flex: 1, gap: spacing.lg },
+  nepalCol: { gap: spacing.lg },
+  // Only side by side: stacked, flex's zero basis lets a column shrink below
+  // its content, so the next heading runs over it.
+  nepalColSide: { flex: 1 },
   darkSubhead: { ...type.h3, color: colors.textInverse },
   hubs: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   hub: {
