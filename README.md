@@ -9,7 +9,7 @@ Shippers post a load and say how many trucks it needs. Verified owners offer a p
 
 | | |
 |---|---|
-| **Web app** | [sanjay019.com.np](https://sanjay019.com.np) (also [flito.vercel.app](https://flito.vercel.app)) |
+| **Web app** | [flito.sanjay019.com.np](https://flito.sanjay019.com.np)) |
 | **API** | `https://api.sanjay019.com.np/api` ([health](https://api.sanjay019.com.np/api/health)) |
 | **Android** | APK and Play Store bundle built with EAS (see [Android](#5-android--eas)) |
 | **Support** | guptagroups09@gmail.com · +977 9766382090 |
