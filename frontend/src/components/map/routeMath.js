@@ -43,6 +43,14 @@ export const metersBetween = (a, b) => {
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
 };
 
+// The compass direction (degrees clockwise from north) from a to b.
+export const bearingBetween = (a, b) => {
+  const dLng = toRad(b[1] - a[1]);
+  const y = Math.sin(dLng) * Math.cos(toRad(b[0]));
+  const x = Math.cos(toRad(a[0])) * Math.sin(toRad(b[0])) - Math.sin(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+};
+
 // Metres from the start of `line` to each of its points.
 export const measureLine = (line) => {
   const along = [0];

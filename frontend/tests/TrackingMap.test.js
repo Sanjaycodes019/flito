@@ -3,7 +3,7 @@ import { fireEvent } from '@testing-library/react-native';
 import TrackingMap from '../src/components/map/TrackingMap';
 import { decodePolyline, measureLine, locateOnLine, formatDuration, freshnessOf } from '../src/components/map/routeMath';
 import { _clearRouteCache } from '../src/components/map/routeCache';
-import { worthSending } from '../src/components/bookings/LocationSharingToggle';
+import { worthSending, gpsQualityOf } from '../src/components/bookings/LocationSharingToggle';
 import { renderWithProviders, fakeUser } from './testUtils';
 
 jest.mock('../src/services/api', () => ({
@@ -99,7 +99,14 @@ describe('TrackingMap', () => {
   const renderMap = (props, route = serverRoute()) => {
     api.get.mockResolvedValue({ data: { route } });
     return renderWithProviders(
-      <TrackingMap bookingId="booking-1" pickup={{ lat: 27.7, lng: 85.3 }} dropoff={{ lat: 27.7, lng: 85.4 }} {...props} />,
+      <TrackingMap
+        bookingId="booking-1"
+        pickup={{ lat: 27.7, lng: 85.3 }}
+        dropoff={{ lat: 27.7, lng: 85.4 }}
+        pickupName="Kalanki, Kathmandu"
+        dropoffName="Lakeside, Pokhara"
+        {...props}
+      />,
       { user: fakeUser('shipper') },
     );
   };
@@ -110,19 +117,30 @@ describe('TrackingMap', () => {
   });
 
   it('shows the road route before the trip starts', async () => {
-    const { findByText } = renderMap({ live: false });
+    const { findByText, getByText, getByLabelText } = renderMap({ live: false });
 
-    expect(await findByText('Road route 9.8 km · about 30 min by truck')).toBeTruthy();
+    expect(await findByText('9.8 km by road')).toBeTruthy();
+    expect(getByText('About 30 min of driving for a loaded truck')).toBeTruthy();
+    expect(getByText('Kalanki, Kathmandu')).toBeTruthy();
+    expect(getByText('Lakeside, Pokhara')).toBeTruthy();
+    expect(getByLabelText('0% of the way to the drop-off')).toBeTruthy();
     expect(api.get).toHaveBeenCalledWith('/bookings/booking-1/route', undefined);
+  });
+
+  it('shows a delivered trip as done', async () => {
+    const { findByText, getByLabelText } = renderMap({ live: false, delivered: true });
+
+    expect(await findByText('Delivered')).toBeTruthy();
+    expect(getByLabelText('100% of the way to the drop-off')).toBeTruthy();
   });
 
   it('keeps the planned road on the phone, so opening the trip again asks nothing', async () => {
     const first = renderMap({ live: false });
-    await first.findByText(/^Road route/);
+    await first.findByText(/by road$/);
     first.unmount();
 
     const again = renderMap({ live: false });
-    expect(await again.findByText(/^Road route/)).toBeTruthy();
+    expect(await again.findByText(/by road$/)).toBeTruthy();
     expect(api.get).toHaveBeenCalledTimes(1);
   });
 
@@ -130,21 +148,23 @@ describe('TrackingMap', () => {
     const { findByLabelText, getByLabelText } = renderMap({ live: false });
 
     fireEvent.press(await findByLabelText('Make the map bigger'));
+    expect(getByLabelText(/open in full screen/)).toBeTruthy();
     fireEvent.press(getByLabelText('Make the map smaller'));
     expect(getByLabelText('Make the map bigger')).toBeTruthy();
   });
 
   it('shows the distance and time left from where the truck is, live', async () => {
-    const { findByText, getByText } = renderMap({
+    const { findByText, getByText, getByLabelText } = renderMap({
       live: true,
       driverLocation: { lat: 27.7, lng: 85.35, speed: 12.5, accuracy: 8, updatedAt: new Date().toISOString() },
     });
 
-    expect(await findByText('4.9 km left')).toBeTruthy();
-    expect(getByText('about 15 min')).toBeTruthy();
-    expect(getByText(/^Live · Updated \d+ s ago$/)).toBeTruthy();
+    expect(await findByText('15 min · 4.9 km left')).toBeTruthy();
+    expect(getByText(/^Arrives around /)).toBeTruthy();
+    expect(getByText(/^Live · \d+ s ago$/)).toBeTruthy();
     expect(getByText('45 km/h')).toBeTruthy();
-    expect(getByText('±8 m')).toBeTruthy();
+    expect(getByText('GPS ±8 m')).toBeTruthy();
+    expect(getByLabelText('50% of the way to the drop-off')).toBeTruthy();
   });
 
   it('asks for a new route from the truck when it leaves the road', async () => {
@@ -181,6 +201,13 @@ describe('TrackingMap', () => {
 describe("what the driver's phone sends", () => {
   const at = Date.parse('2026-10-06T10:00:00Z');
   const last = { fix: { lat: 27.7, lng: 85.3, heading: 90 }, at };
+
+  it('rates GPS accuracy for the driver', () => {
+    expect(gpsQualityOf(8)).toBe('good');
+    expect(gpsQualityOf(45)).toBe('fair');
+    expect(gpsQualityOf(300)).toBe('poor');
+    expect(gpsQualityOf(null)).toBeNull();
+  });
 
   it('sends the first fix at once', () => {
     expect(worthSending({ lat: 27.7, lng: 85.3 }, null, at)).toBe(true);

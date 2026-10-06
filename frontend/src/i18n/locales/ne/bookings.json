@@ -84,7 +84,14 @@
     "stopSharing": "सेयरिङ रोक्नुहोस्",
     "shareMyLocation": "मेरो लोकेसन सेयर गर्नुहोस्",
     "couldNotStartTitle": "सेयरिङ सुरु गर्न सकिएन",
-    "permissionDenied": "आफ्नो स्थान सेयर गर्न लोकेसन पहुँचलाई अनुमति दिनुहोस्"
+    "permissionDenied": "आफ्नो स्थान सेयर गर्न लोकेसन पहुँचलाई अनुमति दिनुहोस्",
+    "on": "चालू",
+    "off": "बन्द",
+    "gps": {
+      "good": "राम्रो GPS · ±{{meters}} मि",
+      "fair": "ठीकै GPS · ±{{meters}} मि",
+      "poor": "कमजोर GPS · ±{{meters}} मि"
+    }
   },
   "signaturePad": {
     "title": "प्राप्तकर्ताको हस्ताक्षर",

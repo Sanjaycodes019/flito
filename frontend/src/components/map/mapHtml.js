@@ -9,11 +9,14 @@
 // (native) or window.parent.postMessage otherwise (web).
 //
 // Commands the host can send in:
-//   {type:'setDriver', lat, lng, heading?, accuracy?, stale?}, {type:'clearDriver'}
-//   {type:'setStops', pickup?, dropoff?, approximate?: {pickup, dropoff}}
+//   {type:'setDriver', lat, lng, heading?, accuracy?, stale?, label?}, {type:'clearDriver'}
+//   {type:'setStops', pickup?, dropoff?, names?: {pickup, dropoff}, approximate?: {pickup, dropoff}}
 //   {type:'setRoute', line: [[lat,lng], ...]}, {type:'clearRoute'}
 //   {type:'setProgress', index, point: [lat,lng]} (where the truck is on the route)
-//   {type:'follow', on}, {type:'fitAll'}, {type:'gestures', mode: 'cooperative'|'greedy'}
+//   {type:'follow', on}, {type:'fitAll'}, {type:'zoomIn'}, {type:'zoomOut'}
+//   {type:'gestures', mode: 'cooperative'|'greedy'}
+//   {type:'setPadding', topLeft: [x, y], bottomRight: [x, y]} (room to leave
+//     around the trip when fitting it, for whatever the host draws on top)
 //   {type:'setPicked', lat, lng}, {type:'clearPicked'}, {type:'center', lat, lng, zoom?}
 // Events the page sends out: {type:'picked', lat, lng} (tap in picker mode),
 // {type:'userMoved'} (the viewer dragged the map), {type:'ready'}.
@@ -34,6 +37,9 @@ const escapeJs = (value) => JSON.stringify(value ?? null);
 //     a phone moves it with two fingers and a mouse wheel zooms it only after
 //     a click, so the page still scrolls past it; 'greedy' when the map has
 //     the screen to itself
+//   theme: 'light' or 'dark', to match the app
+//   zoomControl: whether the page draws its own + / - buttons (a host that
+//     draws its own controls turns it off)
 export const buildMapHtml = ({
   interactive = false,
   pickup = null,
@@ -41,6 +47,8 @@ export const buildMapHtml = ({
   initialPicked = null,
   labels = {},
   gestures = 'cooperative',
+  theme = 'light',
+  zoomControl = true,
 } = {}) => `<!DOCTYPE html>
 <html>
 <head>
@@ -48,48 +56,87 @@ export const buildMapHtml = ({
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body, #map { height: 100%; margin: 0; padding: 0; background: #eef1f3; }
-    .flito-pin {
-      width: 28px; height: 28px; border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg); display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.4); border: 2px solid #fff;
+    html, body, #map { height: 100%; margin: 0; padding: 0; background: #E9EDF0; }
+    body.dark, body.dark #map { background: #171C21; }
+    .leaflet-container { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    /* OpenStreetMap's tiles are drawn for reading, not for carrying a route:
+       toned down, the route, stops and truck stand out. In the dark theme the
+       same tiles are inverted into a night map. */
+    .leaflet-tile-pane { filter: saturate(0.55) contrast(0.94) brightness(1.04); }
+    body.dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.86) saturate(0.4); }
+
+    /* Pins: a drop with the stop's symbol, and its name beside it. */
+    .flito-pin svg { display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
+    .flito-pin.approx { opacity: 0.8; }
+    .leaflet-tooltip.flito-label {
+      background: #fff; color: #1E242B; border: 0; border-radius: 8px; padding: 3px 8px;
+      font-size: 12px; font-weight: 600; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22); white-space: nowrap;
+      max-width: 180px; overflow: hidden; text-overflow: ellipsis;
     }
-    .flito-pin span { transform: rotate(45deg); color: #fff; font-weight: 700; font-size: 12px; font-family: sans-serif; }
-    /* A stop with no exact pin sits at its municipality's centre: shown faded and dashed. */
-    .flito-pin.approx { opacity: 0.7; border-style: dashed; }
-    .flito-dot {
-      /* Distinct from the teal pickup pin so the two are never confused at a glance. */
-      width: 18px; height: 18px; border-radius: 50%; background: #3498DB;
-      border: 3px solid #fff; box-shadow: 0 0 0 2px #3498DB, 0 1px 4px rgba(0,0,0,0.4);
+    .leaflet-tooltip-top.flito-label::before { display: none; }
+    body.dark .leaflet-tooltip.flito-label { background: #1E242B; color: #F4F6F8; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+
+    /* The truck, seen from above, turned to where it is heading. */
+    .flito-truck { position: relative; width: 52px; height: 52px; }
+    .flito-truck-halo {
+      position: absolute; left: 6px; top: 6px; width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255, 159, 0, 0.3); animation: flito-pulse 2s ease-out infinite;
     }
-    /* The truck: an orange disc with an arrow turned to its heading, and a
-       pulse while its position is fresh. */
-    .flito-truck { position: relative; width: 36px; height: 36px; }
-    .flito-truck-pulse {
-      position: absolute; inset: 0; border-radius: 50%; background: rgba(255, 159, 0, 0.35);
-      animation: flito-pulse 1.8s ease-out infinite;
+    .flito-truck-turn { position: absolute; left: 13px; top: 4px; width: 26px; height: 44px; transform-origin: 13px 22px; transition: transform 0.8s ease; }
+    .flito-truck svg { display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45)); }
+    .flito-truck .cargo { fill: #FF9F00; stroke: #fff; stroke-width: 1.5; }
+    .flito-truck .cab { fill: #E08F00; stroke: #fff; stroke-width: 1.5; }
+    .flito-truck .ribs { stroke: rgba(255, 255, 255, 0.5); stroke-width: 1; }
+    .flito-truck .glass { fill: #1E242B; opacity: 0.8; }
+    .flito-truck.stale .flito-truck-halo { display: none; }
+    .flito-truck.stale .cargo { fill: #8A97A3; }
+    .flito-truck.stale .cab { fill: #6B7780; }
+    @keyframes flito-pulse { 0% { transform: scale(0.55); opacity: 1; } 100% { transform: scale(1.45); opacity: 0; } }
+
+    /* Time left, in a bubble above the truck. */
+    .leaflet-tooltip.flito-eta {
+      background: #1E242B; color: #fff; border: 0; border-radius: 10px; padding: 3px 9px;
+      font-size: 12px; font-weight: 700; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); white-space: nowrap;
     }
-    .flito-truck-body {
-      position: absolute; left: 7px; top: 7px; width: 22px; height: 22px; border-radius: 50%;
-      background: #FF9F00; border: 2px solid #fff; box-sizing: border-box;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
+    .leaflet-tooltip-top.flito-eta::before { border-top-color: #1E242B; }
+    body.dark .leaflet-tooltip.flito-eta { background: #F4F6F8; color: #1E242B; }
+    body.dark .leaflet-tooltip-top.flito-eta::before { border-top-color: #F4F6F8; }
+
+    /* Leaflet's controls, in the app's style. */
+    .leaflet-bar { border: 0 !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important; }
+    .leaflet-bar a, .leaflet-bar a:hover {
+      width: 40px !important; height: 40px !important; line-height: 40px !important; font-size: 20px !important;
+      color: #1E242B; background: #fff; border-bottom-color: rgba(30, 36, 43, 0.1) !important;
     }
-    .flito-truck-arrow { width: 14px; height: 14px; transition: transform 0.6s ease; }
-    .flito-truck-centre { display: none; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
-    .flito-truck.no-heading .flito-truck-arrow { display: none; }
-    .flito-truck.no-heading .flito-truck-centre { display: block; }
-    .flito-truck.stale .flito-truck-pulse { display: none; }
-    .flito-truck.stale .flito-truck-body { background: #8A97A3; }
-    @keyframes flito-pulse { 0% { transform: scale(0.6); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+    body.dark .leaflet-bar a, body.dark .leaflet-bar a:hover { color: #F4F6F8; background: #1E242B; border-bottom-color: rgba(244, 246, 248, 0.12) !important; }
+    .leaflet-control-attribution {
+      font-size: 10px; border-radius: 6px 6px 6px 0; background: rgba(255, 255, 255, 0.75) !important; color: #5D6E6F;
+    }
+    .leaflet-control-attribution a { color: #1D6CA1; }
+    body.dark .leaflet-control-attribution { background: rgba(23, 28, 33, 0.75) !important; color: #9AA8AA; }
+    body.dark .leaflet-control-attribution a { color: #5DB6F0; }
+    .leaflet-control-scale-line {
+      border-color: rgba(30, 36, 43, 0.55); color: #1E242B; background: rgba(255, 255, 255, 0.6); font-size: 10px;
+    }
+    body.dark .leaflet-control-scale-line { border-color: rgba(244, 246, 248, 0.6); color: #F4F6F8; background: rgba(23, 28, 33, 0.6); }
+    .leaflet-popup-content-wrapper { border-radius: 10px; }
+    body.dark .leaflet-popup-content-wrapper, body.dark .leaflet-popup-tip { background: #1E242B; color: #F4F6F8; }
+
     .flito-hint {
       position: absolute; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
-      padding: 16px; box-sizing: border-box; background: rgba(18, 22, 26, 0.5); color: #fff;
-      font: 600 15px/1.4 sans-serif; text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+      padding: 16px; box-sizing: border-box; background: rgba(18, 22, 26, 0.35);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .flito-hint span {
+      max-width: 260px; padding: 10px 16px; border-radius: 12px; background: rgba(18, 22, 26, 0.88); color: #fff;
+      font: 600 14px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
     }
     .flito-hint.on { opacity: 1; }
     @media (prefers-reduced-motion: reduce) {
-      .flito-truck-pulse { animation: none; opacity: 0.5; }
-      .flito-truck-arrow, .flito-hint { transition: none; }
+      .flito-truck-halo { animation: none; opacity: 0.5; }
+      .flito-truck-turn, .flito-hint { transition: none; }
     }
   </style>
 </head>
@@ -110,12 +157,18 @@ export const buildMapHtml = ({
       var TWO_FINGERS_LABEL = ${escapeJs(labels.twoFingers || 'Use two fingers to move the map')};
       var CLICK_TO_ZOOM_LABEL = ${escapeJs(labels.clickToZoom || 'Click the map to zoom with the mouse wheel')};
       var GESTURES = ${escapeJs(gestures)};
+      var DARK = ${escapeJs(theme === 'dark')};
+      var ZOOM_CONTROL = ${escapeJs(zoomControl)};
       // A finger, not a mouse: phones, tablets and the Android app.
       var COARSE_POINTER = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
-      var ROUTE_COLOR = '#1D6CA1';
-      var DRIVEN_COLOR = '#8A97A3';
+      if (DARK) document.body.className = 'dark';
+      var COLORS = DARK
+        ? { route: '#5DB6F0', casing: '#0B0E11', driven: '#5D6E6F', pickup: '#00C495', dropoff: '#FF6B5B', picked: '#FFB733', truck: '#FFB733' }
+        : { route: '#1D6CA1', casing: '#FFFFFF', driven: '#A3ADB5', pickup: '#00A884', dropoff: '#E74C3C', picked: '#FF9F00', truck: '#FF9F00' };
       var ANIMATION_MS = 1200;
+      // How far a stop with no exact pin may be from where it is drawn.
+      var APPROXIMATE_RADIUS_M = 1200;
 
       function sendToHost(data) {
         var msg = JSON.stringify(data);
@@ -135,26 +188,63 @@ export const buildMapHtml = ({
         window.addEventListener('message', listener);
       }
 
-      function pinIcon(color, label, approximate) {
-        return L.divIcon({
-          className: '',
-          html: '<div class="flito-pin' + (approximate ? ' approx' : '') + '" style="background:' + color + '"><span>' + label + '</span></div>',
-          iconSize: [28, 28],
-          iconAnchor: [14, 28],
+      function escapeHtml(text) {
+        return String(text).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
       }
+
+      // A drop-shaped pin with the stop's symbol: a parcel for the pickup, a
+      // flag for the drop-off, a dot for a point being picked.
+      function pinSvg(kind) {
+        var color = COLORS[kind];
+        var glyph = kind === 'pickup'
+          ? '<path d="M11.5 13.2l4.5-2.3 4.5 2.3v5.2L16 20.7l-4.5-2.3z M11.5 13.2l4.5 2.3 4.5-2.3 M16 15.5v5.2" fill="none" stroke="' + color + '" stroke-width="1.6" stroke-linejoin="round"/>'
+          : kind === 'dropoff'
+            ? '<path d="M13 21V10.5 M13 11h6.5l-1.6 2.3 1.6 2.3H13" fill="none" stroke="' + color + '" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>'
+            : '<circle cx="16" cy="15.5" r="3.4" fill="' + color + '"/>';
+        return '<svg width="32" height="42" viewBox="0 0 32 42">'
+          + '<path d="M16 1C7.7 1 1 7.6 1 15.8 1 26.9 16 41 16 41s15-14.1 15-25.2C31 7.6 24.3 1 16 1z" fill="' + color + '" stroke="#fff" stroke-width="2"/>'
+          + '<circle cx="16" cy="15.5" r="8.6" fill="#fff"/>' + glyph + '</svg>';
+      }
+      function pinIcon(kind, approximate) {
+        return L.divIcon({
+          className: '',
+          html: '<div class="flito-pin' + (approximate ? ' approx' : '') + '">' + pinSvg(kind) + '</div>',
+          iconSize: [32, 42],
+          iconAnchor: [16, 41],
+          popupAnchor: [0, -36],
+          tooltipAnchor: [0, -44],
+        });
+      }
+
       var truckIcon = L.divIcon({
         className: '',
-        html: '<div class="flito-truck no-heading"><div class="flito-truck-pulse"></div><div class="flito-truck-body">'
-          + '<svg class="flito-truck-arrow" viewBox="0 0 24 24"><path d="M12 2 L20 21 L12 16.5 L4 21 Z" fill="#fff"/></svg>'
-          + '<div class="flito-truck-centre"></div></div></div>',
-        iconSize: [36, 36],
-        iconAnchor: [18, 18],
+        html: '<div class="flito-truck"><div class="flito-truck-halo"></div><div class="flito-truck-turn">'
+          + '<svg width="26" height="44" viewBox="0 0 26 44">'
+          + '<rect class="cargo" x="3" y="14" width="20" height="28" rx="3"/>'
+          + '<path class="ribs" d="M6 20h14M6 26h14M6 32h14M6 38h14"/>'
+          + '<rect class="cab" x="4" y="2" width="18" height="13" rx="5"/>'
+          + '<rect class="glass" x="6.5" y="4.5" width="13" height="4.5" rx="1.8"/>'
+          + '</svg></div></div>',
+        iconSize: [52, 52],
+        iconAnchor: [26, 26],
+        tooltipAnchor: [0, -22],
       });
 
       var start = PICKUP || DROPOFF || INITIAL_PICKED || DEFAULT_CENTER;
-      var map = L.map('map', { zoomControl: true, attributionControl: true })
+      // Half zoom steps, so a trip can fill the map instead of the nearest
+      // whole step leaving it small in the middle.
+      var map = L.map('map', { zoomControl: false, attributionControl: false, zoomSnap: 0.5 })
         .setView([start.lat, start.lng], (PICKUP || DROPOFF) ? 12 : 14);
+      if (ZOOM_CONTROL) L.control.zoom({ position: 'topright' }).addTo(map);
+      // Stop names sit above the route but under the pins and the truck, so a
+      // name never hides the truck going past it.
+      map.createPane('stopNames');
+      map.getPane('stopNames').style.zIndex = 590;
+      map.getPane('stopNames').style.pointerEvents = 'none';
+      L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map);
+      L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
       // Tiles are fetched only once panning or zooming stops, and only one ring
       // beyond the screen is kept: fewer downloads on a phone's data plan and
@@ -164,12 +254,13 @@ export const buildMapHtml = ({
         keepBuffer: 1,
         updateWhenIdle: true,
         updateWhenZooming: false,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map);
-      L.control.scale({ imperial: false }).addTo(map);
 
       var pickupMarker = null;
       var dropoffMarker = null;
+      var pickupArea = null;
+      var dropoffArea = null;
       var driverMarker = null;
       var accuracyCircle = null;
       var pickedMarker = null;
@@ -179,6 +270,7 @@ export const buildMapHtml = ({
       var routeDriven = null;
       var follow = false;
       var animation = null;
+      var shownHeading = null;
 
       // Moves the page makes itself (fitting, following the truck) must not
       // count as the viewer looking around. Leaflet starts an animated zoom
@@ -202,10 +294,12 @@ export const buildMapHtml = ({
       var gestures = GESTURES;
       var hint = document.createElement('div');
       hint.className = 'flito-hint';
+      var hintText = document.createElement('span');
+      hint.appendChild(hintText);
       document.body.appendChild(hint);
       var hintTimer = null;
       function showHint(text) {
-        hint.textContent = text;
+        hintText.textContent = text;
         hint.classList.add('on');
         clearTimeout(hintTimer);
         hintTimer = setTimeout(function () { hint.classList.remove('on'); }, 1500);
@@ -232,24 +326,42 @@ export const buildMapHtml = ({
         if (gestures === 'cooperative') map.scrollWheelZoom.disable();
       });
 
-      function placeStop(marker, point, color, letter, label, approximate) {
+      // A stop: its pin, its name beside it, and for a stop with no exact pin
+      // a dashed circle for the area it is somewhere in.
+      function placeStop(marker, area, point, kind, label, name, approximate) {
+        if (area) map.removeLayer(area);
+        area = null;
         if (!point) {
           if (marker) map.removeLayer(marker);
-          return null;
+          return { marker: null, area: null };
         }
-        var text = approximate ? label + ' (' + APPROXIMATE_LABEL + ')' : label;
+        var popup = escapeHtml(name ? label + ': ' + name : label) + (approximate ? ' (' + escapeHtml(APPROXIMATE_LABEL) + ')' : '');
         if (marker) {
-          marker.setLatLng([point.lat, point.lng]).setIcon(pinIcon(color, letter, approximate));
-          marker.setPopupContent(text);
-          return marker;
+          marker.setLatLng([point.lat, point.lng]).setIcon(pinIcon(kind, approximate)).setPopupContent(popup);
+        } else {
+          marker = L.marker([point.lat, point.lng], { icon: pinIcon(kind, approximate), keyboard: false }).addTo(map).bindPopup(popup);
         }
-        return L.marker([point.lat, point.lng], { icon: pinIcon(color, letter, approximate) }).addTo(map).bindPopup(text);
+        marker.unbindTooltip();
+        // Above the pin: a road leaves a stop sideways far more often than
+        // straight up, so the name rarely sits on the route.
+        if (name) marker.bindTooltip(escapeHtml(name), { permanent: true, direction: 'top', className: 'flito-label', interactive: false, pane: 'stopNames' });
+        if (approximate) {
+          area = L.circle([point.lat, point.lng], {
+            radius: APPROXIMATE_RADIUS_M, color: COLORS[kind], weight: 1.5, dashArray: '4 6', fillOpacity: 0.07, interactive: false,
+          }).addTo(map);
+        }
+        return { marker: marker, area: area };
       }
 
-      function setStops(pickup, dropoff, approximate) {
+      function setStops(pickup, dropoff, names, approximate) {
+        names = names || {};
         approximate = approximate || {};
-        pickupMarker = placeStop(pickupMarker, pickup, '#00D2A2', 'P', PICKUP_LABEL, approximate.pickup);
-        dropoffMarker = placeStop(dropoffMarker, dropoff, '#E74C3C', 'D', DROPOFF_LABEL, approximate.dropoff);
+        var p = placeStop(pickupMarker, pickupArea, pickup, 'pickup', PICKUP_LABEL, names.pickup, approximate.pickup);
+        pickupMarker = p.marker;
+        pickupArea = p.area;
+        var d = placeStop(dropoffMarker, dropoffArea, dropoff, 'dropoff', DROPOFF_LABEL, names.dropoff, approximate.dropoff);
+        dropoffMarker = d.marker;
+        dropoffArea = d.area;
       }
 
       function everything() {
@@ -264,11 +376,21 @@ export const buildMapHtml = ({
         return all;
       }
 
-      function fitAll() {
+      // Room is left at the top for the pins, their names and the status
+      // chip, and on the right for the host's buttons, unless the host says
+      // otherwise.
+      var fitPadding = { topLeft: [72, 84], bottomRight: [72, 28] };
+      // Only a fit someone asked for is animated. The page fits itself several
+      // times as the stops, route and padding arrive, and Leaflet drops a fit
+      // that comes while an earlier one is still animating.
+      function fitAll(animate) {
         var all = everything();
         moveOnPurpose(function () {
-          if (all.length > 1) map.fitBounds(all, { padding: [40, 40], maxZoom: 16 });
-          else if (all.length === 1) map.setView(all[0], 14);
+          if (all.length > 1) {
+            map.fitBounds(all, { paddingTopLeft: fitPadding.topLeft, paddingBottomRight: fitPadding.bottomRight, maxZoom: 16, animate: !!animate });
+          } else if (all.length === 1) {
+            map.setView(all[0], 14, { animate: !!animate });
+          }
         });
       }
 
@@ -286,9 +408,9 @@ export const buildMapHtml = ({
       function setRoute(line) {
         routeLine = line;
         if (!routeCasing) {
-          routeCasing = L.polyline([], { color: '#ffffff', weight: 9, opacity: 0.9, interactive: false }).addTo(map);
-          routeDriven = L.polyline([], { color: DRIVEN_COLOR, weight: 5, opacity: 0.8, dashArray: '2 8', lineCap: 'round', interactive: false }).addTo(map);
-          routeAhead = L.polyline([], { color: ROUTE_COLOR, weight: 5, opacity: 0.95, lineJoin: 'round', interactive: false }).addTo(map);
+          routeCasing = L.polyline([], { color: COLORS.casing, weight: 10, opacity: 1, lineJoin: 'round', lineCap: 'round', interactive: false }).addTo(map);
+          routeDriven = L.polyline([], { color: COLORS.driven, weight: 6, opacity: 1, lineJoin: 'round', lineCap: 'round', interactive: false }).addTo(map);
+          routeAhead = L.polyline([], { color: COLORS.route, weight: 6, opacity: 1, lineJoin: 'round', lineCap: 'round', interactive: false }).addTo(map);
         }
         routeCasing.setLatLngs(line);
         routeAhead.setLatLngs(line);
@@ -302,7 +424,7 @@ export const buildMapHtml = ({
         routeLine = null;
       }
 
-      // Splits the line at the truck: the road behind it dotted grey, the road
+      // Splits the line at the truck: the road behind it grey, the road
       // ahead in blue.
       function setProgress(index, point) {
         if (!routeLine || !routeAhead) return;
@@ -339,10 +461,18 @@ export const buildMapHtml = ({
         animation = requestAnimationFrame(step);
       }
 
+      // Turns the truck the short way round (350 to 10 degrees is a 20 degree
+      // turn, not 340 back the other way).
+      function turnTruck(el, heading) {
+        if (shownHeading == null) shownHeading = heading;
+        else shownHeading += ((heading - shownHeading) % 360 + 540) % 360 - 180;
+        el.style.transform = 'rotate(' + shownHeading + 'deg)';
+      }
+
       function setDriver(msg) {
         var at = [msg.lat, msg.lng];
         if (!driverMarker) {
-          driverMarker = L.marker(at, { icon: truckIcon, zIndexOffset: 1000, keyboard: false }).addTo(map).bindPopup(DRIVER_LABEL);
+          driverMarker = L.marker(at, { icon: truckIcon, zIndexOffset: 1000, keyboard: false }).addTo(map).bindPopup(escapeHtml(DRIVER_LABEL));
         } else {
           animateTruck(at);
         }
@@ -350,17 +480,23 @@ export const buildMapHtml = ({
         var el = driverMarker.getElement && driverMarker.getElement();
         var truck = el && el.querySelector('.flito-truck');
         if (truck) {
-          var hasHeading = typeof msg.heading === 'number' && msg.heading >= 0;
-          truck.classList.toggle('no-heading', !hasHeading);
           truck.classList.toggle('stale', !!msg.stale);
-          if (hasHeading) truck.querySelector('.flito-truck-arrow').style.transform = 'rotate(' + msg.heading + 'deg)';
+          if (typeof msg.heading === 'number' && msg.heading >= 0) turnTruck(truck.querySelector('.flito-truck-turn'), msg.heading);
+        }
+
+        // Time left, above the truck.
+        if (msg.label) {
+          if (driverMarker.getTooltip()) driverMarker.setTooltipContent(escapeHtml(msg.label));
+          else driverMarker.bindTooltip(escapeHtml(msg.label), { permanent: true, direction: 'top', className: 'flito-eta', interactive: false });
+        } else if (driverMarker.getTooltip()) {
+          driverMarker.unbindTooltip();
         }
 
         // How sure the phone is of the spot: a faint circle of that radius.
         var accuracy = typeof msg.accuracy === 'number' && msg.accuracy > 0 && msg.accuracy < 5000 ? msg.accuracy : null;
         if (accuracy) {
           if (accuracyCircle) accuracyCircle.setRadius(accuracy);
-          else accuracyCircle = L.circle(at, { radius: accuracy, color: '#FF9F00', weight: 1, opacity: 0.5, fillOpacity: 0.12, interactive: false }).addTo(map);
+          else accuracyCircle = L.circle(at, { radius: accuracy, color: COLORS.truck, weight: 1, opacity: 0.6, fillOpacity: 0.12, interactive: false }).addTo(map);
           if (!animation) accuracyCircle.setLatLng(at);
         } else if (accuracyCircle) {
           map.removeLayer(accuracyCircle);
@@ -374,11 +510,12 @@ export const buildMapHtml = ({
         if (animation) { cancelAnimationFrame(animation); animation = null; }
         if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
         if (accuracyCircle) { map.removeLayer(accuracyCircle); accuracyCircle = null; }
+        shownHeading = null;
       }
 
       function setPicked(lat, lng) {
         if (pickedMarker) pickedMarker.setLatLng([lat, lng]);
-        else pickedMarker = L.marker([lat, lng], { icon: pinIcon('#FF9F00', '•'), draggable: true }).addTo(map);
+        else pickedMarker = L.marker([lat, lng], { icon: pinIcon('picked'), draggable: true }).addTo(map);
         pickedMarker.on('dragend', function () {
           var p = pickedMarker.getLatLng();
           sendToHost({ type: 'picked', lat: p.lat, lng: p.lng });
@@ -402,7 +539,7 @@ export const buildMapHtml = ({
         } else if (msg.type === 'clearDriver') {
           clearDriver();
         } else if (msg.type === 'setStops') {
-          setStops(msg.pickup, msg.dropoff, msg.approximate);
+          setStops(msg.pickup, msg.dropoff, msg.names, msg.approximate);
           if (!viewerMoved) fitAll();
         } else if (msg.type === 'setRoute') {
           if (msg.line && msg.line.length > 1) setRoute(msg.line);
@@ -415,6 +552,10 @@ export const buildMapHtml = ({
           if (follow && driverMarker) {
             moveOnPurpose(function () { map.setView(driverMarker.getLatLng(), Math.max(map.getZoom(), 15)); });
           }
+        } else if (msg.type === 'zoomIn') {
+          map.zoomIn();
+        } else if (msg.type === 'zoomOut') {
+          map.zoomOut();
         } else if (msg.type === 'setPicked') {
           setPicked(msg.lat, msg.lng);
           map.setView([msg.lat, msg.lng], Math.max(map.getZoom(), 15));
@@ -424,9 +565,12 @@ export const buildMapHtml = ({
           map.setView([msg.lat, msg.lng], msg.zoom || map.getZoom());
         } else if (msg.type === 'fitAll') {
           viewerMoved = false;
-          fitAll();
+          fitAll(true);
         } else if (msg.type === 'gestures') {
           setGestures(msg.mode);
+        } else if (msg.type === 'setPadding') {
+          fitPadding = { topLeft: msg.topLeft || fitPadding.topLeft, bottomRight: msg.bottomRight || fitPadding.bottomRight };
+          if (!viewerMoved) fitAll();
         }
       });
 

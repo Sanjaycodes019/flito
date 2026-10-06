@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import MapCanvas from './MapCanvas';
 import Button from '../common/Button';
 import { buildMapHtml } from './mapHtml';
+import { useTheme } from '../../theme/ThemeProvider';
 import { colors, spacing, radius, type, themedStyles } from '../../theme/tokens';
 
 const samePoint = (a, b) => (!a && !b) || (a && b && a.lat === b.lat && a.lng === b.lng);
@@ -14,6 +15,7 @@ const samePoint = (a, b) => (!a && !b) || (a && b && a.lat === b.lat && a.lng ==
 // TrackingMap is read-only and multi-marker.
 const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = true }) => {
   const { t } = useTranslation();
+  const { scheme } = useTheme();
   const canvasRef = useRef(null);
   const [locating, setLocating] = useState(false);
   // The point the map itself last showed, so a pin the user just placed isn't
@@ -25,6 +27,7 @@ const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = t
   const html = useMemo(() => buildMapHtml({
     interactive: true,
     initialPicked: value || null,
+    theme: scheme,
     labels: { twoFingers: t('loads:trackingMap.twoFingers'), clickToZoom: t('loads:trackingMap.clickToZoom') },
   }), []); // eslint-disable-line react-hooks/exhaustive-deps
 

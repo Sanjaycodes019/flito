@@ -84,7 +84,14 @@
     "stopSharing": "Stop Sharing",
     "shareMyLocation": "Share My Location",
     "couldNotStartTitle": "Could not start sharing",
-    "permissionDenied": "Allow location access to share your position"
+    "permissionDenied": "Allow location access to share your position",
+    "on": "On",
+    "off": "Off",
+    "gps": {
+      "good": "Good GPS · ±{{meters}} m",
+      "fair": "Fair GPS · ±{{meters}} m",
+      "poor": "Weak GPS · ±{{meters}} m"
+    }
   },
   "signaturePad": {
     "title": "Recipient Signature",

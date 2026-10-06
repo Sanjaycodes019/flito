@@ -250,8 +250,11 @@ const BookingDetailScreen = ({ route }) => {
               bookingId={bookingId}
               pickup={booking.loadId?.pickupLocation?.coordinates?.lat != null ? booking.loadId.pickupLocation.coordinates : null}
               dropoff={booking.loadId?.dropoffLocation?.coordinates?.lat != null ? booking.loadId.dropoffLocation.coordinates : null}
+              pickupName={booking.loadId?.pickupLocation?.label}
+              dropoffName={booking.loadId?.dropoffLocation?.label}
               driverLocation={booking.currentLocation?.lat != null ? { ...booking.currentLocation, updatedAt: booking.locationUpdatedAt } : null}
               live={booking.status === 'in_transit'}
+              delivered={booking.status === 'completed'}
             />
           </Card>
         </View>

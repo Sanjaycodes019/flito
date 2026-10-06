@@ -4,8 +4,9 @@ import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
 import Button from '../common/Button';
+import PulseDot from '../common/PulseDot';
 import Icon from '../../theme/icons';
-import { colors, spacing, type, iconSize, themedStyles } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
 import { getErrorMessage } from '../../utils/helpers';
 import { notify } from '../../utils/alert';
 import api from '../../services/api';
@@ -25,6 +26,14 @@ const SEND_MIN_GAP_MS = 8000;
 const SEND_AFTER_MOVING_M = 30;
 const SEND_AFTER_TURNING_DEG = 30;
 const STILL_SHARING_EVERY_MS = 60 * 1000;
+
+// How sure the phone is of where it is, from the radius of its GPS fix.
+export const gpsQualityOf = (accuracy) => {
+  if (accuracy == null) return null;
+  if (accuracy <= 20) return 'good';
+  if (accuracy <= 60) return 'fair';
+  return 'poor';
+};
 
 // Whether `fix` is worth sending, given the last one sent ({ fix, at }).
 export const worthSending = (fix, last, now = Date.now()) => {
@@ -60,6 +69,7 @@ const LocationSharingToggle = ({ bookingId, onFix }) => {
   const [sharing, setSharing] = useState(false);
   const [starting, setStarting] = useState(false);
   const [lastSentAt, setLastSentAt] = useState(null);
+  const [accuracy, setAccuracy] = useState(null);
   const subscriptionRef = useRef(null);
   const timerRef = useRef(null);
   const lastFixRef = useRef(null);
@@ -109,6 +119,7 @@ const LocationSharingToggle = ({ bookingId, onFix }) => {
         (position) => {
           const fix = fixOf(position);
           lastFixRef.current = fix;
+          setAccuracy(fix.accuracy ?? null);
           onFix?.({ ...fix, at: new Date(position.timestamp || Date.now()).toISOString() });
           sendIfWorthIt();
         }
@@ -129,20 +140,43 @@ const LocationSharingToggle = ({ bookingId, onFix }) => {
     setStarting(false);
   };
 
+  const quality = sharing ? gpsQualityOf(accuracy) : null;
+  const tone = { good: colors.successText, fair: colors.warningText, poor: colors.errorText }[quality];
+  const toneBackground = { good: colors.successMuted, fair: colors.warningMuted, poor: colors.errorMuted }[quality];
+
   return (
     <Card>
       <View style={styles.titleRow}>
-        <Icon name={sharing ? 'gps' : 'location'} size={iconSize.md} color={sharing ? colors.successText : colors.primaryText} style={styles.titleIcon} />
+        <View style={[styles.titleIcon, sharing && styles.titleIconOn]}>
+          <Icon name={sharing ? 'gps' : 'location'} size={iconSize.md} color={sharing ? colors.successText : colors.primaryText} />
+        </View>
         <Text style={styles.title}>{t('bookings:locationSharing.title')}</Text>
-        {sharing && <View style={styles.liveDot} />}
+        <View style={[styles.badge, sharing ? styles.badgeOn : styles.badgeOff]}>
+          {sharing && <PulseDot color={colors.success} size={6} />}
+          <Text style={[styles.badgeText, sharing && styles.badgeTextOn]}>
+            {t(sharing ? 'bookings:locationSharing.on' : 'bookings:locationSharing.off')}
+          </Text>
+        </View>
       </View>
       <Text style={styles.hint}>
         {sharing
           ? t('bookings:locationSharing.sharingHint')
           : t('bookings:locationSharing.notSharingHint')}
       </Text>
-      {sharing && lastSentAt && (
-        <Text style={styles.meta}>{t('bookings:locationSharing.lastSent', { time: lastSentAt.toLocaleTimeString() })}</Text>
+      {sharing && (lastSentAt || quality) && (
+        <View style={styles.metaRow}>
+          {lastSentAt && (
+            <Text style={styles.meta}>{t('bookings:locationSharing.lastSent', { time: lastSentAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) })}</Text>
+          )}
+          {quality && (
+            <View style={[styles.quality, { backgroundColor: toneBackground }]}>
+              <Icon name="gps" size={iconSize.xs} color={tone} style={styles.qualityIcon} />
+              <Text style={[styles.qualityText, { color: tone }]}>
+                {t(`bookings:locationSharing.gps.${quality}`, { meters: Math.round(accuracy) })}
+              </Text>
+            </View>
+          )}
+        </View>
       )}
       <Button
         title={sharing ? t('bookings:locationSharing.stopSharing') : t('bookings:locationSharing.shareMyLocation')}
@@ -156,12 +190,29 @@ const LocationSharingToggle = ({ bookingId, onFix }) => {
 };
 
 const styles = themedStyles(() => ({
-  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
-  titleIcon: { marginRight: spacing.xs },
-  title: { ...type.h3, color: colors.textPrimary },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, marginLeft: spacing.sm },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  titleIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryMuted,
+    marginRight: spacing.sm,
+  },
+  titleIconOn: { backgroundColor: colors.successMuted },
+  title: { ...type.h3, color: colors.textPrimary, flex: 1 },
+  badge: { flexDirection: 'row', alignItems: 'center', borderRadius: 999, paddingLeft: spacing.xs, paddingRight: spacing.sm, minHeight: 24 },
+  badgeOn: { backgroundColor: colors.successMuted },
+  badgeOff: { backgroundColor: colors.surfaceMuted, paddingLeft: spacing.sm },
+  badgeText: { ...type.caption, color: colors.textMuted },
+  badgeTextOn: { color: colors.successText },
   hint: { ...type.small, color: colors.textMuted, marginBottom: spacing.sm },
-  meta: { ...type.caption, fontWeight: '400', color: colors.textMuted, marginBottom: spacing.sm },
+  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  meta: { ...type.caption, fontWeight: '400', color: colors.textMuted },
+  quality: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.sm, paddingHorizontal: spacing.xs, paddingVertical: 2 },
+  qualityIcon: { marginRight: 4 },
+  qualityText: { ...type.caption, fontWeight: '600' },
 }));
 
 export default LocationSharingToggle;
