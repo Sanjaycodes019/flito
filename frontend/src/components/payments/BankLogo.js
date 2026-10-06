@@ -29,7 +29,7 @@ const LOGOS = {
   nmb: { source: require('../../../assets/banks/nmb.png'), aspect: 1 },
   prabhu: { source: require('../../../assets/banks/prabhu.jpg'), aspect: 304 / 66 },
   sanima: { source: require('../../../assets/banks/sanima.png'), aspect: 352 / 44 },
-  esewa: { source: require('../../../assets/banks/esewa.png'), aspect: 124 / 33 },
+  esewa: { source: require('../../../assets/banks/esewa.png'), aspect: 886 / 230 },
   khalti: { source: require('../../../assets/banks/khalti.png'), aspect: 2 },
 };
 

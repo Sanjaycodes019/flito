@@ -28,9 +28,13 @@ launch, and replace a file here when a bank changes its branding.
 | nmb.png | NMB Bank | https://www.nmb.com.np/assets/images/favicon.png |
 | prabhu.jpg | Prabhu Bank | https://www.prabhubank.com/uploads/new-logo2.jpg |
 | sanima.png | Sanima Bank | https://www.sanimabank.com/static/images/logo_bank.png |
-| esewa.png | eSewa | https://esewa.com.np/common/images/esewa_logo.png |
+| esewa.png | eSewa | https://cdn.esewa.com.np/ui/images/esewa_og.png (the site's share image; its header logo, `common/images/esewa_logo.png`, has white lettering for the green bar and shows only the "e" on a white tile) |
 | khalti.svg | Khalti | https://khalti-static.s3.ap-south-1.amazonaws.com/cloudfront-cdn/jamara/web19/images/khalti-logo.svg |
 
 `nabil.png` and `khalti.png` are `nabil.svg` and `khalti.svg` drawn out at
 985×128 and 824×412, unchanged otherwise, so every logo is a plain image that
 shows the same in the Android app and on the web. Redraw them if the SVGs change.
+
+`esewa.png` is `esewa_og.png` (1200×630, downloaded on 6 October 2026) cropped
+to the logo, 886×230 from (157, 200), and saved as a plain RGB PNG; the pixels
+are unchanged.
