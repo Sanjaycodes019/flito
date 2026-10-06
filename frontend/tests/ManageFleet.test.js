@@ -3,6 +3,7 @@ import { fireEvent, waitFor } from '@testing-library/react-native';
 import ManageFleet from '../src/screens/owner/ManageFleet';
 import { renderWithProviders, fakeUser } from './testUtils';
 import { addDays, nepalDay } from '../src/utils/nepalDate';
+import { adToBs, bsToAd } from '../src/utils/bsCalendar';
 
 jest.mock('../src/services/api', () => ({
   __esModule: true,
@@ -22,7 +23,8 @@ const TREE = {
   localLevels: [{ id: 'NP0325101', districtId: 'NP0325', name: 'Lalitpur', category: 'Metropolitan City', wards: 29, aliases: [] }],
 };
 
-const NEXT_YEAR = Number(nepalDay().slice(0, 4)) + 1;
+// Dates are picked in BS, the app's default calendar.
+const NEXT_BS_YEAR = adToBs(nepalDay()).year + 1;
 
 const renderFleet = (trucks = [], drivers = []) => {
   api.get.mockImplementation((url) => Promise.resolve({ data: url === '/users/me/drivers' ? { drivers } : { trucks } }));
@@ -86,8 +88,8 @@ describe('my fleet', () => {
     fireEvent.press(screen.getByLabelText('Third-Party'));
     fireEvent.changeText(screen.getByLabelText('Insurance Company'), 'Shikhar Insurance');
     await pick(screen, 'Insurance valid until, day', '15');
-    await pick(screen, 'Insurance valid until, month', 'Mar');
-    await pick(screen, 'Insurance valid until, year', String(NEXT_YEAR));
+    await pick(screen, 'Insurance valid until, month', 'Baisakh');
+    await pick(screen, 'Insurance valid until, year', String(NEXT_BS_YEAR));
     next(screen);
 
     expect(await screen.findByText('Check and save')).toBeTruthy();
@@ -111,7 +113,7 @@ describe('my fleet', () => {
       chassisNumber: null,
       engineNumber: null,
       bluebookRenewedUntil: null,
-      insurance: { type: 'third-party', company: 'Shikhar Insurance', policyNumber: null, validUntil: `${NEXT_YEAR}-03-15` },
+      insurance: { type: 'third-party', company: 'Shikhar Insurance', policyNumber: null, validUntil: bsToAd(NEXT_BS_YEAR, 1, 15) },
       emissionTestValidUntil: null,
     }));
     await waitFor(() => expect(api.get.mock.calls.filter(([url]) => url === '/trucks')).toHaveLength(2));

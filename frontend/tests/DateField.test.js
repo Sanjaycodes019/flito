@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import DateField from '../src/components/common/DateField';
-import { setCalendar } from '../src/services/calendarPreference';
+import { getCalendar, setCalendar } from '../src/services/calendarPreference';
 import { mergeDetectedPlace } from '../src/components/address/NepalAddressFields';
 
 const Harness = ({ onChange, initial = null }) => {
@@ -24,6 +24,15 @@ const choose = (screen, field, option) => {
 afterEach(async () => { await act(() => setCalendar('ad')); });
 
 describe('DateField', () => {
+  // Runs first, before any test has chosen a calendar.
+  it('shows dates in BS until another calendar is chosen', () => {
+    expect(getCalendar()).toBe('bs');
+    const screen = render(<Harness onChange={jest.fn()} initial="2026-09-19" />);
+
+    expect(screen.getByText('Ashwin')).toBeTruthy();
+    expect(screen.getByLabelText('Nepali calendar (BS)').props.accessibilityState).toMatchObject({ selected: true });
+  });
+
   it('picks an AD date and reports it as YYYY-MM-DD', () => {
     const onChange = jest.fn();
     const screen = render(<Harness onChange={onChange} />);

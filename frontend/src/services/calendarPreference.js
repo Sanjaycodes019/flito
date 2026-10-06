@@ -2,18 +2,18 @@ import { useSyncExternalStore } from 'react';
 import i18n from '../i18n';
 import { storage } from './storage';
 
-// Which calendar the app shows dates in: 'ad' (Gregorian) or 'bs' (Bikram
-// Sambat, Nepal's own). Dates are always stored and sent as AD days; this only
-// changes how they are shown and picked. Until someone chooses, it follows the
-// language: Nepali shows BS, English shows AD.
+// Which calendar the app shows dates in: 'bs' (Bikram Sambat, Nepal's official
+// calendar) or 'ad' (Gregorian). Dates are always stored and sent as AD days;
+// this only changes how they are shown and picked. BS is the default in both
+// languages; AD applies only once someone chooses it.
 
 export const CALENDAR_STORAGE_KEY = 'calendar';
-export const CALENDARS = ['ad', 'bs'];
+export const CALENDARS = ['bs', 'ad'];
 
 let chosen = null;
 const listeners = new Set();
 
-export const getCalendar = () => chosen || (i18n.language === 'ne' ? 'bs' : 'ad');
+export const getCalendar = () => chosen || 'bs';
 
 // Reads the saved choice. Called once at start-up, before anything renders.
 export const loadCalendarPreference = async () => {

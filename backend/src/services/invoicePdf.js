@@ -69,18 +69,21 @@ const rs = (amount) => {
   return `Rs. ${value.toLocaleString('en-IN', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 };
 
-// "6 Oct 2026" for a day key ("2026-10-06") or a moment, as Nepal sees it.
+// Dates are in BS, Nepal's official calendar: "20 Ashwin 2083" for a day key
+// ("2026-10-06") or a moment, as Nepal sees it. The key dates also show the AD
+// date under it, as "6 Oct 2026 AD".
 const adDay = (day) => {
   const [y, m, d] = day.split('-').map(Number);
   return `${d} ${MONTHS[m - 1]} ${y}`;
 };
 const keyOf = (value) => (typeof value === 'string' ? value : nepalDay(value));
-const adDate = (value) => (value ? adDay(keyOf(value)) : '-');
-// "20 Ashwin 2083 BS"
-const bsDate = (value) => {
-  const bs = value ? adToBs(keyOf(value)) : null;
-  return bs ? `${bs.day} ${BS_MONTHS.en[bs.month - 1]} ${bs.year} BS` : null;
+const date = (value) => {
+  if (!value) return '-';
+  const bs = adToBs(keyOf(value));
+  // Outside the BS table's range: the AD date, marked as such.
+  return bs ? `${bs.day} ${BS_MONTHS.en[bs.month - 1]} ${bs.year}` : `${adDay(keyOf(value))} AD`;
 };
+const adDate = (value) => (value ? `${adDay(keyOf(value))} AD` : null);
 const nepalTime = (at) => new Date(new Date(at).getTime() + NEPAL_OFFSET_MS).toISOString().slice(11, 16);
 
 const TRUCK_TYPES = {
@@ -211,9 +214,9 @@ const renderInvoicePdf = (invoice, { generatedAt = new Date() } = {}) => new Pro
   const META_H = 46;
   doc.roundedRect(M, y, CW, META_H, 7).fill(C.soft);
   const meta = [
-    ['Issue date', adDate(invoice.issuedAt), bsDate(invoice.issuedAt)],
-    ['Trip completed', adDate(invoice.completedAt), bsDate(invoice.completedAt)],
-    ['Booking reference', `#${invoice.reference}`, `Booked ${adDate(invoice.bookedAt)}`],
+    ['Issue date', date(invoice.issuedAt), adDate(invoice.issuedAt)],
+    ['Trip completed', date(invoice.completedAt), adDate(invoice.completedAt)],
+    ['Booking reference', `#${invoice.reference}`, `Booked ${date(invoice.bookedAt)}`],
     ['Balance due', rs(amounts.due), amounts.due > 0 ? 'Payable to the truck owner' : 'Settled in full'],
   ];
   const metaW = CW / meta.length;
@@ -295,8 +298,8 @@ const renderInvoicePdf = (invoice, { generatedAt = new Date() } = {}) => new Pro
     ['Weight', [kg(trip.weight), trip.volume ? `${trip.volume} m³` : null].filter(Boolean).join(' · ') || '-'],
     ['Truck', truckLine(trip.truck) || '-'],
     ['Truck number', [trip.truck?.registrationNumber, trip.truck?.makeModel].filter(Boolean).join(' · ') || '-'],
-    ['Pickup date', trip.pickupDay ? adDate(trip.pickupDay) : '-'],
-    ['Delivered', adDate(invoice.completedAt)],
+    ['Pickup date', date(trip.pickupDay)],
+    ['Delivered', date(invoice.completedAt)],
     ['Distance', distance || '-'],
     ['Driver', trip.driver || '-'],
   ];
@@ -400,7 +403,7 @@ const renderInvoicePdf = (invoice, { generatedAt = new Date() } = {}) => new Pro
     doc.roundedRect(sx + 3.5, sy + 3.5, sw - 7, sh - 7, 4).lineWidth(0.6).strokeColor(C.tealText).stroke();
     text('PAID IN FULL', sx, sy + 9, { font: 'bold', size: 13, color: C.tealText, width: sw, align: 'center', spacing: 2 });
     const lastPaid = invoice.payments[invoice.payments.length - 1]?.date;
-    if (lastPaid) text(adDate(lastPaid), sx, sy + 28, { font: 'semibold', size: 7, color: C.tealText, width: sw, align: 'center', spacing: 1 });
+    if (lastPaid) text(date(lastPaid), sx, sy + 28, { font: 'semibold', size: 7, color: C.tealText, width: sw, align: 'center', spacing: 1 });
     doc.restore();
   }
 
@@ -419,9 +422,9 @@ const renderInvoicePdf = (invoice, { generatedAt = new Date() } = {}) => new Pro
     text('No payments have been confirmed by the truck owner yet.', M, y + 2, { size: 8, color: C.muted, width: payW });
   } else {
     const payCols = [
-      { title: 'Date', w: 64 },
+      { title: 'Date', w: 76 },
       { title: 'Method', w: 62 },
-      { title: 'Reference / paid to', w: payW - 64 - 62 - 76 },
+      { title: 'Reference / paid to', w: payW - 76 - 62 - 76 },
       { title: 'Amount', w: 76, align: 'right' },
     ];
     const payX = payCols.reduce((xs, col, i) => [...xs, i === 0 ? M : xs[i - 1] + payCols[i - 1].w], []);
@@ -440,7 +443,7 @@ const renderInvoicePdf = (invoice, { generatedAt = new Date() } = {}) => new Pro
     shown.forEach((payment, index) => {
       if ((index + (hidden.length ? 1 : 0)) % 2 === 1) doc.rect(M, ry, payW, 17).fill(C.soft);
       const where = [payment.reference, payment.paidTo || (payment.method === 'cash' ? 'Cash in hand' : null)].filter(Boolean).join(' · ');
-      [adDate(payment.date), METHODS[payment.method] || payment.method, where || '-', rs(payment.amount)]
+      [date(payment.date), METHODS[payment.method] || payment.method, where || '-', rs(payment.amount)]
         .forEach((value, i) => text(value, payX[i] + (i === 0 ? 8 : 0), ry + 4.5, {
           font: i === 3 ? 'semibold' : 'regular',
           size: 7.6,
@@ -469,7 +472,7 @@ const renderInvoicePdf = (invoice, { generatedAt = new Date() } = {}) => new Pro
   hline(proofX + 16, y + 45, PROOF_W - 32, '#C3CBD3', 0.6);
   caption("Receiver's signature", proofX, y + 49, { width: PROOF_W, align: 'center' });
   const proofNote = [
-    delivery.signedAt ? `Signed ${adDate(delivery.signedAt)}, ${nepalTime(delivery.signedAt)} NPT` : `Delivered ${adDate(invoice.completedAt)}`,
+    delivery.signedAt ? `Signed ${date(delivery.signedAt)}, ${nepalTime(delivery.signedAt)} NPT` : `Delivered ${date(invoice.completedAt)}`,
     delivery.photos ? `${delivery.photos} photo${delivery.photos === 1 ? '' : 's'}` : null,
   ].filter(Boolean).join('  ·  ');
   text(proofNote, proofX + 6, y + 62, { size: 6.8, color: C.muted, width: PROOF_W - 12, align: 'center', lines: 1 });
@@ -477,12 +480,12 @@ const renderInvoicePdf = (invoice, { generatedAt = new Date() } = {}) => new Pro
   // ── Notes and footer ──────────────────────────────────────────────────────
   text(
     `Issued by ${invoice.owner?.name || 'the truck owner'} for a trip booked on FLITO. Payments go straight to the truck owner; `
-      + 'FLITO does not collect or hold trip payments, and only payments the owner confirmed are listed. All amounts in NPR.',
+      + 'FLITO does not collect or hold trip payments, and only payments the owner confirmed are listed. All amounts in NPR; dates in BS.',
     M, PAGE_H - 72, { size: 6.8, color: C.muted, width: CW, lines: 2 },
   );
   hline(M, PAGE_H - 44, CW);
   text('Thank you for shipping with FLITO.', M, PAGE_H - 36, { font: 'semibold', size: 7.5, color: C.amberText, width: CW / 3, lines: 1 });
-  text(`Generated ${adDate(generatedAt)}, ${nepalTime(generatedAt)} NPT`, M + CW / 3, PAGE_H - 36, {
+  text(`Generated ${date(generatedAt)}, ${nepalTime(generatedAt)} NPT`, M + CW / 3, PAGE_H - 36, {
     size: 7, color: C.faint, width: CW / 3, align: 'center',
   });
   text(`Invoice ${invoice.number}`, M + (CW * 2) / 3, PAGE_H - 36, { size: 7, color: C.faint, width: CW / 3, align: 'right' });

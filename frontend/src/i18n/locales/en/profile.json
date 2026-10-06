@@ -192,7 +192,7 @@
       "title": "Language",
       "hint": "Choose the language the app is shown in.",
       "calendarTitle": "Calendar",
-      "calendarHint": "Dates are always saved the same way. This only changes how they are shown and picked."
+      "calendarHint": "FLITO uses BS, Nepal's official calendar, unless you choose AD. Dates are always saved the same way; this only changes how they are shown and picked."
     },
     "appearance": {
       "title": "Theme",
