@@ -6,6 +6,9 @@ import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice'
 import Button from '../components/common/Button';
 import Input, { InputAction } from '../components/common/Input';
 import AuthLayout from '../components/auth/AuthLayout';
+import AuthMethodTabs from '../components/auth/AuthMethodTabs';
+import AuthLink from '../components/auth/AuthLink';
+import FormSection from '../components/auth/FormSection';
 import GoogleButton from '../components/auth/GoogleButton';
 import GoogleIcon from '../components/auth/GoogleIcon';
 import PasswordStrengthMeter, { passwordScore } from '../components/auth/PasswordStrengthMeter';
@@ -38,7 +41,9 @@ const RoleOption = ({ option, selected, onSelect, stacked }) => (
     accessibilityLabel={`${option.label}, ${option.desc}`}
     style={[styles.roleCard, stacked && styles.roleCardStacked, selected && styles.roleCardSelected]}
   >
-    <Icon name={option.icon} size={iconSize.lg} color={selected ? colors.primaryText : colors.textMuted} />
+    <View style={[styles.roleIcon, selected && styles.roleIconSelected]}>
+      <Icon name={option.icon} size={iconSize.lg} color={selected ? colors.primaryText : colors.textMuted} />
+    </View>
     <View style={stacked ? styles.roleTextStacked : styles.roleText}>
       <Text style={[styles.roleLabel, stacked && styles.roleLabelStacked, selected && styles.roleLabelSelected]}>{option.label}</Text>
       <Text style={[styles.roleDesc, stacked && styles.roleDescStacked]}>{option.desc}</Text>
@@ -253,28 +258,75 @@ const SignupScreen = ({ navigation, route }) => {
 
   const googleName = [pendingGoogle?.profile?.firstName, pendingGoogle?.profile?.lastName].filter(Boolean).join(' ');
 
-  const rolePicker = (
+  const roleRadios = (
+    <View style={[styles.roleRow, stackRoles && styles.roleColumn]} accessibilityRole="radiogroup">
+      {ROLE_OPTIONS.map((opt) => (
+        <RoleOption
+          key={opt.value}
+          option={opt}
+          selected={role === opt.value}
+          onSelect={() => setRole(opt.value)}
+          stacked={stackRoles}
+        />
+      ))}
+    </View>
+  );
+
+  // First and last name share a row from tablet width up. `validate` turns on
+  // the inline "first name is required" message (the email form shows it; the
+  // phone form reports problems on submit instead).
+  const nameFields = (validate) => (
+    <View style={isPhone ? null : styles.fieldRow}>
+      <Input
+        label={t('auth:signup.firstNameLabel')}
+        value={firstName}
+        onChangeText={setFirstName}
+        onBlur={validate ? () => setNameTouched(true) : undefined}
+        placeholder={t('auth:signup.firstNamePlaceholder')}
+        autoComplete="given-name"
+        icon="person"
+        error={validate ? nameError : null}
+        required
+        containerStyle={isPhone ? undefined : styles.fieldHalf}
+      />
+      <Input
+        label={t('auth:signup.lastNameLabel')}
+        value={lastName}
+        onChangeText={setLastName}
+        placeholder={t('auth:signup.lastNamePlaceholder')}
+        autoComplete="family-name"
+        icon="person"
+        containerStyle={isPhone ? undefined : styles.fieldHalf}
+      />
+    </View>
+  );
+
+  const orGoogle = (
     <>
-      <Text style={styles.sectionLabel}>{t('auth:signup.roleSectionLabel')}</Text>
-      <View style={[styles.roleRow, stackRoles && styles.roleColumn]} accessibilityRole="radiogroup">
-        {ROLE_OPTIONS.map((opt) => (
-          <RoleOption
-            key={opt.value}
-            option={opt}
-            selected={role === opt.value}
-            onSelect={() => setRole(opt.value)}
-            stacked={stackRoles}
-          />
-        ))}
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>{t('auth:shared.or')}</Text>
+        <View style={styles.dividerLine} />
       </View>
+      {/* Never disabled: an unconfigured client still answers the tap with a
+          clear "not available yet" message instead of a dead click. */}
+      <GoogleButton title={t('auth:signup.googleButtonTitle')} onPress={startGoogleSignup} loading={googleLoading} />
     </>
+  );
+
+  const footer = (
+    <View style={styles.hasAccountBar}>
+      <Text style={styles.hasAccountPrompt}>{t('auth:signup.hasAccountPrompt')}</Text>
+      <AuthLink label={t('auth:shared.logIn')} icon="login" onPress={() => navigation.navigate('Login')} />
+    </View>
   );
 
   return (
     <AuthLayout
-      title={t('auth:shared.signUp')}
-      subtitle={pendingGoogle ? t('auth:signup.subtitlePending') : t('auth:signup.subtitleNew')}
+      title={t('auth:signup.title')}
+      subtitle={pendingGoogle ? t('auth:signup.subtitlePending') : t('auth:signup.subtitleJoin')}
       maxWidth={pendingGoogle ? 480 : 560}
+      footer={footer}
     >
       {pendingGoogle ? (
         <>
@@ -290,207 +342,158 @@ const SignupScreen = ({ navigation, route }) => {
             </View>
           </View>
 
-          {rolePicker}
+          <FormSection step={1} title={t('auth:signup.roleSectionLabel')} last>
+            {roleRadios}
+          </FormSection>
 
           <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
 
           <Button
             title={t('auth:signup.finishSignUp')}
             icon="checkmark"
+            size="lg"
             onPress={() => completeGoogleSignup(pendingGoogle.idToken)}
             loading={googleLoading}
             disabled={!agreed}
           />
           <Button title={t('auth:signup.useEmailInstead')} variant="ghost" onPress={() => { setPendingGoogle(null); setMode('email'); }} />
         </>
-      ) : mode === 'phone' ? (
-        <>
-          {rolePicker}
-
-          <View style={isPhone ? null : styles.fieldRow}>
-            <Input
-              label={t('auth:signup.firstNameLabel')}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder={t('auth:signup.firstNamePlaceholder')}
-              autoComplete="given-name"
-              icon="person"
-              required
-              containerStyle={isPhone ? undefined : styles.fieldHalf}
-            />
-            <Input
-              label={t('auth:signup.lastNameLabel')}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder={t('auth:signup.lastNamePlaceholder')}
-              autoComplete="family-name"
-              icon="person"
-              containerStyle={isPhone ? undefined : styles.fieldHalf}
-            />
-          </View>
-
-          <Input
-            label={t('auth:phoneSignup.phoneLabel')}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="98XXXXXXXX"
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            icon="phone"
-            helperText={t('auth:phoneSignup.phoneHelp')}
-            required
-          />
-
-          <Text style={styles.sectionLabel}>{t('auth:phoneSignup.pinLabel')}</Text>
-          <OtpInput length={4} value={pin} onChange={setPin} autoFocus={false} />
-          <Text style={styles.pinHint}>{t('auth:phoneSignup.pinHint')}</Text>
-          <Text style={styles.sectionLabel}>{t('auth:phoneSignup.confirmPinLabel')}</Text>
-          <OtpInput length={4} value={confirmPin} onChange={setConfirmPin} autoFocus={false} />
-
-          <View style={styles.pinGap} />
-          <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
-
-          {/* Never greyed out: a tap on an unfinished form says what is missing. */}
-          <Button title={t('auth:shared.signUp')} icon="checkmark" size="lg" onPress={handlePhoneSignup} loading={loading} />
-          {phoneTried && phoneFormProblem ? <Text style={styles.problem}>{phoneFormProblem}</Text> : null}
-
-          <Button title={t('auth:phoneSignup.useEmail')} variant="ghost" size="sm" onPress={() => setMode('email')} style={styles.modeSwitch} />
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>{t('auth:shared.or')}</Text>
-            <View style={styles.dividerLine} />
-          </View>
-          <GoogleButton title={t('auth:signup.googleButtonTitle')} onPress={startGoogleSignup} loading={googleLoading} />
-        </>
       ) : (
         <>
-          {rolePicker}
+          <AuthMethodTabs active={mode} order={['phone', 'email']} onSelect={setMode} />
 
-          {/* First and last name share a row from tablet width up. */}
-          <View style={isPhone ? null : styles.fieldRow}>
-            <Input
-              label={t('auth:signup.firstNameLabel')}
-              value={firstName}
-              onChangeText={setFirstName}
-              onBlur={() => setNameTouched(true)}
-              placeholder={t('auth:signup.firstNamePlaceholder')}
-              autoComplete="given-name"
-              icon="person"
-              error={nameError}
-              required
-              containerStyle={isPhone ? undefined : styles.fieldHalf}
-            />
-            <Input
-              label={t('auth:signup.lastNameLabel')}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder={t('auth:signup.lastNamePlaceholder')}
-              autoComplete="family-name"
-              icon="person"
-              containerStyle={isPhone ? undefined : styles.fieldHalf}
-            />
-          </View>
+          <FormSection step={1} title={t('auth:signup.roleSectionLabel')}>
+            {roleRadios}
+          </FormSection>
 
-          <Input
-            label={t('auth:shared.emailLabel')}
-            value={email}
-            onChangeText={setEmail}
-            onBlur={() => setEmailTouched(true)}
-            placeholder={t('auth:shared.emailPlaceholder')}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            icon="email"
-            error={emailError}
-            required
-          />
-          <Input
-            label={t('auth:signup.phoneLabel')}
-            value={phone}
-            onChangeText={setPhone}
-            onBlur={() => setPhoneTouched(true)}
-            placeholder={t('auth:signup.phonePlaceholder')}
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            icon="phone"
-            error={phoneError}
-          />
+          {mode === 'phone' ? (
+            <>
+              <FormSection step={2} title={t('auth:signup.stepDetails')}>
+                {nameFields(false)}
+                <Input
+                  label={t('auth:phoneSignup.phoneLabel')}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="98XXXXXXXX"
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
+                  icon="phone"
+                  helperText={t('auth:phoneSignup.phoneHelp')}
+                  required
+                />
+              </FormSection>
 
-          <Input
-            label={t('auth:shared.passwordLabel')}
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t('auth:shared.passwordPlaceholderMin8')}
-            secureTextEntry={!showPassword}
-            autoComplete="new-password"
-            icon="lock"
-            required
-            rightElement={
-              <InputAction
-                icon={showPassword ? 'eyeOff' : 'eye'}
-                onPress={() => setShowPassword((v) => !v)}
-                accessibilityLabel={showPassword ? t('auth:shared.hidePassword') : t('auth:shared.showPassword')}
-              />
-            }
-          />
-          <PasswordStrengthMeter password={password} />
+              <FormSection step={3} title={t('auth:signup.stepPin')} hint={t('auth:phoneSignup.pinHint')} last>
+                <View style={isPhone ? null : styles.fieldRow}>
+                  <View style={isPhone ? styles.pinBlock : styles.fieldHalf}>
+                    <Text style={styles.sectionLabel}>{t('auth:phoneSignup.pinLabel')}</Text>
+                    <OtpInput length={4} value={pin} onChange={setPin} autoFocus={false} />
+                  </View>
+                  <View style={isPhone ? styles.pinBlock : styles.fieldHalf}>
+                    <Text style={styles.sectionLabel}>{t('auth:phoneSignup.confirmPinLabel')}</Text>
+                    <OtpInput length={4} value={confirmPin} onChange={setConfirmPin} autoFocus={false} />
+                  </View>
+                </View>
+              </FormSection>
 
-          <Input
-            label={t('auth:signup.confirmPasswordLabel')}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder={t('auth:signup.confirmPasswordPlaceholder')}
-            secureTextEntry={!showPassword}
-            autoComplete="new-password"
-            icon="lock"
-            required
-            error={!passwordsMatch ? t('auth:shared.passwordsMismatch') : null}
-          />
+              <View style={styles.finish}>
+                <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
+                {/* Never greyed out: a tap on an unfinished form says what is missing. */}
+                <Button title={t('auth:shared.signUp')} icon="checkmark" size="lg" onPress={handlePhoneSignup} loading={loading} />
+                {phoneTried && phoneFormProblem ? <Text style={styles.problem}>{phoneFormProblem}</Text> : null}
+              </View>
+            </>
+          ) : (
+            <>
+              <FormSection step={2} title={t('auth:signup.stepDetails')}>
+                {nameFields(true)}
+                <Input
+                  label={t('auth:shared.emailLabel')}
+                  value={email}
+                  onChangeText={setEmail}
+                  onBlur={() => setEmailTouched(true)}
+                  placeholder={t('auth:shared.emailPlaceholder')}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  icon="email"
+                  error={emailError}
+                  required
+                />
+                <Input
+                  label={t('auth:signup.phoneLabel')}
+                  value={phone}
+                  onChangeText={setPhone}
+                  onBlur={() => setPhoneTouched(true)}
+                  placeholder={t('auth:signup.phonePlaceholder')}
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
+                  icon="phone"
+                  error={phoneError}
+                />
+              </FormSection>
 
-          <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
+              <FormSection step={3} title={t('auth:signup.stepPassword')} last>
+                <Input
+                  label={t('auth:shared.passwordLabel')}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={t('auth:shared.passwordPlaceholderMin8')}
+                  secureTextEntry={!showPassword}
+                  autoComplete="new-password"
+                  icon="lock"
+                  required
+                  rightElement={
+                    <InputAction
+                      icon={showPassword ? 'eyeOff' : 'eye'}
+                      onPress={() => setShowPassword((v) => !v)}
+                      accessibilityLabel={showPassword ? t('auth:shared.hidePassword') : t('auth:shared.showPassword')}
+                    />
+                  }
+                />
+                <PasswordStrengthMeter password={password} />
+                <Input
+                  label={t('auth:signup.confirmPasswordLabel')}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder={t('auth:signup.confirmPasswordPlaceholder')}
+                  secureTextEntry={!showPassword}
+                  autoComplete="new-password"
+                  icon="lock"
+                  required
+                  error={!passwordsMatch ? t('auth:shared.passwordsMismatch') : null}
+                />
+              </FormSection>
 
-          <Button title={t('auth:shared.signUp')} icon="checkmark" onPress={handleSignup} loading={loading} disabled={!canSubmit} />
-          {started && missing.length > 0 && (
-            <Text style={styles.missingHint}>{t('auth:signup.missingHint', { items: missing.join(', ') })}</Text>
+              <View style={styles.finish}>
+                <TermsCheckbox checked={agreed} onToggle={() => setAgreed((v) => !v)} />
+                <Button title={t('auth:shared.signUp')} icon="checkmark" size="lg" onPress={handleSignup} loading={loading} disabled={!canSubmit} />
+                {started && missing.length > 0 && (
+                  <Text style={styles.missingHint}>{t('auth:signup.missingHint', { items: missing.join(', ') })}</Text>
+                )}
+              </View>
+            </>
           )}
-          <Button title={t('auth:phoneSignup.usePhone')} variant="ghost" size="sm" onPress={() => setMode('phone')} style={styles.modeSwitch} />
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>{t('auth:shared.or')}</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Never disabled: an unconfigured client still answers the tap with
-              a clear "not available yet" message instead of a dead click. */}
-          <GoogleButton
-            title={t('auth:signup.googleButtonTitle')}
-            onPress={startGoogleSignup}
-            loading={googleLoading}
-          />
+          {orGoogle}
         </>
       )}
-
-      <View style={styles.switchRow}>
-        <Text style={styles.switchPrompt}>{t('auth:signup.hasAccountPrompt')}</Text>
-        <Button title={t('auth:shared.logIn')} variant="tertiary" onPress={() => navigation.navigate('Login')} />
-      </View>
     </AuthLayout>
   );
 };
 
 const styles = themedStyles(() => ({
   sectionLabel: { ...type.smallMedium, color: colors.textSecondary, marginBottom: spacing.sm },
-  roleRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
+  roleRow: { flexDirection: 'row', gap: spacing.sm },
   roleColumn: { flexDirection: 'column' },
   roleCard: {
     flex: 1,
     borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.sm,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
     alignItems: 'center',
     backgroundColor: colors.surface,
   },
@@ -501,10 +504,12 @@ const styles = themedStyles(() => ({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
+  roleIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+  roleIconSelected: { backgroundColor: colors.surface },
   roleCardSelected: { borderColor: colors.primaryText, backgroundColor: colors.primaryMuted },
   roleText: { alignItems: 'center' },
   roleTextStacked: { flex: 1, alignItems: 'flex-start' },
-  roleLabel: { ...type.smallMedium, color: colors.textPrimary, marginTop: spacing.xs, textAlign: 'center' },
+  roleLabel: { ...type.smallMedium, color: colors.textPrimary, marginTop: spacing.sm, textAlign: 'center' },
   roleLabelStacked: { marginTop: 0, textAlign: 'left' },
   roleLabelSelected: { color: colors.primaryText },
   roleDesc: { ...type.caption, fontWeight: '400', color: colors.textMuted, textAlign: 'center', marginTop: 2 },
@@ -525,19 +530,29 @@ const styles = themedStyles(() => ({
   googleBannerTitle: { ...type.bodyMedium, color: colors.textPrimary },
   googleBannerBody: { ...type.small, color: colors.textSecondary, marginTop: spacing.xxs },
   googleBannerEmail: { fontWeight: '700', color: colors.textPrimary },
-  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.lg },
+  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.lg, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceMuted },
   termsText: { ...type.small, color: colors.textSecondary, flex: 1, paddingTop: 2 },
   termsLink: { fontWeight: '600', color: colors.textLink, textDecorationLine: 'underline' },
-  pinHint: { ...type.small, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.md },
-  pinGap: { height: spacing.lg },
   problem: { ...type.small, color: colors.errorText, textAlign: 'center', marginTop: spacing.sm },
-  modeSwitch: { alignSelf: 'center', marginTop: spacing.sm },
   missingHint: { ...type.small, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
   dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },
-  switchRow: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.divider },
-  switchPrompt: { ...type.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.xs },
+  pinBlock: { marginBottom: spacing.lg },
+  finish: { marginTop: spacing.xs },
+  hasAccountBar: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceMuted,
+  },
+  hasAccountPrompt: { ...type.small, color: colors.textSecondary },
 }));
 
 export default SignupScreen;

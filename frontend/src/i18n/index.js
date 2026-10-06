@@ -111,7 +111,11 @@ export const initI18n = () => {
         ns: NAMESPACES,
         defaultNS: 'common',
         interpolation: { escapeValue: false },
-        returnEmptyString: false,
+        // An empty string is a real translation, not a missing one: sentences
+        // built from a prefix and a suffix leave one side empty where English
+        // and Nepali word order differ (Nepali puts the verb last). Treating ""
+        // as missing showed the raw key, or the English text, in its place.
+        returnEmptyString: true,
       })
     );
   }

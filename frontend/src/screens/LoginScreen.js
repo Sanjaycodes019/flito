@@ -6,9 +6,11 @@ import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice'
 import Button from '../components/common/Button';
 import Input, { InputAction } from '../components/common/Input';
 import AuthLayout from '../components/auth/AuthLayout';
+import AuthMethodTabs from '../components/auth/AuthMethodTabs';
+import AuthLink from '../components/auth/AuthLink';
 import GoogleButton from '../components/auth/GoogleButton';
 import { useGoogleAuth, isGoogleConfigured } from '../hooks/useGoogleAuth';
-import { colors, spacing, type, themedStyles } from '../theme/tokens';
+import { colors, spacing, radius, type, themedStyles } from '../theme/tokens';
 import { authService } from '../services/auth';
 import { isValidEmail, getErrorMessage } from '../utils/helpers';
 import { notify } from '../utils/alert';
@@ -17,6 +19,7 @@ const LoginScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
+  const [tried, setTried] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,11 +27,15 @@ const LoginScreen = ({ navigation }) => {
   const dispatch = useDispatch();
 
   const emailError = emailTouched && !isValidEmail(email) ? t('auth:shared.invalidEmail') : null;
+  const passwordError = tried && !password ? t('auth:login.passwordRequired') : null;
   const canSubmit = isValidEmail(email) && password.length > 0;
 
   const handleLogin = async () => {
+    // The button is never greyed out: a tap on an unfinished form says what
+    // is missing, which a disabled button can't.
     if (!canSubmit) {
       setEmailTouched(true);
+      setTried(true);
       return;
     }
     setLoading(true);
@@ -71,17 +78,25 @@ const LoginScreen = ({ navigation }) => {
 
   const { promptGoogleSignIn } = useGoogleAuth(handleGoogleResult);
 
-  return (
-    <AuthLayout title={t('auth:shared.logIn')} subtitle={t('auth:login.subtitle')}>
-      {/* Many users have no email, so the phone way in comes first. */}
-      <Button
-        title={t('auth:login.driverButton')}
-        icon="phone"
-        variant="tertiary"
-        size="sm"
-        onPress={() => navigation.navigate('PinLogin')}
-        style={styles.driverButton}
+  const footer = (
+    <>
+      <View style={styles.signUpBar}>
+        <Text style={styles.signUpPrompt}>{t('auth:login.newHere')}</Text>
+        <AuthLink label={t('auth:login.createAccount')} icon="add" onPress={() => navigation.navigate('Signup')} />
+      </View>
+      <AuthLink
+        label={t('auth:admin.link')}
+        icon="admin"
+        tone="muted"
+        onPress={() => navigation.navigate('AdminAccess')}
       />
+    </>
+  );
+
+  return (
+    <AuthLayout title={t('auth:login.welcome')} subtitle={t('auth:login.welcomeSubtitle')} footer={footer}>
+      {/* Many users have no email, so the phone way in sits beside it. */}
+      <AuthMethodTabs active="email" onSelect={() => navigation.navigate('PinLogin')} />
 
       <Input
         label={t('auth:shared.emailLabel')}
@@ -106,6 +121,7 @@ const LoginScreen = ({ navigation }) => {
         secureTextEntry={!showPassword}
         autoComplete="current-password"
         icon="lock"
+        error={passwordError}
         required
         onSubmitEditing={handleLogin}
         rightElement={
@@ -117,20 +133,16 @@ const LoginScreen = ({ navigation }) => {
         }
       />
 
-      <Button
-        title={t('auth:login.forgotPassword')}
-        variant="ghost"
-        size="sm"
-        onPress={() => navigation.navigate('ForgotPassword')}
-        style={styles.forgotButton}
-      />
+      <View style={styles.forgotRow}>
+        <AuthLink label={t('auth:login.forgotPassword')} onPress={() => navigation.navigate('ForgotPassword')} />
+      </View>
 
       <Button
         title={t('auth:shared.logIn')}
-        icon="checkmark"
+        icon="login"
+        size="lg"
         onPress={handleLogin}
         loading={loading}
-        disabled={!canSubmit}
         style={styles.loginButton}
       />
 
@@ -146,37 +158,29 @@ const LoginScreen = ({ navigation }) => {
         onPress={() => { setGoogleLoading(isGoogleConfigured()); promptGoogleSignIn(); }}
         loading={googleLoading}
       />
-
-      <View style={styles.switchRow}>
-        <Text style={styles.switchPrompt}>{t('auth:login.noAccountPrompt')}</Text>
-        <Button
-          title={t('auth:shared.signUp')}
-          variant="tertiary"
-          icon="add"
-          onPress={() => navigation.navigate('Signup')}
-        />
-      </View>
-      <Button
-        title={t('auth:admin.link')}
-        variant="ghost"
-        size="sm"
-        onPress={() => navigation.navigate('AdminAccess')}
-        style={styles.adminLink}
-      />
     </AuthLayout>
   );
 };
 
 const styles = themedStyles(() => ({
-  driverButton: { alignSelf: 'center', marginTop: 0, marginBottom: spacing.md },
-  forgotButton: { alignSelf: 'flex-end', marginTop: -spacing.sm },
-  adminLink: { alignSelf: 'center', marginTop: spacing.md },
-  loginButton: { marginTop: spacing.sm },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
+  forgotRow: { alignSelf: 'flex-end', marginTop: -spacing.xs, marginBottom: spacing.lg },
+  loginButton: { marginTop: 0 },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.xl },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.divider },
-  dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.sm },
-  switchRow: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.divider },
-  switchPrompt: { ...type.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.xs },
+  dividerText: { ...type.small, color: colors.textMuted, marginHorizontal: spacing.md },
+  signUpBar: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceMuted,
+  },
+  signUpPrompt: { ...type.small, color: colors.textSecondary },
 }));
 
 export default LoginScreen;

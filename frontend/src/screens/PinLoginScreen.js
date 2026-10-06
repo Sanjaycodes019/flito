@@ -6,6 +6,7 @@ import { loginStart, loginSuccess, loginError } from '../redux/slices/authSlice'
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import AuthLayout from '../components/auth/AuthLayout';
+import AuthMethodTabs from '../components/auth/AuthMethodTabs';
 import OtpInput from '../components/auth/OtpInput';
 import { colors, spacing, type, themedStyles } from '../theme/tokens';
 import { authService } from '../services/auth';
@@ -52,6 +53,8 @@ const PinLoginScreen = ({ navigation }) => {
 
   return (
     <AuthLayout title={t('auth:pinLogin.title')} subtitle={t('auth:pinLogin.subtitle')}>
+      <AuthMethodTabs active="phone" onSelect={() => navigation.navigate('Login')} />
+
       <Input
         label={t('auth:pinLogin.phoneLabel')}
         value={phone}
@@ -88,13 +91,6 @@ const PinLoginScreen = ({ navigation }) => {
         />
       ) : null}
 
-      <Button
-        title={t('auth:pinLogin.emailInstead')}
-        variant="ghost"
-        size="sm"
-        onPress={() => navigation.navigate('Login')}
-        style={styles.emailLink}
-      />
     </AuthLayout>
   );
 };
@@ -105,7 +101,6 @@ const styles = themedStyles(() => ({
   loginButton: { marginTop: spacing.lg },
   hint: { ...type.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
   support: { marginTop: spacing.md },
-  emailLink: { alignSelf: 'center', marginTop: spacing.lg },
 }));
 
 export default PinLoginScreen;

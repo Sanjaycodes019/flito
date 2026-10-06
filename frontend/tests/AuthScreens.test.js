@@ -41,14 +41,15 @@ beforeEach(() => {
 });
 
 describe('LoginScreen', () => {
-  it('keeps Log In disabled until email and password are both present', async () => {
+  it('does not log in until email and password are both present, and says what is missing', async () => {
     const navigation = fakeNavigation();
-    const { findByRole } = renderWithProviders(<LoginScreen navigation={navigation} />);
+    const { findByRole, findByText } = renderWithProviders(<LoginScreen navigation={navigation} />);
 
-    // The page title and the submit button are both "Log In"; target the button.
+    // Target the button, not the link text.
     fireEvent.press(await findByRole('button', { name: 'Log In' }));
     // No email/password yet: the screen should not have attempted a login.
     expect(authService.login).not.toHaveBeenCalled();
+    expect(await findByText('Enter your password')).toBeTruthy();
   });
 
   it('logs in with valid credentials', async () => {
@@ -81,7 +82,7 @@ describe('LoginScreen', () => {
     fireEvent.press(await findByText('Forgot password?'));
     expect(navigation.navigate).toHaveBeenCalledWith('ForgotPassword');
 
-    fireEvent.press(await findByText('Sign Up'));
+    fireEvent.press(await findByText('Create an account'));
     expect(navigation.navigate).toHaveBeenCalledWith('Signup');
   });
 
@@ -123,7 +124,7 @@ describe('SignupScreen', () => {
     authService.signup.mockResolvedValue({ token: 'tok', user: fakeUser('owner') });
     const navigation = fakeNavigation();
     const { findAllByText, findByPlaceholderText, findByRole } = renderWithProviders(<SignupScreen navigation={navigation} />);
-    fireEvent.press(await screen.findByText('Sign up with email instead'));
+    fireEvent.press(await screen.findByRole('tab', { name: 'Email' }));
 
     fireEvent.press((await findAllByText('Truck Owner'))[0]);
     fireEvent.changeText(await findByPlaceholderText('Ram'), 'Bikash');
@@ -149,7 +150,7 @@ describe('SignupScreen', () => {
   it('blocks submit when the passwords do not match', async () => {
     const navigation = fakeNavigation();
     const { findByText, findAllByText, findByPlaceholderText } = renderWithProviders(<SignupScreen navigation={navigation} />);
-    fireEvent.press(await screen.findByText('Sign up with email instead'));
+    fireEvent.press(await screen.findByRole('tab', { name: 'Email' }));
 
     fireEvent.changeText(await findByPlaceholderText('Ram'), 'Bikash');
     fireEvent.changeText(await findByPlaceholderText('you@example.com'), 'bikash@example.com');
@@ -165,7 +166,7 @@ describe('SignupScreen', () => {
   it('keeps Sign Up blocked until the Terms are agreed, and says what is missing', async () => {
     const navigation = fakeNavigation();
     const { findByText, findAllByText, findByPlaceholderText } = renderWithProviders(<SignupScreen navigation={navigation} />);
-    fireEvent.press(await screen.findByText('Sign up with email instead'));
+    fireEvent.press(await screen.findByRole('tab', { name: 'Email' }));
 
     fireEvent.changeText(await findByPlaceholderText('Ram'), 'Bikash');
     fireEvent.changeText(await findByPlaceholderText('you@example.com'), 'bikash@example.com');
