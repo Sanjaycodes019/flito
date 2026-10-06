@@ -14,6 +14,7 @@ import TruckSlots from '../components/loads/TruckSlots';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
+import useCommissionEstimate from '../hooks/useCommissionEstimate';
 import { formatCurrency, formatDate, formatKg, formatTrip, getErrorMessage, truckTypeLabel } from '../utils/helpers';
 import { dayLabel } from '../utils/nepalDate';
 import { isOpenQuote, offerHistory, openingSide, standingOffer } from '../utils/negotiation';
@@ -525,6 +526,7 @@ const QuoteForm = ({ load, maxTrucks, navigation, onSubmitted }) => {
   const [submitting, setSubmitting] = useState(false);
   const share = weightPerTruck(load);
   const multi = trucksNeededOf(load) > 1;
+  const fee = useCommissionEstimate(isWholePrice(price) ? Number(price) : null);
 
   useEffect(() => {
     let active = true;
@@ -631,6 +633,13 @@ const QuoteForm = ({ load, maxTrucks, navigation, onSubmitted }) => {
                   ? t('loads:loadDetail.yourRatesForTrip', { price: formatCurrency(lastPicked.askingPrice) })
                   : t('loads:loadDetail.setRatePerKmHint')}
               />
+              {fee ? (
+                <Text style={styles.feeNote}>
+                  {fee.reason
+                    ? t(`payments:commission.offerFee_${fee.reason}`)
+                    : t('payments:commission.offerFee', { amount: formatCurrency(fee.amount) })}
+                </Text>
+              ) : null}
               {total ? (
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t('loads:loadDetail.totalForTrucks', { count, price: formatCurrency(Number(price)) })}</Text>
@@ -752,6 +761,7 @@ const styles = themedStyles(() => ({
     backgroundColor: colors.surfaceMuted,
   },
   totalLabel: { ...type.small, color: colors.textSecondary, flexShrink: 1 },
+  feeNote: { ...type.small, color: colors.textMuted, marginTop: -spacing.xs, marginBottom: spacing.sm },
   totalValue: { ...type.h3, color: colors.textPrimary },
   footnote: { ...type.small, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
 }));

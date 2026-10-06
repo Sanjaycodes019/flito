@@ -13,6 +13,7 @@ import api from '../../../services/api';
 import useAdminRecord from '../../useAdminRecord';
 import { refreshAdminStats } from '../../useAdminStats';
 import { formatPhone, formatWhen } from '../../format';
+import { formatDayKey } from '../../../utils/nepalDate';
 import DetailPage from '../../components/detail/DetailPage';
 import { Hero, Lead, Panel, InfoGrid, InfoItem, Notice, Muted } from '../../components/detail/DetailParts';
 import VerificationPanel from '../../components/detail/VerificationPanel';
@@ -324,6 +325,30 @@ const UserDetailScreen = ({ route }) => {
               {user.role !== 'admin' ? <InfoItem label={t('admin:detail.user.wallet')} value={formatCurrency(user.walletBalance)} /> : null}
             </InfoGrid>
           </Panel>
+
+          {user.commission ? (
+            <Panel icon="receipt" title={t('admin:detail.user.fees.title')}>
+              {user.commission.blocked ? (
+                <Notice tone="error" icon="prohibited">{t('admin:detail.user.fees.blocked')}</Notice>
+              ) : null}
+              <InfoGrid>
+                <InfoItem label={t('admin:detail.user.fees.charged')} value={formatCurrency(user.commission.charged)} />
+                <InfoItem label={t('admin:detail.user.fees.paid')} value={formatCurrency(user.commission.paid)} tone="success" />
+                <InfoItem
+                  label={t('admin:detail.user.fees.balance')}
+                  value={formatCurrency(user.commission.balance)}
+                  tone={user.commission.balance > 0 ? 'warning' : undefined}
+                />
+                <InfoItem
+                  label={t('admin:detail.user.fees.overdue')}
+                  value={formatCurrency(user.commission.overdue)}
+                  tone={user.commission.overdue > 0 ? 'error' : undefined}
+                />
+                <InfoItem label={t('admin:detail.user.fees.awaiting')} value={formatCurrency(user.commission.awaiting)} />
+                <InfoItem label={t('admin:detail.user.fees.dueBy')} value={user.commission.dueDay ? formatDayKey(user.commission.dueDay) : null} />
+              </InfoGrid>
+            </Panel>
+          ) : null}
 
           {user.addedBy ? (
             <Panel icon="owner" title={t('admin:detail.user.addedBy')}>

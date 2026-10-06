@@ -22,7 +22,7 @@
       },
       {
         "icon": "cash",
-        "text": "Prices are agreed between shipper and owner. Using FLITO is free today, and payment currently happens directly between you."
+        "text": "Prices are agreed between shipper and owner, and the shipper pays the owner directly. Shippers pay FLITO nothing; from 1 Magh 2083, truck owners pay a small fee on each completed trip, shown before they offer."
       },
       {
         "icon": "prohibited",
@@ -131,8 +131,9 @@
         "title": "Prices and payment",
         "body": [
           "FLITO does not set prices. Each price is agreed between the shipper and the owner, offer by offer.",
-          "Joining FLITO, posting loads and sending offers is free today. If we ever introduce fees, we will tell you clearly in the app and on our website before they apply, and they will never apply to a booking already made.",
-          "At present, the shipper pays the owner directly, by cash or transfer as they agree. Agree when and how payment will be made before the goods are loaded. When paying in the app becomes available, extra terms for it will be shown before you use it.",
+          "Joining FLITO, posting loads and sending offers is free, and shippers pay FLITO nothing. From 1 Magh 2083 (15 January 2027), truck owners pay FLITO a fee on each completed trip booked on or after that day. The fee depends on the trip's agreed fare and is shown in the app before you send or accept an offer, on the booking, and on your monthly bill; it is the fee shown before the booking was made that applies. Each owner's first 5 trips under fees are free. There is no fee on cancelled trips or on trips booked before that day. We will tell you in the app and on our website before we change how fees are worked out, and a change will never apply to a booking already made.",
+          "Fees are added up for each Nepali month and are due by the 15th of the next month, paid into one of FLITO's accounts shown in the app. A payment counts once we confirm it reached us. If fees are still unpaid after their due date, we may pause your new offers until they are paid; trips already booked are not affected.",
+          "The shipper pays the owner directly, into the owner's bank account or wallet shown on the booking, or in cash, as they agree. Agree when and how before the goods are loaded. FLITO does not hold or move this money; the app only records the payment, which the owner confirms.",
           "Each user is responsible for their own taxes, including issuing bills or receipts where the law requires."
         ]
       },
@@ -279,6 +280,8 @@
           "Truck details: registration number, type, capacity, base, service areas, and photos of the bluebook and insurance papers.",
           "Loads: the goods, weight, pickup and drop-off addresses and points on the map, dates and any photos you add.",
           "Offers, bookings, ratings and reviews.",
+          "Payment details, for truck owners: the bank, branch, account holder's name and account number, or the eSewa or Khalti number, and a photo of the payment QR code.",
+          "Payment records: the amount, where it was paid, the transaction ID, any note, and a screenshot if you add one, for payments between shippers and owners and for owners' payments of FLITO's fees.",
           "Anything you send us when you contact us."
         ]
       },
@@ -291,6 +294,7 @@
           "Delivery proof: photos taken at pickup and drop-off, the receiver's signature, and when they were taken.",
           "Booking progress: when a booking is made, confirmed, picked up, delivered or cancelled.",
           "Notifications: a push notification token for your device, so we can tell you about offers and trips.",
+          "FLITO's fees: for truck owners, the fee on each completed trip, the month it is billed in, and which fees are paid.",
           "Technical information: your device or browser type, app version, and logs of errors and requests that help us keep FLITO working and secure."
         ]
       },
@@ -328,6 +332,8 @@
           "A driver's trip location, delivery photos and the receiver's signature are seen only by the people on that booking.",
           "Your verification documents are seen only by FLITO's verification team. Other users see only the verified badge.",
           "Your truck owner can see the details of the drivers in their fleet and the jobs assigned to them.",
+          "A truck owner's payment details (account number, wallet number and QR code) are shown only to the shippers of that owner's bookings, and are hidden once a booking is cancelled.",
+          "Payments recorded on a booking are seen only by its shipper and owner. FLITO's fees and the payments an owner makes for them are seen only by that owner and FLITO's administrators.",
           "FLITO's administrators can see account and booking information when they need to, for example to review documents, help you, or investigate a report."
         ]
       },

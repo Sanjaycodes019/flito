@@ -116,7 +116,9 @@ const emptyDraft = (kind) => ({
 
 // Adding or editing one bank account or wallet. `method` is the one being
 // edited, or null to add; `initialKind` preselects the type when adding.
-const PayoutMethodForm = ({ visible, method, initialKind = 'bank', onClose, onSaved }) => {
+// `onSave(id, fields, qr)` stores it (an owner's own accounts by default) and
+// resolves to the fresh list, which goes to `onSaved`.
+const PayoutMethodForm = ({ visible, method, initialKind = 'bank', onSave = savePayoutMethod, onClose, onSaved }) => {
   const { t } = useTranslation();
   const editing = Boolean(method);
   const [draft, setDraft] = useState(emptyDraft(initialKind));
@@ -177,7 +179,7 @@ const PayoutMethodForm = ({ visible, method, initialKind = 'bank', onClose, onSa
 
     setSaving(true);
     try {
-      const list = await savePayoutMethod(method?._id, fields, qr);
+      const list = await onSave(method?._id, fields, qr);
       onSaved(list);
     } catch (error) {
       notify(t('payments:methods.actionFailed'), getErrorMessage(error));

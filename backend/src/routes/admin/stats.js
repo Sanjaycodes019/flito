@@ -3,6 +3,7 @@ const User = require('../../models/User');
 const Load = require('../../models/Load');
 const Booking = require('../../models/Booking');
 const Truck = require('../../models/Truck');
+const CommissionPayment = require('../../models/CommissionPayment');
 
 // { value: count } for one field, so the admin filter chips can show how many
 // records each choice holds. A record missing the field counts as `fallback`.
@@ -17,7 +18,7 @@ router.get('/', async (req, res, next) => {
   try {
     const [
       userCount, loadCount, bookingCount, truckCount, pendingKyc, pendingTrucks, openLoads, activeBookings,
-      userRoles, userStatuses, userKyc, loadStatuses, bookingStatuses, truckVerification,
+      pendingCommissionPayments, userRoles, userStatuses, userKyc, loadStatuses, bookingStatuses, truckVerification,
     ] = await Promise.all([
       User.countDocuments(),
       Load.countDocuments(),
@@ -27,6 +28,7 @@ router.get('/', async (req, res, next) => {
       Truck.countDocuments({ verificationStatus: 'pending' }),
       Load.countDocuments({ status: { $in: ['open', 'quoted', 'negotiating'] } }),
       Booking.countDocuments({ status: { $in: ['pending', 'confirmed', 'in_transit'] } }),
+      CommissionPayment.countDocuments({ status: 'reported' }),
       countBy(User, 'role'),
       countBy(User, 'status', 'active'),
       countBy(User, 'kycStatus', 'not_submitted'),
@@ -38,6 +40,8 @@ router.get('/', async (req, res, next) => {
       success: true,
       stats: {
         userCount, loadCount, bookingCount, truckCount, pendingKyc, pendingTrucks, openLoads, activeBookings,
+        // Owners' fee payments waiting for an admin to confirm them.
+        pendingCommissionPayments,
         // Record counts per filter choice, keyed <resource>.<filter>.<value>.
         breakdown: {
           users: { role: userRoles, status: userStatuses, kycStatus: userKyc },

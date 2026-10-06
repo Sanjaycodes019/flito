@@ -85,6 +85,7 @@ export const buildLinking = (signedIn) => ({
           VerifyEmail: 'verify-email',
           Address: 'address',
           PaymentMethods: 'payments',
+          Commission: 'fees',
           Settings: 'settings',
           LanguageSettings: 'settings/language',
           AppearanceSettings: 'settings/appearance',

@@ -1,27 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { KYC_DOCUMENT_TYPES } = require('../services/kycPolicy');
-const { BANK_CODES, PAYOUT_KINDS } = require('../config/banks');
-
-const payoutMethodSchema = new mongoose.Schema(
-  {
-    kind: { type: String, enum: PAYOUT_KINDS, required: true },
-    // Banks only: a code from config/banks, and the name typed in for "other".
-    bankCode: { type: String, enum: BANK_CODES },
-    bankName: String,
-    branch: String,
-    accountNumber: String,
-    // The name on the account or wallet, so the shipper can check it before paying.
-    accountName: { type: String, required: true },
-    // eSewa or Khalti: the wallet's mobile number.
-    walletId: String,
-    // A photo of the bank's or wallet's payment QR, in public storage.
-    qr: { url: String, publicId: String },
-    // The one shown first to shippers.
-    primary: { type: Boolean, default: false },
-  },
-  { timestamps: true }
-);
+const payoutMethodSchema = require('./schemas/payoutMethod');
 
 const userSchema = new mongoose.Schema(
   {

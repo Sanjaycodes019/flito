@@ -60,3 +60,11 @@ export const formatMonthYear = (date) => {
   const day = nepalDay(new Date(date));
   return formatDayKey(day).split(' ').filter((_, i) => i !== 0).join(' ');
 };
+
+// "Ashwin 2083" (असोज २०८३ in Nepali) for a BS month key like "2083-06".
+// FLITO's fees are billed by Nepali month whichever calendar is chosen.
+export const formatBsMonth = (period) => {
+  const [year, month] = String(period || '').split('-').map(Number);
+  if (!year || !month) return period || '';
+  return `${monthNamesFor()[month - 1]} ${localizeDigits(year, i18n.language)}`;
+};

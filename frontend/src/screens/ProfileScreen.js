@@ -10,13 +10,14 @@ import ProfileChecklist from '../components/profile/ProfileChecklist';
 import Modal from '../components/common/Modal';
 import ActionList from '../components/common/ActionList';
 import { SettingsSection, SettingsRow } from '../components/common/SettingsList';
+import useCommissionSummary from '../hooks/useCommissionSummary';
 import { colors, spacing, type, themedStyles } from '../theme/tokens';
 import useScreenLayout from '../hooks/useScreenLayout';
 import api from '../services/api';
 import { authService } from '../services/auth';
 import { pickImages, takePhoto, uploadFiles } from '../services/uploads';
 import { ROLES, MAX_AVATAR_BYTES } from '../utils/constants';
-import { getErrorMessage } from '../utils/helpers';
+import { formatCurrency, getErrorMessage } from '../utils/helpers';
 import { confirmAction, notify } from '../utils/alert';
 
 // From this window width the hero sits beside the details.
@@ -100,6 +101,9 @@ const ProfileScreen = ({ navigation }) => {
   const goAddress = () => navigation.navigate('Address');
   const goPayments = () => navigation.navigate('PaymentMethods');
   const payoutCount = user?.payoutMethodCount || 0;
+  const fees = useCommissionSummary(user?.role === ROLES.OWNER);
+  const feesOwed = fees ? Math.max(0, fees.summary.balance - fees.summary.awaiting) : 0;
+  const feesOverdue = fees ? fees.summary.overdue - fees.summary.awaiting > 0 : false;
   const kycStatusKey = ['pending', 'approved', 'rejected'].includes(user?.kycStatus) ? user.kycStatus : 'not_submitted';
   const kycRow = {
     value: t(`profile:kyc.${kycStatusKey}.value`),
@@ -162,6 +166,14 @@ const ProfileScreen = ({ navigation }) => {
             value={payoutCount ? t('profile:rows.payoutCount', { count: payoutCount }) : t('profile:rows.payoutsNone')}
             valueMuted={!payoutCount}
             onPress={goPayments}
+          />
+          <SettingsRow
+            icon="receipt"
+            label={t('payments:commission.profileRow')}
+            value={feesOwed ? t('payments:commission.profileOwe', { amount: formatCurrency(feesOwed) }) : t('payments:commission.profileClear')}
+            valueMuted={!feesOwed}
+            pill={feesOverdue ? { label: t('payments:commission.monthStatus.overdue'), tone: 'error' } : undefined}
+            onPress={() => navigation.navigate('Commission')}
           />
         </SettingsSection>
       )}

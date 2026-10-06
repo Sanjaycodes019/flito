@@ -1,9 +1,12 @@
 const Booking = require('../models/Booking');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
+const CommissionCharge = require('../models/CommissionCharge');
 const storage = require('../services/storage');
 const { payoutList, payoutLabel } = require('../services/payoutView');
 const { sendPushToUser } = require('../services/push');
+const { commissionFor } = require('../config/commission');
+const { isChargeable, welcomeTripsLeft } = require('../services/commission');
 const { fail } = require('../utils/respond');
 
 // FLITO doesn't hold the money for a trip. The shipper pays the owner straight
@@ -65,12 +68,35 @@ const loadForParty = async (req, res) => {
   return { booking, party };
 };
 
+// FLITO's fee on this trip, for the owner only: the charge once the trip is
+// delivered, or what it will be until then. None on a cancelled booking, or
+// one booked before fees started.
+const commissionOf = async (booking) => {
+  if (booking.status === 'cancelled' || !isChargeable(booking)) return null;
+  if (booking.status === 'completed') {
+    const charge = await CommissionCharge.findOne({ bookingId: booking._id }).select('rate amount period welcome');
+    if (charge) {
+      return {
+        amount: charge.amount, charged: true, welcome: Boolean(charge.welcome), period: charge.period,
+      };
+    }
+  }
+  const { amount } = commissionFor(booking.totalAmount);
+  if (!amount) return null;
+  // Free if it will be one of the owner's welcome trips.
+  const welcome = await welcomeTripsLeft(booking.ownerId) > 0;
+  return {
+    amount: welcome ? 0 : amount, charged: false, welcome, period: null,
+  };
+};
+
 const respondWithPayments = async (res, booking, party, status = 200) => {
-  const [payments, owner] = await Promise.all([
+  const [payments, owner, commission] = await Promise.all([
     Payment.find({ bookingId: booking._id }).sort({ createdAt: -1 }),
     // A cancelled booking has nothing left to pay, so the owner's accounts are
     // no longer shown to the shipper.
     booking.status === 'cancelled' ? null : User.findById(booking.ownerId).select('payoutMethods'),
+    party === 'owner' ? commissionOf(booking) : null,
   ]);
   res.status(status).json({
     success: true,
@@ -78,6 +104,7 @@ const respondWithPayments = async (res, booking, party, status = 200) => {
     summary: summaryOf(booking, payments),
     payTo: owner ? payoutList(owner.payoutMethods) : [],
     payments: payments.map(paymentView),
+    ...(party === 'owner' ? { commission } : {}),
   });
 };
 

@@ -34,7 +34,8 @@
     "appearanceSettings": "रूप",
     "securitySettings": "साइन-इन र सुरक्षा",
     "setPin": "लग इन PIN",
-    "paymentMethods": "भुक्तानी विवरण"
+    "paymentMethods": "भुक्तानी विवरण",
+    "commission": "FLITO शुल्क"
   },
   "menu": "मेनु"
 }

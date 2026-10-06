@@ -59,6 +59,7 @@ module.exports = function createApp({ io } = {}) {
   app.use('/api/loads', require('./routes/loads'));
   app.use('/api/quotes', require('./routes/quotes'));
   app.use('/api/bookings', require('./routes/bookings'));
+  app.use('/api/commission', require('./routes/commission'));
   app.use('/api/admin', require('./routes/admin'));
   app.use('/api/users', require('./routes/users'));
   app.use('/api/trucks', require('./routes/trucks'));

@@ -24,6 +24,7 @@ import Pagination from './Pagination';
 //     endpoint="/admin/users" itemsKey="users"
 //     filterGroups={[...]} emptyIcon="people"
 //     renderItem={(user, list) => <UserCard user={user} list={list} />}
+//     header={<Summary />}                // optional, between the title and the filters
 //   />
 const ResourceScreen = ({
   page,
@@ -34,6 +35,7 @@ const ResourceScreen = ({
   searchable = true,
   emptyIcon = 'empty',
   renderItem,
+  header = null,
 }) => {
   const { t } = useTranslation();
   const layout = useScreenLayout('wide');
@@ -78,6 +80,8 @@ const ResourceScreen = ({
           <Button title={t('admin:common.refresh')} icon="refresh" variant="ghost" size="sm" onPress={onRefresh} loading={refreshing} />
         )}
       </View>
+
+      {header}
 
       <FilterBar
         search={list.search}

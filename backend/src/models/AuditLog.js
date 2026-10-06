@@ -8,7 +8,7 @@ const auditLogSchema = new mongoose.Schema(
     actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     // e.g. "user.suspended", "kyc.approved", "truck.revoked", "booking.cancelled"
     action: { type: String, required: true },
-    targetType: { type: String, enum: ['user', 'truck', 'booking', 'load'], required: true },
+    targetType: { type: String, enum: ['user', 'truck', 'booking', 'load', 'platform'], required: true },
     targetId: { type: mongoose.Schema.Types.ObjectId, required: true },
     // What the admin wrote for the person affected, when there is one.
     reason: String,

@@ -131,7 +131,7 @@ export const InfoItem = ({ icon, label, value, children, tone }) => {
       {empty ? (
         <Text style={[styles.itemValue, styles.itemEmpty]}>{t('admin:detail.notGiven')}</Text>
       ) : typeof content === 'string' || typeof content === 'number' ? (
-        <Text style={[styles.itemValue, tone === 'warning' && styles.itemWarning, tone === 'success' && styles.itemSuccess]} selectable>{content}</Text>
+        <Text style={[styles.itemValue, tone === 'warning' && styles.itemWarning, tone === 'success' && styles.itemSuccess, tone === 'error' && styles.itemError]} selectable>{content}</Text>
       ) : content}
     </View>
   );
@@ -248,6 +248,7 @@ const styles = themedStyles(() => ({
   itemEmpty: { color: colors.textMuted, fontWeight: '400' },
   itemWarning: { color: colors.warningText },
   itemSuccess: { color: colors.successText },
+  itemError: { color: colors.errorText },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   rowPressable: { marginHorizontal: -spacing.sm, paddingHorizontal: spacing.sm, borderRadius: radius.md },

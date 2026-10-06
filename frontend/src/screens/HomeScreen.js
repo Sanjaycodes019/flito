@@ -9,6 +9,8 @@ import Avatar from '../components/common/Avatar';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import VerificationPrompt from '../components/kyc/VerificationPrompt';
 import EmailVerificationPrompt from '../components/auth/EmailVerificationPrompt';
+import CommissionNotice from '../components/payments/CommissionNotice';
+import useCommissionSummary from '../hooks/useCommissionSummary';
 import Icon from '../theme/icons';
 import { colors, spacing, radius, shadow, type, iconSize, themedStyles } from '../theme/tokens';
 import { ROLES } from '../utils/constants';
@@ -47,6 +49,7 @@ const HomeScreen = ({ navigation }) => {
   const isShipper = user?.role === ROLES.SHIPPER;
   const isOwner = user?.role === ROLES.OWNER;
   const isDriver = user?.role === ROLES.DRIVER;
+  const fees = useCommissionSummary(isOwner);
 
   const loadData = useCallback(async () => {
     dispatch(fetchLoadsStart());
@@ -202,6 +205,10 @@ const HomeScreen = ({ navigation }) => {
             ? t('common:home.ownerVerificationMessage')
             : t('common:home.driverVerificationMessage')}
         />
+      )}
+
+      {isOwner && (
+        <CommissionNotice fees={fees} onOpen={() => navigation.navigate('Profile', { screen: 'Commission', initial: false })} />
       )}
 
       {mainTile && <View style={styles.mainTile}>{mainTile}</View>}

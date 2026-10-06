@@ -3,6 +3,7 @@ import LoadsScreen from './screens/LoadsScreen';
 import BookingsScreen from './screens/BookingsScreen';
 import KycScreen from './screens/KycScreen';
 import TrucksScreen from './screens/TrucksScreen';
+import CommissionScreen from './screens/CommissionScreen';
 import UserDetailScreen from './screens/detail/UserDetailScreen';
 import TruckDetailScreen from './screens/detail/TruckDetailScreen';
 import BookingDetailScreen from './screens/detail/BookingDetailScreen';
@@ -30,6 +31,7 @@ export const ADMIN_SECTIONS = [
   { key: 'bookings', route: 'AdminBookings', path: 'admin/bookings', icon: 'truckDelivery', labelKey: 'admin:nav.bookings', record: 'booking', component: BookingsScreen },
   { key: 'kyc', route: 'AdminKyc', path: 'admin/kyc', icon: 'verified', labelKey: 'admin:nav.kyc', badgeStat: 'pendingKyc', record: 'user', component: KycScreen },
   { key: 'trucks', route: 'AdminTrucks', path: 'admin/trucks', icon: 'truck', labelKey: 'admin:nav.trucks', badgeStat: 'pendingTrucks', record: 'truck', component: TrucksScreen },
+  { key: 'commission', route: 'AdminCommission', path: 'admin/fees', icon: 'receipt', labelKey: 'admin:nav.commission', badgeStat: 'pendingCommissionPayments', record: 'user', component: CommissionScreen },
 ];
 
 // The screen of each record page (see records.js for its route and address).

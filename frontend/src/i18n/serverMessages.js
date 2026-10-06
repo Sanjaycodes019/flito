@@ -251,6 +251,13 @@ const SERVER_MESSAGES_NE = {
   PAYMENTS_OWNER_ONLY: () => 'पैसा आयो कि आएन ट्रक मालिकले मात्र पुष्टि गर्न सक्नुहुन्छ',
   PAYMENTS_NOT_FOUND: () => 'भुक्तानी फेला परेन',
   PAYMENTS_ALREADY_ANSWERED: () => 'यो भुक्तानीको जवाफ पहिले नै दिइसकिएको छ',
+
+  // ── FLITO fees ───────────────────────────────────────────────────────
+  COMMISSION_OVERDUE: ({ amount }) => `नयाँ ट्रिप लिनुअघि म्याद नाघेको FLITO शुल्क रु. ${Number(amount || 0).toLocaleString('en-IN')} तिर्नुहोस्`,
+  COMMISSION_MORE_THAN_OWED: ({ max }) => (max ? `तपाईंले अहिले FLITO लाई बढीमा रु. ${Number(max).toLocaleString('en-IN')} तिर्नुपर्छ` : 'तपाईंले अहिले FLITO लाई केही तिर्नु पर्दैन'),
+  COMMISSION_ACCOUNT_NOT_FOUND: () => 'त्यो खाता अब FLITO को सूचीमा छैन',
+  ADMIN_COMMISSION_ALREADY_ANSWERED: () => 'यो भुक्तानीको जवाफ पहिले नै दिइसकिएको छ',
+  ADMIN_COMMISSION_PAYMENT_NOT_FOUND: () => 'भुक्तानी फेला परेन',
 };
 
 export const translateServerMessage = (code, extra) => {

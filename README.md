@@ -24,6 +24,7 @@ Shippers post a load and say how many trucks it needs. Verified owners offer a p
 - [Environment variables](#environment-variables)
 - [The public site](#the-public-site)
 - [Roles and flows](#roles-and-flows)
+- [Payments and FLITO's fees](#payments-and-flitos-fees)
 - [API reference](#api-reference)
 - [Push notifications](#push-notifications)
 - [Live tracking](#live-tracking)
@@ -62,18 +63,21 @@ One backend serves the web app and the Android build. The services are joined on
 flito/
 ├── backend/
 │   ├── src/
-│   │   ├── config/       database, validateEnv, allowedOrigins, sentry, truckTypes
-│   │   ├── models/       User, Truck, Load, Quote, Booking, Payment, Notification, AuditLog
-│   │   ├── controllers/  auth, loads, quotes, bookings, deliveryProof, trucks, users, fleetDrivers
-│   │   ├── routes/       auth, loads, quotes, bookings, trucks, users, locations, admin/*
+│   │   ├── config/       database, validateEnv, allowedOrigins, sentry, truckTypes, banks, commission
+│   │   ├── models/       User, Truck, Load, Quote, Booking, Payment, CommissionCharge, CommissionPayment,
+│   │   │                 PlatformSettings, Notification, AuditLog
+│   │   ├── controllers/  auth, loads, quotes, bookings, deliveryProof, payments, payoutMethods, commission,
+│   │   │                 trucks, users, fleetDrivers
+│   │   ├── routes/       auth, loads, quotes, bookings, commission, trucks, users, locations, admin/*
 │   │   ├── middleware/   auth (+requireRole), kyc (requireVerification), upload, validators, errorHandler
 │   │   ├── services/     truckMatching, negotiation, loadSlots, bookingRelease, tripSchedule, routing,
-│   │   │                 expiry, kycPolicy, pin, audit, push, email, storage, nepal* (address data) ...
+│   │   │                 commission, bsCalendar, payoutView, expiry, kycPolicy, pin, audit, push, email,
+│   │   │                 storage, nepal* (address data) ...
 │   │   ├── data/nepal/   provinces, districts, local levels, ward boundaries, place names (+ SOURCES.md)
 │   │   ├── socket/       events, handlers
 │   │   └── server.js / app.js
 │   ├── scripts/          seedDemo, createAdmin, migrations, Nepal data builders
-│   └── tests/            23 suites against an in-memory MongoDB
+│   └── tests/            25 suites against an in-memory MongoDB
 └── frontend/
     ├── src/
     │   ├── public/       landing page and the information pages (about, help, legal), their layout,
@@ -87,7 +91,7 @@ flito/
     │   ├── redux/        store + auth/user/loads/booking slices
     │   ├── services/     api, auth, socket, storage, push, uploads, theme and calendar preferences
     │   └── utils/        colors, constants, helpers, AD/BS calendar, load slots
-    └── tests/            20 suites (Jest + React Native Testing Library)
+    └── tests/            22 suites (Jest + React Native Testing Library)
 ```
 
 Backend and frontend are independent npm projects in one repo, so Render and Vercel each build only their own folder through a "Root Directory" setting.
@@ -122,13 +126,13 @@ Check the backend: `curl http://localhost:5000/api/health` returns `{"status":"o
 cd backend && npm test
 ```
 
-**340 API tests in 23 suites** run against a real in-memory MongoDB (nothing to configure, no external service called). They cover email and password, phone and PIN, Google and admin sign-in; email verification, password reset and the language of emailed codes; PIN lockout; booking permissions and status changes; road distances and multi-day truck availability; ward and tole detection; offers, acceptance races and double-booking protection; loads that need several trucks; fleet drivers; ratings; expiry; file uploads; identity and truck verification; the admin lists, record pages, audit history and account suspension; the notification feed; CORS origins; security headers and query-operator stripping; and push notifications (Expo's API is mocked, no real push is sent).
+**373 API tests in 25 suites** run against a real in-memory MongoDB (nothing to configure, no external service called). They cover email and password, phone and PIN, Google and admin sign-in; email verification, password reset and the language of emailed codes; PIN lockout; booking permissions and status changes; road distances and multi-day truck availability; ward and tole detection; offers, acceptance races and double-booking protection; loads that need several trucks; fleet drivers; ratings; expiry; file uploads; identity and truck verification; the admin lists, record pages, audit history and account suspension; the notification feed; owners' payment details, booking payments and FLITO's fees (billing by Nepali month, welcome trips, overdue blocking, admin confirmation); CORS origins; security headers and query-operator stripping; and push notifications (Expo's API is mocked, no real push is sent).
 
 ```bash
 cd frontend && npm test
 ```
 
-**181 component tests in 20 suites** cover the sign-in screens (email, phone + PIN, language choice), posting a load, choosing trucks, offers on a load, booking status changes per role, KYC, the fleet page, profile and settings, the AD/BS calendar and date picker, the admin dashboard and record pages, and the public site (landing page, navbar, help search, legal pages, web addresses). Native modules and `services/api` are mocked; see `jest.setup.js`.
+**194 component tests in 22 suites** cover the sign-in screens (email, phone + PIN, language choice), posting a load, choosing trucks, offers on a load, booking status changes per role, KYC, the fleet page, profile and settings, the AD/BS calendar and date picker, the admin dashboard and record pages, payment details and FLITO's fees, and the public site (landing page, navbar, help search, legal pages, web addresses). Native modules and `services/api` are mocked; see `jest.setup.js`.
 
 ### Code quality
 
@@ -207,6 +211,8 @@ A standalone Android build additionally needs an **Android** OAuth client ID reg
 | `OSRM_URL` | Your own OSRM server for road distances. Optional: blank uses the public demo server, `off` uses straight-line estimates |
 | `SENTRY_DSN` | Error tracking. Optional |
 | `LOG_LEVEL` | `debug` / `info` / `warn` / `error` (default `info`). Logs are structured JSON (pino) |
+| `COMMISSION_START_DATE` | Nepal day (YYYY-MM-DD) from which bookings carry FLITO's fee. Blank = 2027-01-15 (1 Magh 2083). See [Payments and FLITO's fees](#payments-and-flitos-fees) |
+| `COMMISSION_WELCOME_TRIPS` | How many of each owner's first trips under fees are free. Blank = 5 |
 | `ESEWA_*`, `KHALTI_*`, `SPARROW_SMS_*` | Placeholders in `.env.example`; no payment gateway or SMS is wired up yet |
 
 **Frontend** (`frontend/.env` locally, Vercel for the web, `eas.json` for Android):
@@ -254,12 +260,12 @@ The Terms show a "last updated" date in the reader's calendar, set by `LEGAL_UPD
 
 | Role | Can do |
 |---|---|
-| **shipper** | Post loads for 1 to 10 trucks, choose from ranked truck matches, ask a truck at their own price, accept owners' offers, stop with "Enough Trucks", track bookings, rate the owner |
-| **owner** | List trucks with a base, service area and rates; offer on loads with one or more trucks; answer shippers' requests; add drivers by phone; assign drivers; track jobs; rate the shipper |
+| **shipper** | Post loads for 1 to 10 trucks, choose from ranked truck matches, ask a truck at their own price, accept owners' offers, stop with "Enough Trucks", track bookings, pay the owner and record it, rate the owner |
+| **owner** | List trucks with a base, service area and rates; add bank accounts and eSewa/Khalti with QR; offer on loads with one or more trucks; answer shippers' requests; add drivers by phone; assign drivers; track jobs; confirm payments received; pay FLITO's monthly fees; rate the shipper |
 | **driver** | Log in with phone + PIN, see the job on one screen, tap arrived / loaded / delivered, share location while in transit, take delivery photos and the receiver's signature, see earnings |
-| **admin** | Browse and filter every user, truck, load and booking; open each one's page with its full history; approve, reject or revoke identity and truck verification; suspend, ban or reactivate accounts; cancel a load or a booking; reset a PIN |
+| **admin** | Browse and filter every user, truck, load and booking; open each one's page with its full history; approve, reject or revoke identity and truck verification; suspend, ban or reactivate accounts; cancel a load or a booking; reset a PIN; add FLITO's payment accounts and QR, see who owes fees, and confirm or reject owners' fee payments |
 
-**Happy path:** a shipper posts a load (goods, weight, pickup and drop-off, pickup day, how many trucks) → owners offer a price per truck, or the shipper asks a matched truck at their price → the other side accepts or declines → each acceptance books one truck as its own booking, with its regular driver if verified → the driver marks arrived, picked up, delivered, with photos and a signature → the booking completes → shipper and owner rate each other.
+**Happy path:** a shipper posts a load (goods, weight, pickup and drop-off, pickup day, how many trucks) → owners offer a price per truck, or the shipper asks a matched truck at their price → the other side accepts or declines → each acceptance books one truck as its own booking, with its regular driver if verified → the driver marks arrived, picked up, delivered, with photos and a signature → the booking completes → the shipper pays the owner and records it, the owner confirms → FLITO's fee is added to the owner's monthly bill → shipper and owner rate each other.
 
 **Offer rules** (`backend/src/services/negotiation.js`, `quotesController.js`): either side opens. An owner applies with one or more of their trucks, each truck becoming its own offer at the same price, never more trucks than the load still needs and each truck once. A shipper can request a matched truck at their own price, with as many requests waiting as the trucks still needed plus two spare. The other side accepts or declines at that price: **there is no bargaining** (quotes from when counter-offers existed are still read). Only verified owners can offer or accept. A load takes offers until the end of its pickup day in Nepal time (at least 12 hours after posting), and an offer stays open 48 hours but never past its load. Acceptance reserves the truck's trip days and claims a slot on the load in conditional updates, so neither can be booked twice when acceptances race. When every slot is filled, or the shipper taps "Enough Trucks", the remaining offers close.
 
@@ -273,7 +279,7 @@ A booking blocks its truck for every day the trip needs, not just the pickup day
 
 **Truck listings** follow how trucks are described in Nepal: the trade's classes (pickup, mini truck, light truck or canter, 6, 10 and 12-wheeler, trailer) with common makes and models, body type, year, fuel, cargo bed size in feet, and extras shippers ask about (tarpaulin, a helper or khalasi, GPS, hill roads). Papers (chassis and engine numbers, bluebook tax, insurance, pollution test green sticker) stay private to the owner; shippers only see whether the insurance is current, and the fleet page flags papers that have lapsed or end within 30 days. Registration numbers stay private until a booking is made. Distances are real road distances from OpenStreetMap roads (OSRM), falling back to the straight-line distance times 1.4 if the routing server can't be reached (the app then says "about").
 
-**Pricing:** each truck can carry a rate per km and a minimum charge. Its asking price is the rate times the distance, rounded to the nearest Rs. 100 and never below the minimum. A truck without a rate shows no price and the shipper names one. Joining and using FLITO is free; the shipper pays the owner directly for now (see [Known gaps](#known-gaps)).
+**Pricing:** each truck can carry a rate per km and a minimum charge. Its asking price is the rate times the distance, rounded to the nearest Rs. 100 and never below the minimum. A truck without a rate shows no price and the shipper names one. Joining is free and shippers pay FLITO nothing; owners pay a small fee on completed trips (see [Payments and FLITO's fees](#payments-and-flitos-fees)).
 
 **Fleet drivers:** an owner adds a driver with a name and phone number; FLITO makes a 4-digit PIN shown once to the owner. The owner's photo of the driver's license goes straight to admin review, and a driver can only be assigned to a booking once approved. Owners can reset a driver's PIN.
 
@@ -288,6 +294,25 @@ A booking blocks its truck for every day the trip needs, not just the pickup day
 **Admin console:** a sidebar of sections (users, loads, bookings, identity verification and trucks, the last two with a count of what is waiting for review) with filters, search and paging. Every user, truck, load and booking has its own page and web address, linked to each other, showing the full record, related records and an **audit history**: each admin action is written to an append-only `AuditLog` with who did it, what changed and the reason given to the person affected.
 
 **Contact between parties:** phone numbers appear only on bookings, for the shipper, owner and driver on that booking (one-tap call buttons), and are hidden again if it is cancelled. They never appear on loads or offers.
+
+---
+
+## Payments and FLITO's fees
+
+FLITO never holds or moves a trip's money. It shows people where to pay and keeps the record.
+
+**Shipper to owner.** An owner adds up to five bank accounts (any commercial bank, or "other" for development banks and finance companies) or eSewa/Khalti wallets under Profile → Payment details, each with an optional photo of its payment QR. The shipper of a booking sees them on the booking, pays with their own bank app or wallet, and records the payment (amount, account, transaction ID, optional screenshot). The owner confirms it arrived or says it didn't, and can record cash received. Only confirmed payments count towards the booking's paid amount (`paymentStatus`: pending, partial, completed). Owners' details are hidden once a booking is cancelled. Bank and wallet logos are each bank's own, from its website (`frontend/assets/banks/SOURCES.md`).
+
+**Owner to FLITO** (`backend/src/config/commission.js`, `services/commission.js`). Shippers never pay FLITO. When the driver marks a trip delivered, the owner is charged a fee on that truck's fare: **3% of the fare, at least Rs. 1,000, but never more than 4% of the fare.** So it never falls as the fare rises and never passes 4%:
+
+| Fare | Fee |
+|---|---|
+| Rs. 15,000 | Rs. 600 (4%) |
+| Rs. 25,000 – 33,333 | Rs. 1,000 |
+| Rs. 60,000 | Rs. 1,800 (3%) |
+| Rs. 1,50,000 | Rs. 4,500 (3%) |
+
+Launch terms: no fee on trips booked before `COMMISSION_START_DATE` (1 Magh 2083 by default, about three months after launch; the Terms promise owners notice before fees apply), and each owner's first `COMMISSION_WELCOME_TRIPS` (5) trips under fees are free. Cancelled trips have no fee. Fees are billed by Nepali month (`services/bsCalendar.js`) and due by the 15th of the next month. The owner pays into FLITO's own accounts, which admins add under Admin → Fees with the official QR, and records the payment; an admin confirms it against FLITO's account or rejects it with a reason. Confirmed payments pay off the oldest month first. While fees are past due (and not covered by a payment waiting for review) the owner can't make or accept new offers (`COMMISSION_OVERDUE`); booked trips carry on. `BLOCK_OFFERS_WHEN_OVERDUE` turns that off. The owner sees the fee on each booking and before sending an offer, a reminder on Home, and the full bill under Profile → FLITO fees.
 
 ---
 
@@ -341,6 +366,10 @@ Routes marked `public` need no token; every other route needs `Authorization: Be
 | POST | `/api/bookings/:id/rate` | party | Rate after completion (1–5, optional review) |
 | POST | `/api/bookings/:id/delivery-proof` | driver | Up to 5 delivery photos |
 | POST | `/api/bookings/:id/signature` | driver | The receiver's signature |
+| GET | `/api/bookings/:id/payments` | shipper/owner | What is paid and due, the owner's accounts to pay into, the payments, and (owner only) FLITO's fee on the trip |
+| POST | `/api/bookings/:id/payments` | shipper/owner | Record a payment: `amount`, `method`, optional `payoutMethodId`, `transactionId`, `note`, screenshot (multipart `proof`). The shipper's waits for the owner; the owner's counts at once |
+| POST | `/api/bookings/:id/payments/:paymentId/confirm` | owner | The money arrived |
+| POST | `/api/bookings/:id/payments/:paymentId/dispute` | owner | It didn't, with an optional `reason` |
 
 **Trucks, profile, fleet and verification**
 
@@ -369,6 +398,12 @@ Routes marked `public` need no token; every other route needs `Authorization: Be
 | POST | `/api/users/me/kyc/documents` | shipper/owner/driver | Upload or replace a document (multipart `document` + `type`) |
 | DELETE | `/api/users/me/kyc/documents/:docId` | shipper/owner/driver | Remove a document before submitting |
 | POST | `/api/users/me/kyc/submit` | shipper/owner/driver | Send documents for review |
+| GET | `/api/users/me/payout-methods` | owner | Your bank accounts and wallets |
+| POST | `/api/users/me/payout-methods` | owner | Add one: `kind` (`bank`, `esewa`, `khalti`), `accountName`, and `bankCode` + `accountNumber` and/or a QR (multipart `qr`), or `walletId` |
+| PATCH / DELETE | `/api/users/me/payout-methods/:methodId` | owner | Change (`removeQr` to drop the QR) / remove one |
+| POST | `/api/users/me/payout-methods/:methodId/primary` | owner | Show this one first |
+| GET | `/api/commission/me` | owner | Your FLITO fees: rates, monthly bills, trips, payments, and FLITO's accounts to pay into |
+| POST | `/api/commission/me/payments` | owner | Record a payment to FLITO (same fields as a booking payment) |
 | GET | `/api/locations` | public | Provinces, districts and local levels with ward counts |
 | POST | `/api/locations/detect` | any | Province, district, local level and ward at `{ lat, lng }`, plus a suggested tole |
 
@@ -394,6 +429,13 @@ Routes marked `public` need no token; every other route needs `Authorization: Be
 | GET | `/api/admin/kyc` | Verification submissions with document links. `?status=` pending (default) / approved / rejected, `q` (`/pending` = queue) |
 | PATCH | `/api/admin/kyc/:userId` | Approve, or reject with a required reason |
 | POST | `/api/admin/kyc/:userId/revoke` | Take a verification back, with a reason |
+| GET | `/api/admin/commission/overview` | Fee totals, the owners who owe most, and FLITO's accounts |
+| GET | `/api/admin/commission/payments` | Owners' fee payments. `?status=` reported (default) / confirmed / rejected, `q` |
+| POST | `/api/admin/commission/payments/:paymentId/confirm` | The payment reached FLITO's account |
+| POST | `/api/admin/commission/payments/:paymentId/reject` | It didn't, with a reason the owner sees |
+| GET / POST | `/api/admin/commission/accounts` | FLITO's bank accounts and wallets / add one (multipart `qr` for its QR) |
+| PATCH / DELETE | `/api/admin/commission/accounts/:methodId` | Change / remove one |
+| POST | `/api/admin/commission/accounts/:methodId/primary` | Show this one first |
 
 **Paging.** Admin lists take `?page=1&limit=20` (limit at most 50) and answer with their items plus `pagination: { page, limit, total, totalPages }`. A page past the end is empty, not an error.
 
@@ -403,7 +445,7 @@ Routes marked `public` need no token; every other route needs `Authorization: Be
 
 ### Real-time (Socket.io)
 
-Clients emit `join-room` with their JWT to join a private `user-<id>` room; the server verifies the token first. Server events: `new-quote`, `quote-updated`, `quote-accepted`, `booking-assigned`, `booking-status-changed`, `location-update`, `delivery-proof-added`, `kyc-reviewed`, `truck-reviewed`, `notification`.
+Clients emit `join-room` with their JWT to join a private `user-<id>` room; the server verifies the token first. Server events: `new-quote`, `quote-updated`, `quote-accepted`, `booking-assigned`, `booking-status-changed`, `location-update`, `delivery-proof-added`, `booking-payment-updated`, `commission-updated`, `kyc-reviewed`, `truck-reviewed`, `notification`.
 
 ---
 
@@ -500,7 +542,9 @@ EAS builds run on Expo's servers and never see your local `.env`: the API, socke
 
 Deliberate scope cuts and open items, not oversights:
 
-- **No payment gateway yet.** FLITO doesn't move money. Owners add their bank accounts (with the bank's QR) and eSewa/Khalti wallets under Profile → Payment details; the shipper pays them directly, records the payment on the booking, and the owner confirms it arrived. eSewa/Khalti settings exist for a gateway later, which needs a merchant account. Bank and wallet logos come from each bank's official site (`frontend/assets/banks/SOURCES.md`).
+- **No payment gateway yet.** Payments, to owners and to FLITO, are made outside the app and recorded in it, then confirmed by whoever received them (see [Payments and FLITO's fees](#payments-and-flitos-fees)). eSewa/Khalti settings exist for a gateway later, which needs a merchant account.
+- **FLITO's fees need paperwork.** FLITO should be registered (PAN, and VAT if it applies) and issue a bill for each month's fees; the app records fees but doesn't produce tax invoices. The fee start date and rates are in `backend/src/config/commission.js` and the Terms (`frontend/src/i18n/locales/*/legal.json`, `site.json`); change them together.
+- **Bank logos are trademarks.** They are shown to identify where to pay; check with the banks, and eSewa's and Khalti's brand rules, before a public launch.
 - **Phone numbers aren't confirmed by SMS.** Phone + PIN sign-up trusts the number typed; identity verification is what ties an account to a real person. `src/services/sms.js` and `otpStore.js` are kept, unused, for a later SMS feature.
 - **The Terms and Privacy Policy need legal review.** They describe the product as built but name no registered company; have a lawyer in Nepal review them before launch.
 - **Email needs Brevo in production.** Without `BREVO_API_KEY`/`BREVO_SENDER_EMAIL`, codes are only logged, and production refuses to boot.

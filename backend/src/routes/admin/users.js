@@ -13,6 +13,7 @@ const {
   paginationParams, paginationMeta, searchClause, enumFilter, idFilter, allOf, requireObjectId, fullName, PERSON_FIELDS, personSummary,
 } = require('./helpers');
 const { sortPayoutMethods, adminPayoutView } = require('../../services/payoutView');
+const { accountFor } = require('../../services/commission');
 
 const FIELDS = 'firstName lastName email phone role status kycStatus companyName rating totalRatings createdAt avatar addedBy';
 const ROLES = ['shipper', 'owner', 'driver', 'admin'];
@@ -141,8 +142,23 @@ router.get('/:userId', async (req, res, next) => {
       .populate('kycReviewedBy', 'firstName lastName email');
     if (!user) return fail(res, 404, 'ADMIN_USER_NOT_FOUND', 'User not found');
 
-    const [counts, history] = await Promise.all([relatedCounts(user), historyFor('user', user._id)]);
-    res.json({ success: true, user: adminUserView(user), counts, history });
+    const [counts, history, fees] = await Promise.all([
+      relatedCounts(user),
+      historyFor('user', user._id),
+      // Where an owner stands with FLITO's fees.
+      user.role === 'owner' ? accountFor(user._id) : null,
+    ]);
+    const commission = fees ? {
+      charged: fees.charged,
+      paid: fees.paid,
+      balance: fees.balance,
+      payableNow: fees.payableNow,
+      overdue: fees.overdue,
+      awaiting: fees.awaiting,
+      dueDay: fees.dueDay,
+      blocked: fees.blocked,
+    } : null;
+    res.json({ success: true, user: { ...adminUserView(user), commission }, counts, history });
   } catch (error) {
     next(error);
   }

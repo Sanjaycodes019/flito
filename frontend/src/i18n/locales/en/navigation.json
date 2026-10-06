@@ -34,7 +34,8 @@
     "appearanceSettings": "Appearance",
     "securitySettings": "Sign-in & Security",
     "setPin": "Login PIN",
-    "paymentMethods": "Payment details"
+    "paymentMethods": "Payment details",
+    "commission": "FLITO fees"
   },
   "menu": "Menu"
 }

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Image, Pressable } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Card from '../common/Card';
@@ -8,19 +8,16 @@ import Input from '../common/Input';
 import Modal from '../common/Modal';
 import StatusBadge from '../common/StatusBadge';
 import PayoutMethodCard from '../payments/PayoutMethodCard';
-import BankLogo from '../payments/BankLogo';
+import RecordPaymentModal from '../payments/RecordPaymentModal';
 import Icon from '../../theme/icons';
 import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
-import { methodTitle } from '../../utils/banks';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
+import { formatBsMonth } from '../../utils/nepalDate';
 import { confirmAction, notify } from '../../utils/alert';
-import { pickImages } from '../../services/uploads';
 import socketService from '../../services/socket';
 import {
   getBookingPayments, recordBookingPayment, confirmBookingPayment, disputeBookingPayment,
 } from '../../services/payments';
-
-const CASH = 'cash';
 
 const Stat = ({ label, value, tone }) => (
   <View style={styles.stat}>
@@ -28,143 +25,6 @@ const Stat = ({ label, value, tone }) => (
     <Text style={[styles.statValue, tone && styles[`tone_${tone}`]]} numberOfLines={1}>{value}</Text>
   </View>
 );
-
-// One choice of where the money went: one of the owner's accounts, or cash.
-const DestinationRow = ({ method, label, hint, selected, onPress }) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="radio"
-    accessibilityState={{ checked: selected }}
-    accessibilityLabel={label}
-    style={({ pressed }) => [styles.destination, selected && styles.destinationSelected, pressed && styles.pressed]}
-  >
-    {method
-      ? <BankLogo kind={method.kind} bankCode={method.bankCode} size={30} />
-      : <View style={styles.cashGlyph}><Icon name="cash" size={20} color={colors.successText} /></View>}
-    <View style={styles.destinationText}>
-      <Text style={styles.destinationLabel}>{label}</Text>
-      {hint ? <Text style={styles.destinationHint} numberOfLines={1}>{hint}</Text> : null}
-    </View>
-    <Icon name={selected ? 'radioOn' : 'radioOff'} size={iconSize.md} color={selected ? colors.primaryText : colors.textMuted} />
-  </Pressable>
-);
-
-// The shipper reports a payment they made, or the owner records one they got.
-const RecordPaymentModal = ({ visible, party, payTo, due, onClose, onSubmit }) => {
-  const { t } = useTranslation();
-  const [amount, setAmount] = useState('');
-  const [destination, setDestination] = useState(CASH);
-  const [transactionId, setTransactionId] = useState('');
-  const [note, setNote] = useState('');
-  const [proof, setProof] = useState(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!visible) return;
-    setAmount(due ? String(due) : '');
-    setDestination(payTo[0]?._id || CASH);
-    setTransactionId('');
-    setNote('');
-    setProof(null);
-  }, [visible, due, payTo]);
-
-  const chooseProof = async () => {
-    try {
-      const [asset] = await pickImages({ max: 1 });
-      if (asset) setProof(asset);
-    } catch (error) {
-      notify(t('payments:form.photoFailed'), getErrorMessage(error));
-    }
-  };
-
-  const submit = async () => {
-    const value = Number(amount);
-    if (!Number.isInteger(value) || value < 1) {
-      notify(t('payments:form.missingTitle'), t('payments:report.badAmount'));
-      return;
-    }
-    const account = payTo.find((method) => method._id === destination);
-    setSaving(true);
-    await onSubmit({
-      amount: value,
-      method: account ? account.kind : CASH,
-      payoutMethodId: account?._id,
-      transactionId: account ? transactionId.trim() || undefined : undefined,
-      note: note.trim() || undefined,
-    }, proof);
-    setSaving(false);
-  };
-
-  const isCash = destination === CASH;
-  return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      closeOnBackdrop={false}
-      title={party === 'owner' ? t('payments:report.ownerTitle') : t('payments:report.shipperTitle')}
-      footer={<Button title={t('payments:report.submit')} icon="checkmark" onPress={submit} loading={saving} style={styles.fill} />}
-    >
-      <Input
-        label={t('payments:report.amount')}
-        value={amount}
-        onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
-        keyboardType="number-pad"
-        icon="price"
-        helperText={t('payments:report.amountHint', { amount: formatCurrency(due) })}
-        required
-      />
-
-      <Text style={styles.label}>{party === 'owner' ? t('payments:report.receivedIn') : t('payments:report.paidTo')}</Text>
-      <View style={styles.destinations} accessibilityRole="radiogroup">
-        {payTo.map((method) => (
-          <DestinationRow
-            key={method._id}
-            method={method}
-            label={methodTitle(method)}
-            hint={method.kind === 'bank' ? method.accountNumber || method.accountName : method.walletId}
-            selected={destination === method._id}
-            onPress={() => setDestination(method._id)}
-          />
-        ))}
-        <DestinationRow
-          label={t('payments:kinds.cash')}
-          hint={t('payments:report.cashHint')}
-          selected={isCash}
-          onPress={() => setDestination(CASH)}
-        />
-      </View>
-
-      {!isCash ? (
-        <Input
-          label={t('payments:report.reference')}
-          helperText={t('payments:report.referenceHint')}
-          value={transactionId}
-          onChangeText={setTransactionId}
-          icon="receipt"
-          autoCapitalize="characters"
-          autoCorrect={false}
-        />
-      ) : null}
-      <Input label={t('payments:report.note')} value={note} onChangeText={setNote} icon="document" />
-
-      {party === 'shipper' && !isCash ? (
-        <View>
-          <Text style={styles.label}>{t('payments:report.screenshot')}</Text>
-          <View style={styles.proofRow}>
-            {proof ? <Image source={{ uri: proof.uri }} style={styles.proofThumb} accessibilityIgnoresInvertColors /> : null}
-            <Button
-              title={proof ? t('payments:report.changeScreenshot') : t('payments:report.addScreenshot')}
-              icon="image"
-              size="sm"
-              variant="tertiary"
-              onPress={chooseProof}
-            />
-          </View>
-        </View>
-      ) : null}
-    </Modal>
-  );
-};
 
 const PaymentRow = ({ payment, first, canAnswer, busy, onConfirm, onDispute, onProof }) => {
   const { t } = useTranslation();
@@ -244,7 +104,7 @@ const PaymentSection = ({ bookingId, ownerName }) => {
   }
   if (!data) return null;
 
-  const { party, summary, payTo, payments } = data;
+  const { party, summary, payTo, payments, commission } = data;
   const isOwner = party === 'owner';
   const fullyPaid = summary.total > 0 && summary.due === 0;
   const canRecord = summary.due - (isOwner ? 0 : summary.awaitingConfirmation) > 0;
@@ -303,6 +163,21 @@ const PaymentSection = ({ bookingId, ownerName }) => {
           <Icon name="time" size={iconSize.sm} color={colors.warningText} />
           <Text style={styles.awaitingText}>
             {t(isOwner ? 'payments:booking.awaitingOwner' : 'payments:booking.awaitingShipper', { amount: formatCurrency(summary.awaitingConfirmation) })}
+          </Text>
+        </View>
+      ) : null}
+      {isOwner && commission ? (
+        <View style={styles.feeRow}>
+          <Icon name="receipt" size={iconSize.sm} color={colors.textMuted} />
+          <Text style={styles.feeText}>
+            <Text style={styles.feeLabel}>{t('payments:commission.bookingFee')}: </Text>
+            {commission.welcome
+              ? t('payments:commission.bookingFeeWelcome')
+              : commission.charged
+              ? t('payments:commission.bookingFeeCharged', {
+                amount: formatCurrency(commission.amount), month: formatBsMonth(commission.period),
+              })
+              : t('payments:commission.bookingFeeEstimate', { amount: formatCurrency(commission.amount) })}
           </Text>
         </View>
       ) : null}
@@ -369,7 +244,9 @@ const PaymentSection = ({ bookingId, ownerName }) => {
 
       <RecordPaymentModal
         visible={recording}
-        party={party}
+        title={isOwner ? t('payments:report.ownerTitle') : t('payments:report.shipperTitle')}
+        destinationLabel={isOwner ? t('payments:report.receivedIn') : t('payments:report.paidTo')}
+        withProof={!isOwner}
         payTo={payTo}
         due={Math.max(0, summary.due - (isOwner ? 0 : summary.awaitingConfirmation))}
         onClose={() => setRecording(false)}
@@ -422,6 +299,9 @@ const styles = themedStyles(() => ({
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.successMuted, marginBottom: spacing.sm,
   },
   paidText: { ...type.bodyMedium, color: colors.successText },
+  feeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs, marginBottom: spacing.sm },
+  feeText: { ...type.small, color: colors.textSecondary, flex: 1 },
+  feeLabel: { ...type.smallMedium, color: colors.textPrimary },
 
   block: { marginTop: spacing.sm },
   blockTitle: { ...type.bodyMedium, color: colors.textPrimary, marginBottom: spacing.xxs },
@@ -445,27 +325,6 @@ const styles = themedStyles(() => ({
   answerQuestion: { ...type.smallMedium, color: colors.textPrimary, marginBottom: spacing.sm },
   answerButtons: { flexDirection: 'row', gap: spacing.sm },
 
-  destinations: { gap: spacing.xs, marginBottom: spacing.lg },
-  destination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: 56,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  destinationSelected: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
-  cashGlyph: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: colors.successMuted, alignItems: 'center', justifyContent: 'center',
-  },
-  destinationText: { flex: 1, minWidth: 0 },
-  destinationLabel: { ...type.bodyMedium, color: colors.textPrimary },
-  destinationHint: { ...type.small, color: colors.textMuted },
-  proofRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  proofThumb: { width: 56, height: 56, borderRadius: radius.sm },
   proofLarge: { width: '100%', height: 420 },
 }));
 

@@ -114,7 +114,8 @@
     "loads": "Loads",
     "bookings": "Bookings",
     "kyc": "KYC",
-    "trucks": "Trucks"
+    "trucks": "Trucks",
+    "commission": "Fees"
   },
   "console": {
     "title": "Admin console",
@@ -169,6 +170,13 @@
       "search": "Search by registration or make/model",
       "emptyTitle": "No trucks yet",
       "emptyMessage": "Trucks owners add will show up here."
+    },
+    "commission": {
+      "title": "FLITO fees",
+      "subtitle": "Owners' fee payments to check, who owes what, and FLITO's payment details.",
+      "search": "Search by owner name, phone or company",
+      "emptyTitle": "Nothing to check",
+      "emptyMessage": "No payments in this list."
     }
   },
   "dashboard": {
@@ -271,7 +279,17 @@
       "wallet": "Wallet",
       "addedBy": "Added by",
       "documents": "Documents",
-      "noDocuments": "No documents uploaded yet."
+      "noDocuments": "No documents uploaded yet.",
+      "fees": {
+        "title": "FLITO fees",
+        "charged": "Fees so far",
+        "paid": "Paid",
+        "balance": "Owes",
+        "overdue": "Past due",
+        "awaiting": "Being checked",
+        "dueBy": "Due by",
+        "blocked": "New offers are stopped until the past-due fees are paid."
+      }
     },
     "truck": {
       "title": "Truck",
@@ -469,6 +487,13 @@
       },
       "load": {
         "cancelled": "Load removed by an admin"
+      },
+      "commission": {
+        "payment_confirmed": "Fee payment confirmed",
+        "payment_rejected": "Fee payment rejected"
+      },
+      "platform": {
+        "payment_details_changed": "FLITO's payment details changed"
       }
     }
   },
@@ -492,5 +517,40 @@
       "rejected": "Papers rejected",
       "not_submitted": "Papers not sent"
     }
+  },
+  "commission": {
+    "owed": "Owed to FLITO",
+    "overdue": "Past due",
+    "toCheck": "Payments to check",
+    "received": "Received so far",
+    "ownersOverdue_one": "{{count}} owner past due",
+    "ownersOverdue_other": "{{count}} owners past due",
+    "owingTitle": "Owners who owe",
+    "owingEmpty": "No owner owes FLITO anything.",
+    "owes": "Owes {{amount}}",
+    "pastDue": "{{amount}} past due",
+    "dueBy": "Due by {{date}}",
+    "blocked": "Offers stopped",
+    "accountsTitle": "FLITO's payment details",
+    "accountsHint": "Owners pay FLITO's fees into these. Add the official QR from FLITO's bank or wallet.",
+    "accountsEmptyTitle": "Add FLITO's payment details",
+    "accountsEmptyText": "Owners can't pay FLITO into an account until there is at least one here.",
+    "accountsSaved": "Owners will see this on their FLITO fees page.",
+    "accountsRemove": "Owners will no longer see it. Payments already recorded stay.",
+    "paymentsTitle": "Owners' payments",
+    "paidTo": "Paid to",
+    "reference": "Reference",
+    "note": "Note",
+    "proof": "See screenshot",
+    "proofTitle": "Payment screenshot",
+    "sent": "Sent",
+    "checkedBy": "Checked by {{name}}",
+    "reason": "Reason",
+    "confirm": "Received",
+    "reject": "Not received",
+    "rejectPlaceholder": "What's wrong? The owner will see this.",
+    "confirmTitle": "{{amount}} in FLITO's account?",
+    "confirmMessage": "Check FLITO's bank or wallet first. This marks the owner's fees as paid.",
+    "loadFailed": "Could not load the fees overview."
   }
 }

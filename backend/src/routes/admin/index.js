@@ -14,5 +14,6 @@ router.use('/loads', require('./loads'));
 router.use('/bookings', require('./bookings'));
 router.use('/kyc', require('./kyc'));
 router.use('/trucks', require('./trucks'));
+router.use('/commission', require('./commission'));
 
 module.exports = router;

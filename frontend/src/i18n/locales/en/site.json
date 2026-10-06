@@ -838,7 +838,11 @@
           },
           {
             "q": "Does FLITO charge a fee?",
-            "a": "Joining FLITO, posting loads and sending offers is free today. If that ever changes, we will say so clearly in the app and on this site before any fee applies."
+            "a": "Shippers pay nothing, and joining, posting loads and sending offers stay free. Truck owners pay FLITO a small fee on each completed trip. The exact fee is shown before you send an offer, on the booking and on your monthly bill, so you always know it before you take a trip. Fees start on 1 Magh 2083 (15 January 2027); trips booked before then are free, and so are each owner's first 5 trips after that. Cancelled trips have no fee. Trips are billed each Nepali month and paid by the 15th of the next."
+          },
+          {
+            "q": "How do owners pay FLITO's fees?",
+            "a": "Open Profile, then FLITO fees. It shows each month's bill and FLITO's official bank, eSewa and Khalti accounts with their QR codes. Pay with your own bank app or wallet, then tap \"I have paid FLITO\". The fee counts as paid once FLITO finds the money in its account. If fees stay unpaid after the due date, your new offers are paused until you pay; trips already booked carry on."
           }
         ]
       },
@@ -902,11 +906,15 @@
         "items": [
           {
             "q": "How do I pay for a trip?",
-            "a": "For now, the shipper pays the truck owner directly, in the way you agree: cash or a transfer. Agree when and how before the truck is loaded."
+            "a": "The shipper pays the truck owner directly. On the booking, the shipper sees the owner's bank account, eSewa or Khalti with its QR code. Pay with your own bank app or wallet (or in cash, as you agree), then tap \"I have paid\" and add the transaction ID. The owner confirms the money arrived."
           },
           {
-            "q": "Can I pay in the app?",
-            "a": "Not yet. Paying through Nepali digital wallets is coming. Until then, never pay anyone who asks you to send money to unlock a load or an account."
+            "q": "Does the money go through FLITO?",
+            "a": "No. A trip's money goes straight from the shipper to the owner's own account; FLITO only keeps the record. FLITO will never ask you to send money to unlock a load or an account, and never asks for your PIN, password or OTP."
+          },
+          {
+            "q": "How do owners add their bank account or QR?",
+            "a": "Open Profile, then Payment details, and add a bank account, eSewa or Khalti with a photo of its payment QR. Only shippers with a booking with you see them."
           },
           {
             "q": "Where do drivers see their earnings?",
