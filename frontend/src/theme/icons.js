@@ -126,6 +126,8 @@ const GLYPHS = {
   search: 'magnify',
   filter: 'filter-variant',
   refresh: 'refresh',
+  expand: 'arrow-expand',
+  collapse: 'arrow-collapse',
   send: 'send-outline',
   share: 'share-variant-outline',
   logout: 'logout',

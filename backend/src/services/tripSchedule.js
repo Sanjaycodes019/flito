@@ -25,10 +25,17 @@ const tripDaysFor = (km) => {
   return Math.min(MAX_TRIP_DAYS, Math.max(1, Math.ceil(hours / DRIVING_HOURS_PER_DAY)));
 };
 
+// Driving minutes for a loaded truck over `km` of road. A routing server's
+// time is for a car, so a truck takes at least that and usually longer; the
+// planning speed above sets the slower pace.
+const truckMinutesFor = (km, carMinutes = 0) => (
+  km > 0 ? Math.round(Math.max(carMinutes, (km / TRUCK_AVG_KMH) * 60)) : 0
+);
+
 // The day keys from `startDay` for `count` days: ["2026-09-16", "2026-09-17"].
 const daysFrom = (startDay, count = 1) => Array.from({ length: Math.max(1, count) }, (_, i) => addDays(startDay, i));
 
 // The days a load would keep a truck busy, or [] for a load with no pickup day.
 const busyDaysOf = (load) => (load?.pickupDay ? daysFrom(load.pickupDay, load.tripDays || 1) : []);
 
-module.exports = { tripDaysFor, daysFrom, busyDaysOf, MAX_TRIP_DAYS };
+module.exports = { tripDaysFor, truckMinutesFor, daysFrom, busyDaysOf, MAX_TRIP_DAYS };

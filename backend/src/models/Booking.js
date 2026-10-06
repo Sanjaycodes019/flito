@@ -71,9 +71,15 @@ const bookingSchema = new mongoose.Schema(
       default: 'pending',
     },
 
+    // The driver's last GPS fix. heading is degrees clockwise from north,
+    // speed is metres a second and accuracy is the fix's radius in metres;
+    // each is left out when the phone didn't report it.
     currentLocation: {
       lat: Number,
       lng: Number,
+      heading: Number,
+      speed: Number,
+      accuracy: Number,
     },
     locationUpdatedAt: Date,
 

@@ -1,6 +1,5 @@
 const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
-const events = require('./events');
 
 const setupSocketHandlers = (io) => {
   io.on('connection', (socket) => {
@@ -19,14 +18,10 @@ const setupSocketHandlers = (io) => {
       }
     });
 
-    // High-frequency GPS pings go straight over the socket (bypassing REST)
-    // for lower latency; the driver also periodically persists location via
-    // PATCH /api/bookings/:id/location.
-    socket.on('location-update', (data) => {
-      const { shipperId, ownerId, bookingId, lat, lng } = data || {};
-      if (shipperId) io.to(`user-${shipperId}`).emit(events.LOCATION_UPDATE, { bookingId, lat, lng });
-      if (ownerId) io.to(`user-${ownerId}`).emit(events.LOCATION_UPDATE, { bookingId, lat, lng });
-    });
+    // Live GPS goes through PATCH /api/bookings/:id/location, which checks the
+    // sender is the booking's driver before it reaches the shipper and owner.
+    // There is deliberately no socket path for it: a socket message carries
+    // no such check, so anyone connected could move a truck on someone's map.
 
     socket.on('disconnect', () => {
       logger.info('Socket disconnected:', socket.id);

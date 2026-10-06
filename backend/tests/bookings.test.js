@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const {
   setupTestDb, teardownTestDb, clearDb, signUp, as, uniquePhone, sampleLoad, placeQuote,
 } = require('./helpers');
@@ -5,6 +6,11 @@ const {
 beforeAll(setupTestDb);
 afterAll(teardownTestDb);
 beforeEach(clearDb);
+
+// The server ignores a fix sent within a few seconds of the last one; tests
+// that send two in a row move the last one back in time first.
+const backdateLastFix = (booking) => mongoose.model('Booking')
+  .updateOne({ _id: booking._id }, { locationUpdatedAt: new Date(Date.now() - 60000) });
 
 // Drives the real flow up to a confirmed booking with a driver assigned.
 const setupBooking = async ({ withDriver = true } = {}) => {
@@ -208,6 +214,73 @@ describe('driver assignment and location', () => {
 
     expect(res.body.currentLocation).toEqual({ lat: 27.7, lng: 85.3 });
     expect(new Date(res.body.locationUpdatedAt).getTime()).toBeGreaterThanOrEqual(before);
+  });
+
+  it('keeps the heading, speed and accuracy of a fix, and drops nonsense ones', async () => {
+    const { driver, booking } = await setupBooking();
+    await as(driver.token).patch(`/api/bookings/${booking._id}/status`)
+      .send({ pickupStatus: 'picked_up', status: 'in_transit' }).expect(200);
+
+    const good = await as(driver.token).patch(`/api/bookings/${booking._id}/location`)
+      .send({ lat: 27.7, lng: 85.3, heading: 92.4, speed: 11.26, accuracy: 6.7 }).expect(200);
+    expect(good.body.currentLocation).toEqual({ lat: 27.7, lng: 85.3, heading: 92, speed: 11.3, accuracy: 7 });
+
+    await backdateLastFix(booking);
+    const unknown = await as(driver.token).patch(`/api/bookings/${booking._id}/location`)
+      .send({ lat: 27.7, lng: 85.3, heading: -1, speed: null, accuracy: 'x' }).expect(200);
+    expect(unknown.body.currentLocation).toEqual({ lat: 27.7, lng: 85.3 });
+  });
+
+  it('keeps one fix when two arrive within seconds, without failing the second', async () => {
+    const { driver, booking } = await setupBooking();
+    await as(driver.token).patch(`/api/bookings/${booking._id}/status`)
+      .send({ pickupStatus: 'picked_up', status: 'in_transit' }).expect(200);
+
+    await as(driver.token).patch(`/api/bookings/${booking._id}/location`).send({ lat: 27.7, lng: 85.3 }).expect(200);
+    const tooSoon = await as(driver.token).patch(`/api/bookings/${booking._id}/location`)
+      .send({ lat: 27.8, lng: 85.4 }).expect(200);
+    expect(tooSoon.body.skipped).toBe(true);
+
+    const stored = await mongoose.model('Booking').findById(booking._id).lean();
+    expect(stored.currentLocation).toMatchObject({ lat: 27.7, lng: 85.3 });
+
+    await backdateLastFix(booking);
+    const later = await as(driver.token).patch(`/api/bookings/${booking._id}/location`)
+      .send({ lat: 27.8, lng: 85.4 }).expect(200);
+    expect(later.body.skipped).toBeUndefined();
+  });
+});
+
+describe('route for the map', () => {
+  it('gives each party both ends of the trip, and no one else', async () => {
+    const { shipper, owner, driver, booking } = await setupBooking();
+    const stranger = await signUp({ phone: uniquePhone(), role: 'shipper' });
+
+    for (const actor of [shipper, owner, driver]) {
+      const { body } = await as(actor.token).get(`/api/bookings/${booking._id}/route`).expect(200);
+      // Routing is off in the suite, so there is no road line, only the ends.
+      expect(body.route).toMatchObject({ fromTruck: false, polyline: null, km: null });
+      expect(body.route.from.lat).toEqual(expect.any(Number));
+      expect(body.route.to.lng).toEqual(expect.any(Number));
+    }
+
+    const res = await as(stranger.token).get(`/api/bookings/${booking._id}/route`);
+    expect(res.status).toBe(403);
+  });
+
+  it('starts from the truck only once it is under way and has a position', async () => {
+    const { shipper, driver, booking } = await setupBooking();
+
+    const before = await as(shipper.token).get(`/api/bookings/${booking._id}/route?from=truck`).expect(200);
+    expect(before.body.route.fromTruck).toBe(false);
+
+    await as(driver.token).patch(`/api/bookings/${booking._id}/status`)
+      .send({ pickupStatus: 'picked_up', status: 'in_transit' }).expect(200);
+    await as(driver.token).patch(`/api/bookings/${booking._id}/location`)
+      .send({ lat: 27.65, lng: 85.1 }).expect(200);
+
+    const { body } = await as(shipper.token).get(`/api/bookings/${booking._id}/route?from=truck`).expect(200);
+    expect(body.route).toMatchObject({ fromTruck: true, from: { lat: 27.65, lng: 85.1 } });
   });
 });
 

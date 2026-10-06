@@ -22,7 +22,11 @@ const LocationPickerMap = ({ value, onChange, height = 220, showLocateButton = t
 
   // Rebuilt only if the marker's starting point changes identity-wise (not on
   // every pixel of a drag). The page manages the marker itself after that.
-  const html = useMemo(() => buildMapHtml({ interactive: true, initialPicked: value || null }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const html = useMemo(() => buildMapHtml({
+    interactive: true,
+    initialPicked: value || null,
+    labels: { twoFingers: t('loads:trackingMap.twoFingers'), clickToZoom: t('loads:trackingMap.clickToZoom') },
+  }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A point set from outside the map (a detected location, or cleared because
   // the address changed) moves or removes the pin.

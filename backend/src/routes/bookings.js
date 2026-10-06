@@ -20,6 +20,7 @@ router.use(authMiddleware);
 
 router.get('/', bookingsController.listMyBookings);
 router.get('/:id', bookingsController.getBooking);
+router.get('/:id/route', bookingsController.getRoute);
 router.patch('/:id/assign-driver', requireRole('owner'), bookingsController.assignDriver);
 router.patch('/:id/status', bookingsController.updateStatus);
 router.patch('/:id/location', requireRole('driver'), validateCoordinates, bookingsController.updateLocation);

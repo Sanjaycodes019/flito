@@ -59,3 +59,51 @@ describe('road distances', () => {
     expect(kms).toEqual([127, 200, 127]);
   });
 });
+
+describe('route lines', () => {
+  const a = { lat: 27.7172, lng: 85.324 };
+  const b = { lat: 28.2096, lng: 83.9856 };
+
+  it('asks for the full line and returns it with distance and car time', async () => {
+    axios.get.mockResolvedValue({ data: { code: 'Ok', routes: [{ distance: 201234.6, duration: 18000.4, geometry: '_p~iF~ps|U_ulLnnqC' }] } });
+
+    expect(await routing.roadRoute([a, b])).toEqual({ meters: 201235, seconds: 18000, polyline: '_p~iF~ps|U_ulLnnqC' });
+    const [url, { params }] = axios.get.mock.calls[0];
+    expect(url).toBe('http://osrm.test/route/v1/driving/85.324,27.7172;83.9856,28.2096');
+    expect(params).toMatchObject({ overview: 'full', geometries: 'polyline' });
+  });
+
+  it('remembers a line instead of asking again', async () => {
+    axios.get.mockResolvedValue({ data: { code: 'Ok', routes: [{ distance: 1000, duration: 60, geometry: 'abc' }] } });
+
+    await routing.roadRoute([a, b]);
+    await routing.roadRoute([a, b]);
+
+    expect(axios.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('thins a long line to within a few metres of the road', async () => {
+    // 1 km of straight road with a point every metre, then a turn.
+    const { encode, decode } = require('../src/services/polyline');
+    const straight = Array.from({ length: 1001 }, (_, i) => [27.7, 85.3 + i * 0.00001]);
+    const turn = [27.701, 85.31];
+    axios.get.mockResolvedValue({ data: { code: 'Ok', routes: [{ distance: 1110, duration: 90, geometry: encode([...straight, turn]) }] } });
+
+    const { polyline } = await routing.roadRoute([a, b]);
+
+    expect(decode(polyline)).toEqual([[27.7, 85.3], [27.7, 85.31], turn]);
+  });
+
+  it('returns null rather than a made-up line when there is no route', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    axios.get.mockResolvedValue({ data: { code: 'NoRoute', routes: [] } });
+    expect(await routing.roadRoute([a, b])).toBeNull();
+
+    axios.get.mockRejectedValue(new Error('timeout'));
+    expect(await routing.roadRoute([a, { lat: 26.45, lng: 87.27 }])).toBeNull();
+
+    process.env.OSRM_URL = 'off';
+    expect(await routing.roadRoute([a, b])).toBeNull();
+    expect(axios.get).toHaveBeenCalledTimes(2);
+  });
+});

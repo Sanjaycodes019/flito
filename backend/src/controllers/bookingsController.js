@@ -4,6 +4,9 @@ const { fail } = require('../utils/respond');
 const { releaseBooking } = require('../services/bookingRelease');
 const { chargeForBooking } = require('../services/commission');
 const { issueInvoice } = require('../services/invoice');
+const { roadRoute } = require('../services/routing');
+const { pointOf } = require('../services/nepalLocations');
+const { truckMinutesFor } = require('../services/tripSchedule');
 
 const { PARTY_FIELDS, withVerification } = require('../services/partyView');
 
@@ -236,37 +239,120 @@ exports.updateStatus = async (req, res, next) => {
   }
 };
 
-// Driver pushes a live GPS ping for an in-transit booking
+// How long a road from the truck's position is reused for other viewers.
+const TRUCK_ROUTE_TTL_MS = 10 * 60 * 1000;
+
+// Whether a stop was pinned on the map, not just given as an address.
+const isPinned = (place) => Number.isFinite(place?.coordinates?.lat) && Number.isFinite(place?.coordinates?.lng);
+
+// The road route for a booking's map, from pickup to drop-off. With
+// ?from=truck, while the trip is under way, it starts at the truck's last
+// position instead, for when the driver has left the planned road.
+exports.getRoute = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('loadId', 'pickupLocation dropoffLocation');
+    if (!booking) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');
+    if (!isParty(booking, req.user.userId)) {
+      return fail(res, 403, 'BOOKINGS_NOT_PARTY', 'Not part of this booking');
+    }
+
+    const { pickupLocation, dropoffLocation } = booking.loadId || {};
+    const truck = booking.currentLocation;
+    const fromTruck = req.query.from === 'truck' && booking.status === 'in_transit' && truck?.lat != null;
+    const from = fromTruck ? { lat: truck.lat, lng: truck.lng } : pointOf(pickupLocation);
+    const to = pointOf(dropoffLocation);
+    if (!from || !to) return res.json({ success: true, route: null });
+
+    // When the routing server can't answer, the points still come back so a
+    // map can show both ends, just without a road line between them.
+    //
+    // A trip's planned road never changes, so the phone may keep it for a day
+    // without asking again; one from the truck is only good for a moment.
+    const road = await roadRoute([from, to], fromTruck ? { ttlMs: TRUCK_ROUTE_TTL_MS } : undefined);
+    const km = road ? Math.round(road.meters / 100) / 10 : null;
+    res.set('Cache-Control', !road ? 'no-cache' : fromTruck ? 'private, max-age=30' : 'private, max-age=86400');
+    res.json({
+      success: true,
+      route: {
+        from,
+        to,
+        fromTruck,
+        km,
+        minutes: road ? truckMinutesFor(km, road.seconds / 60) : null,
+        polyline: road?.polyline || null,
+        // A stop without a pin is placed at its municipality's centre.
+        approximate: { pickup: !fromTruck && !isPinned(pickupLocation), dropoff: !isPinned(dropoffLocation) },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// The optional parts of a GPS fix, kept only when the phone reported a sane
+// value (browsers and some phones send null or -1 for "unknown").
+const fixDetails = ({ heading, speed, accuracy }) => {
+  const details = {};
+  if (Number.isFinite(heading) && heading >= 0 && heading <= 360) details.heading = Math.round(heading) % 360;
+  if (Number.isFinite(speed) && speed >= 0 && speed < 70) details.speed = Math.round(speed * 10) / 10;
+  if (Number.isFinite(accuracy) && accuracy > 0 && accuracy < 100000) details.accuracy = Math.round(accuracy);
+  return details;
+};
+
+// A driver's phone sends a fix every several seconds at most; anything
+// faster is answered without touching the database.
+const MIN_PING_GAP_MS = 3000;
+
+// Driver pushes a live GPS ping for an in-transit booking. This runs for
+// every truck on the road every few seconds, so the usual case is a single
+// conditional update that returns only who to tell, and the booking is only
+// read to explain a refusal.
 exports.updateLocation = async (req, res, next) => {
   try {
     const { lat, lng } = req.body;
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');
-    if (idOf(booking.driverId) !== req.user.userId) {
-      return fail(res, 403, 'BOOKINGS_LOCATION_DRIVER_ONLY', 'Only the assigned driver can update location');
-    }
-    // GPS pings are only meaningful while cargo is moving; a booking that
-    // hasn't started or has already ended shouldn't gain a "current" location.
-    if (booking.status !== 'in_transit') {
-      return fail(
-        res,
-        400,
-        'BOOKINGS_LOCATION_NOT_IN_TRANSIT',
-        `Location can only be shared while a booking is in transit (this one is ${booking.status.replace('_', ' ')})`,
-        { status: booking.status },
-      );
-    }
-
     const locationUpdatedAt = new Date();
-    booking.currentLocation = { lat, lng };
-    booking.locationUpdatedAt = locationUpdatedAt;
-    await booking.save();
+    const currentLocation = { lat, lng, ...fixDetails(req.body) };
 
-    const payload = { bookingId: booking._id, lat, lng, updatedAt: locationUpdatedAt };
+    const booking = await Booking.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        driverId: req.user.userId,
+        status: 'in_transit',
+        $or: [
+          { locationUpdatedAt: null },
+          { locationUpdatedAt: { $lte: new Date(locationUpdatedAt.getTime() - MIN_PING_GAP_MS) } },
+        ],
+      },
+      { $set: { currentLocation, locationUpdatedAt } },
+      { projection: { shipperId: 1, ownerId: 1 }, lean: true },
+    );
+
+    if (!booking) {
+      const found = await Booking.findById(req.params.id).select('driverId status locationUpdatedAt').lean();
+      if (!found) return fail(res, 404, 'BOOKINGS_NOT_FOUND', 'Booking not found');
+      if (idOf(found.driverId) !== req.user.userId) {
+        return fail(res, 403, 'BOOKINGS_LOCATION_DRIVER_ONLY', 'Only the assigned driver can update location');
+      }
+      // GPS pings are only meaningful while cargo is moving; a booking that
+      // hasn't started or has already ended shouldn't gain a "current" location.
+      if (found.status !== 'in_transit') {
+        return fail(
+          res,
+          400,
+          'BOOKINGS_LOCATION_NOT_IN_TRANSIT',
+          `Location can only be shared while a booking is in transit (this one is ${found.status.replace('_', ' ')})`,
+          { status: found.status },
+        );
+      }
+      // Too soon after the last fix: fine, but not stored or passed on.
+      return res.json({ success: true, skipped: true, locationUpdatedAt: found.locationUpdatedAt });
+    }
+
+    const payload = { bookingId: booking._id, ...currentLocation, updatedAt: locationUpdatedAt };
     req.io?.to(`user-${booking.shipperId}`).emit('location-update', payload);
     req.io?.to(`user-${booking.ownerId}`).emit('location-update', payload);
 
-    res.json({ success: true, currentLocation: booking.currentLocation, locationUpdatedAt });
+    res.json({ success: true, currentLocation, locationUpdatedAt });
   } catch (error) {
     next(error);
   }

@@ -362,7 +362,8 @@ Routes marked `public` need no token; every other route needs `Authorization: Be
 | GET | `/api/bookings/:id` | party | Booking detail, with the parties' phone numbers |
 | PATCH | `/api/bookings/:id/assign-driver` | owner | Assign a driver |
 | PATCH | `/api/bookings/:id/status` | party | Update status / pickup and drop-off progress; shipper or owner may cancel while pending or confirmed |
-| PATCH | `/api/bookings/:id/location` | driver | GPS ping, only while `in_transit` |
+| GET | `/api/bookings/:id/route` | party | Road route for the map: ends, km, truck minutes, thinned polyline; `?from=truck` starts at the truck's last fix while in transit |
+| PATCH | `/api/bookings/:id/location` | driver | GPS ping (`lat`, `lng`, optional `heading`, `speed`, `accuracy`), only while `in_transit`; one within 3 s of the last is ignored |
 | POST | `/api/bookings/:id/rate` | party | Rate after completion (1–5, optional review) |
 | POST | `/api/bookings/:id/delivery-proof` | driver | Up to 5 delivery photos |
 | POST | `/api/bookings/:id/signature` | driver | The receiver's signature |
@@ -466,8 +467,10 @@ A push goes out alongside the matching socket event for new offers, an accepted 
 Maps use **Leaflet + OpenStreetMap**: no API key, no billing. The same HTML (`frontend/src/components/map/mapHtml.js`) renders in a `WebView` on Android and an `iframe` on the web, so the map behaves the same on both.
 
 - **Posting a load:** pickup and drop-off use the same province, district, municipality, ward and tole pickers as a profile address, filled from "Use Current Location" or the saved address. An exact point on the map is optional.
-- **Tracking:** `TrackingMap` shows the pickup and drop-off pins plus a driver marker that moves live with `location-update` events, without resetting the viewer's pan or zoom.
-- **Sharing:** while a booking is `in_transit`, the assigned driver can turn on "Share My Location". It samples every ~15 s / 25 m and sends it to the server, which keeps only the latest position on the booking and pushes it to the shipper and owner. Sharing stops when the driver leaves the screen; it is never a background broadcast. The server accepts a ping only while the booking is in transit and checks the coordinates are real.
+- **Road route:** `GET /api/bookings/:id/route` returns the road from pickup to drop-off from OSRM (free, no key), thinned to within 5 m of the road (Kathmandu to Pokhara: about 7,500 points down to 1,850, 20 KB to 7 KB), with a truck-paced time (the slower of OSRM's car time and 28 km/h). Stops without a pin are placed at their municipality's centre and marked approximate. The server caches routes for a week and the phone keeps the last 20 for a week too, so reopening a booking costs no request.
+- **Tracking:** `TrackingMap` draws the route, greys out the part already driven, and moves the truck along it with its heading, its GPS accuracy circle and a smooth glide between fixes, without resetting the viewer's pan or zoom. Below the map: distance and time left, arrival time, speed, and how fresh the fix is (live, recent, or last seen). The truck is matched to the road from where it was last seen, so hairpin bends don't throw it onto the road below. If it leaves the planned road by more than 250 m, the route is redrawn from where it is, at most every 90 s. "Follow" keeps the map on the truck; "Fit" shows the whole trip.
+- **Any screen:** the map's height follows the window and it can go full screen. Inside the page, a phone moves the map with two fingers (one finger scrolls the page past it) and a mouse wheel zooms it only after a click, each with a short hint; full screen, the map takes every gesture. Buttons are at least 44 px and show only icons on phones.
+- **Sharing:** while a booking is `in_transit`, the assigned driver can turn on "Share My Location". The phone reads GPS every 4 s for the driver's own map, but sends a fix only once the truck has moved 30 m or turned 30 degrees, at most one every 8 s, plus one a minute while it stands still. The server stores each fix with one conditional update (no full read and save), ignores any that arrive within 3 s of the last, and pushes them to the shipper and owner. Sharing stops when the driver leaves the screen; it is never a background broadcast. The server accepts a ping only from the assigned driver while the booking is in transit and checks the coordinates are real. There is no socket path for locations, so no one else can move a truck on a map.
 
 ---
 
@@ -553,7 +556,8 @@ Deliberate scope cuts and open items, not oversights:
 - **Google sign-in needs an OAuth client ID** to be used end to end. Signature, audience and expiry are checked; the request `nonce` is not yet compared.
 - **Accounts from before email login** (old phone + OTP accounts) have no way in unless a password or PIN is set for them. After deploying, run `npm run migrate-auth-indexes` once so accounts without a phone don't collide on an old index.
 - **Truck paper dates are typed in.** Admins check the uploaded bluebook and photo, but the bluebook, insurance and green sticker dates owners enter aren't read from the documents.
-- **Road distances use the public OSRM demo server by default:** real routes, cached, about one request a second. For real traffic run your own and set `OSRM_URL`. OSRM's car profile knows nothing about truck restrictions or seasonal closures.
+- **Road distances and route lines use the public OSRM demo server by default:** real routes, cached, about one request a second. For real traffic run your own and set `OSRM_URL`. OSRM's car profile knows nothing about truck restrictions or seasonal closures, so a route can use a road a loaded truck can't.
+- **Map tiles come from OpenStreetMap's free tile servers,** which ask heavy users to run or pay for their own. The map loads as few tiles as it can; if traffic grows, point the tile URL in `frontend/src/components/map/mapHtml.js` at a paid or self-hosted tile service.
 - **Trip length is a plan, not tracking.** A delayed truck can overrun into a day it was booked for, and nothing models where a truck ends up after a job.
 - **Push receipts aren't checked.** A dead push token is cleared on its next failed send rather than from Expo's delivery receipts.
 - **Ward and tole data are volunteer-mapped.** 6,696 of 6,743 wards and 713 of 753 municipalities are complete in OpenStreetMap; near a ward border the answer can be the neighbour. Results are always shown as a suggestion to check.

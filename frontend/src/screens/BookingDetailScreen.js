@@ -89,14 +89,26 @@ const BookingDetailScreen = ({ route }) => {
   // refresh (pull-to-refresh, or fetchBooking after an action) still carries
   // the persisted currentLocation, so this is a live overlay, not the source
   // of truth.
+  //
+  // A pushed fix is stamped with when it arrived, by this phone's clock, so
+  // "updated 5 s ago" stays right even if the phone's clock is off.
   useEffect(() => {
-    const onLocationUpdate = ({ bookingId: id, lat, lng }) => {
+    const onLocationUpdate = ({ bookingId: id, lat, lng, heading, speed, accuracy }) => {
       if (id !== bookingId) return;
-      setBooking((current) => (current ? { ...current, currentLocation: { lat, lng } } : current));
+      setBooking((current) => (current ? {
+        ...current,
+        currentLocation: { lat, lng, heading, speed, accuracy },
+        locationUpdatedAt: new Date().toISOString(),
+      } : current));
     };
     socketService.on('location-update', onLocationUpdate);
     return () => socketService.off('location-update', onLocationUpdate);
   }, [bookingId]);
+
+  // The driver's own map follows their phone's GPS directly.
+  const showOwnFix = useCallback(({ at, ...currentLocation }) => {
+    setBooking((current) => (current ? { ...current, currentLocation, locationUpdatedAt: at } : current));
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -235,16 +247,18 @@ const BookingDetailScreen = ({ route }) => {
             <Detail labelKey="booked" label={t('bookings:detail.booked')} value={formatDate(booking.createdAt)} />
 
             <TrackingMap
+              bookingId={bookingId}
               pickup={booking.loadId?.pickupLocation?.coordinates?.lat != null ? booking.loadId.pickupLocation.coordinates : null}
               dropoff={booking.loadId?.dropoffLocation?.coordinates?.lat != null ? booking.loadId.dropoffLocation.coordinates : null}
-              driverLocation={booking.currentLocation?.lat != null ? booking.currentLocation : null}
+              driverLocation={booking.currentLocation?.lat != null ? { ...booking.currentLocation, updatedAt: booking.locationUpdatedAt } : null}
+              live={booking.status === 'in_transit'}
             />
           </Card>
         </View>
 
         <View style={twoColumns ? styles.sideColumn : null}>
           {isDriver && booking.status === 'in_transit' && (
-            <LocationSharingToggle bookingId={bookingId} />
+            <LocationSharingToggle bookingId={bookingId} onFix={showOwnFix} />
           )}
 
           {needsDriver && (

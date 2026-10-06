@@ -1,6 +1,7 @@
 const logger = require('../utils/logger');
 const axios = require('axios');
 const { pointOf, estimateRoadKm } = require('./nepalLocations');
+const { decode, encode, simplify } = require('./polyline');
 
 // Real road distances from an OSRM server (OpenStreetMap roads).
 //
@@ -137,7 +138,57 @@ const roadDistancesTo = async (origins, to) => {
   return result;
 };
 
-module.exports = { roadDistance, roadDistancesTo };
+// Routes for drawing on a map. A trip's planned road doesn't change, so it is
+// kept as long as a distance is; a road from a moving truck goes stale fast.
+// Lines are thinned before they are kept (see polyline.js), so a few thousand
+// fit in a few megabytes.
+const PLANNED_ROUTE_TTL_MS = CACHE_TTL_MS;
+const ROUTE_CACHE_MAX_ENTRIES = 2000;
+const ROUTE_TOLERANCE_M = 5;
+const routeCache = new Map();
+
+const routeKey = (points) => points.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join('>');
+
+// The road route through two or more {lat,lng} points, as { meters, seconds,
+// polyline }, where polyline is the line encoded the way OSRM and Google do
+// (precision 5), thinned to within 5 m of the road, and seconds is a car's
+// driving time. Null when routing is off, the server fails, or there is no
+// road between the points: a map then shows the points without a line rather
+// than a made-up one. `ttlMs` is how long the answer is reused.
+const roadRoute = async (points, { ttlMs = PLANNED_ROUTE_TTL_MS } = {}) => {
+  if (!enabled() || !Array.isArray(points) || points.length < 2) return null;
+
+  const key = routeKey(points);
+  const hit = routeCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.route;
+
+  try {
+    const { data } = await throttled(() => axios.get(`${baseUrl()}/route/v1/driving/${points.map(coord).join(';')}`, {
+      params: { overview: 'full', geometries: 'polyline', steps: false },
+      timeout: TIMEOUT_MS,
+    }));
+    const best = data?.code === 'Ok' ? data.routes?.[0] : null;
+    if (!best || typeof best.geometry !== 'string') throw new Error(`routing answered ${data?.code || 'nothing'}`);
+
+    const route = {
+      meters: Math.round(best.distance),
+      seconds: Math.round(best.duration),
+      polyline: encode(simplify(decode(best.geometry), ROUTE_TOLERANCE_M)),
+    };
+    routeCache.delete(key);
+    if (routeCache.size >= ROUTE_CACHE_MAX_ENTRIES) routeCache.delete(routeCache.keys().next().value);
+    routeCache.set(key, { route, expires: Date.now() + ttlMs });
+    return route;
+  } catch (error) {
+    logger.error('[routing] no route line:', error.message);
+    return null;
+  }
+};
+
+module.exports = { roadDistance, roadDistancesTo, roadRoute };
 
 // Exposed so tests can start from a clean slate.
-module.exports._clearCache = () => cache.clear();
+module.exports._clearCache = () => {
+  cache.clear();
+  routeCache.clear();
+};
