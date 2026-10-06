@@ -177,7 +177,9 @@ const styles = themedStyles(() => ({
   menuRoot: { flex: 1, flexDirection: 'row', justifyContent: 'flex-end' },
   menuBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.overlay },
   menuSheet: { flex: 1, backgroundColor: colors.surface, paddingHorizontal: spacing.lg },
-  menuSheetSide: { flex: 0, width: 400, ...shadow.level3 },
+  // `flex: 0` would also set a 0% flex-basis, which beats the width on the web
+  // and collapses the panel to its padding, so the three parts are spelled out.
+  menuSheetSide: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', width: 400, maxWidth: '100%', ...shadow.level3 },
   menuHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.divider },
   menuBody: { paddingVertical: spacing.lg },
   menuGroup: { ...type.caption, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: spacing.sm, marginLeft: spacing.xs },
