@@ -5,7 +5,7 @@ import Avatar from '../common/Avatar';
 import Button from '../common/Button';
 import VerifiedBadge from '../common/VerifiedBadge';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, shadow, type, iconSize, themedStyles, themed } from '../../theme/tokens';
+import { colors, spacing, radius, shadow, type, iconSize, themedStyles, themed, sizeOf } from '../../theme/tokens';
 import { ROLES } from '../../utils/constants';
 import { formatMonthYear } from '../../utils/nepalDate';
 
@@ -25,7 +25,8 @@ const TONE_COLORS = themed(() => ({
   error: { bg: colors.errorMuted, fg: colors.errorText },
 }));
 
-const AVATAR = 112;
+// The photo and the cover band shrink on a phone (see sizes in theme/tokens).
+const avatarSize = () => sizeOf().heroAvatar;
 const RING = 4;
 const BADGE = 30;
 
@@ -52,7 +53,7 @@ const PhotoButton = ({ user, busy, onPress }) => {
       style={styles.photoRing}
     >
       {focused && <View style={styles.focusRing} pointerEvents="none" />}
-      <Avatar uri={user?.avatarUrl} role={user?.role} size={AVATAR} />
+      <Avatar uri={user?.avatarUrl} role={user?.role} size={avatarSize()} />
       {(hovered || busy) && (
         <View style={styles.photoOverlay} pointerEvents="none">
           {busy ? (
@@ -141,17 +142,17 @@ const ProfileHero = ({ user, busy, onPhoto, onEdit, onSettings }) => {
 
 const styles = themedStyles(() => ({
   card: { backgroundColor: colors.surface, borderRadius: radius.xl, overflow: 'hidden', ...shadow.level1 },
-  cover: { height: 132, backgroundColor: colors.surfaceDark, overflow: 'hidden' },
+  cover: { height: sizeOf().heroCover, backgroundColor: colors.surfaceDark, overflow: 'hidden' },
   blob: { position: 'absolute', borderRadius: 999, backgroundColor: colors.primary },
   blobLarge: { width: 190, height: 190, top: -90, right: -40, opacity: 0.9 },
   blobSmall: { width: 90, height: 90, bottom: -50, left: 30, opacity: 0.35 },
   body: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl },
 
-  photoLift: { marginTop: -(AVATAR / 2 + RING) },
+  photoLift: { marginTop: -(avatarSize() / 2 + RING) },
   photoRing: {
-    width: AVATAR + RING * 2,
-    height: AVATAR + RING * 2,
-    borderRadius: (AVATAR + RING * 2) / 2,
+    width: avatarSize() + RING * 2,
+    height: avatarSize() + RING * 2,
+    borderRadius: (avatarSize() + RING * 2) / 2,
     borderWidth: RING,
     borderColor: colors.surface,
     backgroundColor: colors.surface,

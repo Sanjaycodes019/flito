@@ -174,6 +174,22 @@ let version = 0;
 
 export const getScheme = () => scheme;
 
+let density = 'regular';
+
+export const getDensity = () => density;
+
+// Swaps the shared spacing, type and icon scales to `regular` or `compact` in
+// place and invalidates every themed style. Returns true when it changed.
+export const applyDensity = (next) => {
+  if (next === density || !SPACING[next]) return false;
+  density = next;
+  version += 1;
+  Object.assign(spacing, SPACING[next]);
+  Object.assign(iconSize, ICON_SIZE[next]);
+  Object.keys(TYPE[next]).forEach((key) => Object.assign(type[key], TYPE[next][key]));
+  return true;
+};
+
 // Returns true when the scheme actually changed.
 export const applyScheme = (next) => {
   if (!palettes[next] || next === scheme) return false;
@@ -206,19 +222,20 @@ const lazyByScheme = (build) => (factory) => {
   });
 };
 
-// 4px base spacing scale. Every padding/margin/gap in the app should be one
-// of these values, never an arbitrary one-off number.
-export const spacing = {
-  xxs: 2,
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  huge: 40,
+// Density: how much room things take. `regular` is tablets and laptops;
+// `compact` is phones, where the same screens sit a little tighter so more fits
+// without scrolling. The scales below are shared objects whose values are swapped
+// in place when the density changes (see applyDensity), exactly like `colors`
+// for light/dark, so every `import { spacing, type, iconSize }` keeps working and
+// every style built with `themedStyles` is rebuilt.
+const SPACING = {
+  regular: { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32, huge: 40 },
+  compact: { xxs: 2, xs: 3, sm: 6, md: 10, lg: 12, xl: 16, xxl: 20, xxxl: 24, huge: 32 },
 };
+
+// 4px base spacing scale (3px steps when compact). Every padding/margin/gap in
+// the app should be one of these values, never an arbitrary one-off number.
+export const spacing = { ...SPACING.regular };
 
 // Border radius scale, shared by buttons, cards, inputs, modals, badges.
 export const radius = {
@@ -260,28 +277,54 @@ export const shadow = {
 //
 // Sized for people who may not read easily, often on a small phone in
 // sunlight: body text is 17px, nothing a user must read is under 13px, and
-// line heights leave room for Devanagari's vowel marks above and below.
-export const type = {
-  display: { fontSize: 30, lineHeight: 39, fontWeight: '700' },
-  h1: { fontSize: 26, lineHeight: 34, fontWeight: '700' },
-  h2: { fontSize: 22, lineHeight: 30, fontWeight: '700' },
-  h3: { fontSize: 19, lineHeight: 26, fontWeight: '600' },
-  bodyLarge: { fontSize: 18, lineHeight: 26, fontWeight: '400' },
-  body: { fontSize: 17, lineHeight: 25, fontWeight: '400' },
-  bodyMedium: { fontSize: 17, lineHeight: 25, fontWeight: '600' },
-  small: { fontSize: 15, lineHeight: 21, fontWeight: '400' },
-  smallMedium: { fontSize: 15, lineHeight: 21, fontWeight: '600' },
-  caption: { fontSize: 13, lineHeight: 18, fontWeight: '700' },
+// line heights leave room for Devanagari's vowel marks above and below. The
+// compact (phone) set trims about 2px off each step but keeps body text at 15px
+// and everything a user must read at 13px or more.
+const TYPE = {
+  regular: {
+    display: { fontSize: 30, lineHeight: 39, fontWeight: '700' },
+    h1: { fontSize: 26, lineHeight: 34, fontWeight: '700' },
+    h2: { fontSize: 22, lineHeight: 30, fontWeight: '700' },
+    h3: { fontSize: 19, lineHeight: 26, fontWeight: '600' },
+    bodyLarge: { fontSize: 18, lineHeight: 26, fontWeight: '400' },
+    body: { fontSize: 17, lineHeight: 25, fontWeight: '400' },
+    bodyMedium: { fontSize: 17, lineHeight: 25, fontWeight: '600' },
+    small: { fontSize: 15, lineHeight: 21, fontWeight: '400' },
+    smallMedium: { fontSize: 15, lineHeight: 21, fontWeight: '600' },
+    caption: { fontSize: 13, lineHeight: 18, fontWeight: '700' },
+  },
+  compact: {
+    display: { fontSize: 26, lineHeight: 34, fontWeight: '700' },
+    h1: { fontSize: 23, lineHeight: 30, fontWeight: '700' },
+    h2: { fontSize: 20, lineHeight: 27, fontWeight: '700' },
+    h3: { fontSize: 17, lineHeight: 23, fontWeight: '600' },
+    bodyLarge: { fontSize: 16, lineHeight: 23, fontWeight: '400' },
+    body: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
+    bodyMedium: { fontSize: 15, lineHeight: 22, fontWeight: '600' },
+    small: { fontSize: 13, lineHeight: 18, fontWeight: '400' },
+    smallMedium: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
+    caption: { fontSize: 12, lineHeight: 16, fontWeight: '700' },
+  },
 };
 
+export const type = Object.fromEntries(Object.entries(TYPE.regular).map(([key, value]) => [key, { ...value }]));
+
 // Icon sizes, tied to the text size they typically sit next to.
-export const iconSize = {
-  xs: 14, // inline with caption/small text
-  sm: 16, // inline with body text
-  md: 20, // default UI icon: buttons, inputs, list rows
-  lg: 24, // section headers, nav bars, tab bar
-  xl: 32, // empty states, feature callouts
-  xxl: 48, // large empty-state illustrations
+const ICON_SIZE = {
+  regular: { xs: 14, sm: 16, md: 20, lg: 24, xl: 32, xxl: 48 },
+  compact: { xs: 13, sm: 15, md: 18, lg: 22, xl: 28, xxl: 40 },
+};
+// xs inline with caption/small text, sm inline with body text, md the default UI
+// icon (buttons, inputs, list rows), lg section headers and nav bars, xl empty
+// states and feature callouts, xxl large empty-state illustrations.
+export const iconSize = { ...ICON_SIZE.regular };
+
+// What each density changes, for the components whose sizes are not spacing:
+// a button's height, an input's, a list row's. Read it at render time through
+// `getDensity()` or use `themed`.
+export const sizes = {
+  regular: { buttonLg: 56, buttonMd: 48, buttonSm: 40, input: 48, row: 64, tabBar: 62, heroAvatar: 112, heroCover: 132 },
+  compact: { buttonLg: 50, buttonMd: 44, buttonSm: 36, input: 44, row: 56, tabBar: 58, heroAvatar: 88, heroCover: 84 },
 };
 
 // Motion durations. Every hover/focus/state transition should use one of
@@ -301,10 +344,13 @@ export const breakpoints = {
   desktop: 1024,
 };
 
+// The size table for the active density: `sizeOf().buttonMd`.
+export const sizeOf = () => sizes[density];
+
 export const themedStyles = lazyByScheme((styles) => StyleSheet.create(styles));
 
 // Same laziness for plain lookup tables built from `colors` (status tones,
 // button variants). Index it at render time, like `themedStyles`.
 export const themed = lazyByScheme((table) => table);
 
-export default { colors, palettes, spacing, radius, shadow, type, iconSize, motion, breakpoints };
+export default { colors, palettes, spacing, radius, shadow, type, iconSize, sizes, motion, breakpoints };

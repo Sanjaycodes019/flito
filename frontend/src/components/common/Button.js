@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Pressable, Text, View, ActivityIndicator, Animated } from 'react-native';
-import { colors, spacing, radius, type as textType, iconSize, motion, themedStyles, themed } from '../../theme/tokens';
+import { colors, spacing, radius, type as textType, iconSize, motion, themedStyles, themed, sizeOf } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
 // Five variants covering every emphasis level the app needs:
@@ -47,15 +47,16 @@ const VARIANTS = themed(() => ({
   },
 }));
 
-const SIZES = {
-  // Large: for the main step buttons of a guided flow. 56px is easy to hit with a thumb.
-  lg: { height: 56, paddingHorizontal: spacing.xxl, fontSize: 18, icon: 24, gap: spacing.sm },
-  md: { height: 48, paddingHorizontal: spacing.xl, fontSize: textType.bodyMedium.fontSize, icon: iconSize.md, gap: spacing.sm },
-  // 40px plus the 8px hitSlop below reaches the 44-48px minimum touch target
-  // recommended on both iOS and Android, even though the drawn chip looks
-  // more compact than an "md" button.
-  sm: { height: 40, paddingHorizontal: spacing.lg, fontSize: textType.small.fontSize, icon: iconSize.sm, gap: spacing.xs },
-};
+// Heights come from the density table (see theme/tokens): a phone's buttons are
+// a few px shorter. `themed` rebuilds this when the density changes.
+const SIZES = themed(() => ({
+  // Large: for the main step buttons of a guided flow, easy to hit with a thumb.
+  lg: { height: sizeOf().buttonLg, paddingHorizontal: spacing.xxl, fontSize: textType.bodyLarge.fontSize + 1, icon: iconSize.lg, gap: spacing.sm },
+  md: { height: sizeOf().buttonMd, paddingHorizontal: spacing.xl, fontSize: textType.bodyMedium.fontSize, icon: iconSize.md, gap: spacing.sm },
+  // The 8px hitSlop below keeps the touch target at 44px or more even when the
+  // drawn chip is shorter.
+  sm: { height: sizeOf().buttonSm, paddingHorizontal: spacing.lg, fontSize: textType.small.fontSize, icon: iconSize.sm, gap: spacing.xs },
+}));
 
 const Button = ({
   title,

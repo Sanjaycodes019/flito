@@ -1,8 +1,8 @@
 import React, { Fragment, createContext, useContext, useEffect, useMemo } from 'react';
-import { Platform, useColorScheme } from 'react-native';
+import { Platform, useColorScheme, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NavigationBar from 'expo-navigation-bar';
-import { colors, applyScheme } from './tokens';
+import { colors, applyScheme, applyDensity, breakpoints } from './tokens';
 import { setThemePreference, useThemePreference } from '../services/themePreference';
 
 const ThemeContext = createContext({ scheme: 'light', preference: 'system', setPreference: setThemePreference });
@@ -10,7 +10,8 @@ const ThemeContext = createContext({ scheme: 'light', preference: 'system', setP
 export const useTheme = () => useContext(ThemeContext);
 
 // Resolves the preference (or the system setting) to 'light' or 'dark', swaps
-// the shared palette, and remounts the tree below it when that changes. The
+// the shared palette, picks the density, and remounts the tree below it when
+// either changes. The
 // palette is read at render time all over the app, so a remount is what makes
 // every screen pick up the new colors at once. Redux state is untouched.
 export const ThemeProvider = ({ children }) => {
@@ -18,8 +19,16 @@ export const ThemeProvider = ({ children }) => {
   const system = useColorScheme();
   const scheme = preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
 
-  // During render, so the first paint already uses the right palette.
+  // Phones get the compact density, everything wider the regular one. On the
+  // web it follows the window width; on a device it follows the shorter side,
+  // so turning a phone sideways does not flip the density (which remounts the
+  // tree and would lose what someone was typing).
+  const { width, height } = useWindowDimensions();
+  const density = (Platform.OS === 'web' ? width : Math.min(width, height)) < breakpoints.tablet ? 'compact' : 'regular';
+
+  // During render, so the first paint already uses the right palette and sizes.
   applyScheme(scheme);
+  applyDensity(density);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
@@ -42,7 +51,7 @@ export const ThemeProvider = ({ children }) => {
   return (
     <ThemeContext.Provider value={value}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} translucent={false} backgroundColor={colors.surface} />
-      <Fragment key={scheme}>{children}</Fragment>
+      <Fragment key={`${scheme}-${density}`}>{children}</Fragment>
     </ThemeContext.Provider>
   );
 };

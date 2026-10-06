@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Platform } from 'react-native';
-import { colors, spacing, radius, type, iconSize, themedStyles } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles, sizeOf } from '../../theme/tokens';
 import Icon from '../../theme/icons';
 
 // On web the native <input> draws the browser's own focus outline inside the
@@ -115,7 +115,7 @@ const styles = themedStyles(() => ({
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
-    minHeight: 48,
+    minHeight: sizeOf().input,
   },
   fieldDisabled: { backgroundColor: colors.surfaceMuted },
   leadingIcon: { marginRight: spacing.sm },

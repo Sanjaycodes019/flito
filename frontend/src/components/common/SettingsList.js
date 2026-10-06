@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import Card from './Card';
 import Button from './Button';
 import Icon from '../../theme/icons';
-import { colors, spacing, radius, type, iconSize, themedStyles, themed } from '../../theme/tokens';
+import { colors, spacing, radius, type, iconSize, themedStyles, themed, sizeOf } from '../../theme/tokens';
 
 // The building blocks of an account page, in the pattern account settings use
 // across Google, LinkedIn and Uber: a titled group (with an optional action
@@ -131,7 +131,7 @@ const styles = themedStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: 64,
+    minHeight: sizeOf().row,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },

@@ -52,7 +52,7 @@ const useSiteStyle = () => {
     isWideWindow: windowWidth >= breakpoints.desktop,
     size,
     gutter: isDesktop ? spacing.huge : isTablet ? spacing.xxxl : spacing.lg,
-    sectionSpace: isDesktop ? 96 : isTablet ? 72 : 52,
+    sectionSpace: isDesktop ? 96 : isTablet ? 72 : 44,
     hero: { ...pick(HEADLINES.hero, size), fontWeight: '800', letterSpacing: isPhone ? -0.3 : -0.8 },
     title: { ...pick(HEADLINES.title, size), fontWeight: '800', letterSpacing: isPhone ? -0.2 : -0.4 },
     subtitle: { ...pick(HEADLINES.subtitle, size), fontWeight: '700' },
