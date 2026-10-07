@@ -186,7 +186,12 @@ Public sign-in routes allow 20 attempts per 15 minutes per address. Phone number
 4. Under **Authorized JavaScript origins** and **Authorized redirect URIs** add `http://localhost:8081` and each deployed web address (`https://sanjay019.com.np`, `https://flito.vercel.app`).
 5. Put the **Client ID** in both `GOOGLE_CLIENT_ID` (backend) and `EXPO_PUBLIC_GOOGLE_CLIENT_ID` (frontend), then restart both. The client secret isn't needed: the app requests an ID token and the backend verifies it against the client ID.
 
-A standalone Android build additionally needs an **Android** OAuth client ID registered with the build's SHA-1 fingerprint.
+The Android app signs in with Google's native account picker (`@react-native-google-signin/google-signin`), not the web popup, and asks Google for an ID token issued to the same Web client ID, so the backend needs nothing extra. Google only issues that token to an app it recognises, though:
+
+6. In the same project, **Create credentials > OAuth client ID > Android**: package name `com.flito.app`, and the **SHA-1** of the key the APK is signed with. For the release key that's `82:5C:45:75:FE:46:75:02:FE:68:62:3E:DC:CB:EC:83:25:7C:67:88`; get any other key's with `keytool -list -v -keystore <file>`. Builds signed with a different key (a debug build, or an EAS-managed key) each need their own Android client. The Android client's ID isn't used anywhere in code.
+7. Android builds read `EXPO_PUBLIC_GOOGLE_CLIENT_ID` from `eas.json` (local builds from the environment). It must be the **Web** client ID, not the Android one.
+
+Without step 6 the Google button says sign-in isn't available, and the app logs `DEVELOPER_ERROR`. Google sign-in doesn't work in Expo Go, which lacks the native module.
 
 ---
 

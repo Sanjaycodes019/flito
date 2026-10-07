@@ -1,0 +1,31 @@
+diff --git a/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt b/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt
+index ab5d0ed..5e39e7b 100644
+--- a/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt
++++ b/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt
+@@ -67,6 +67,10 @@ class AppContext(
+ 
+   private var hostWasDestroyed = false
+ 
++  // FLITO patch: identity of the Activity the modules' activity result
++  // launchers are bound to (see onHostResume).
++  private var contractsActivityId: Int? = null
++
+   // We postpone creating the `JSIContext` to not load so files in unit tests.
+   internal lateinit var jsiInterop: JSIContext
+ 
+@@ -347,7 +351,14 @@ class AppContext(
+     }
+ 
+     // We need to re-register activity contracts when reusing AppContext with new Activity after host destruction.
+-    if (hostWasDestroyed) {
++    // FLITO patch: also whenever a different Activity instance resumes. Launchers are unregistered when the
++    // Activity they were bound to is destroyed, and React Native skips onHostDestroy when that Activity is no
++    // longer the current one (a new instance resumed before the old one was destroyed). Without this, every
++    // later image picker call failed with "Attempting to launch an unregistered ActivityResultLauncher".
++    val activityId = System.identityHashCode(activity)
++    val activityChanged = contractsActivityId != null && contractsActivityId != activityId
++    contractsActivityId = activityId
++    if (hostWasDestroyed || activityChanged) {
+       hostWasDestroyed = false
+       registry.registerActivityContracts()
+     }

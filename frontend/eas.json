@@ -12,7 +12,8 @@
         "EXPO_PUBLIC_API_URL": "https://api.sanjay019.com.np/api",
         "EXPO_PUBLIC_SOCKET_URL": "https://api.sanjay019.com.np",
         "EXPO_PUBLIC_SUPPORT_PHONE": "+9779766382090",
-        "EXPO_PUBLIC_SUPPORT_EMAIL": "guptagroups09@gmail.com"
+        "EXPO_PUBLIC_SUPPORT_EMAIL": "guptagroups09@gmail.com",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "312301618467-kcoubkk0nn8ck38lek4cg3o0oh9rth4e.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -23,7 +24,8 @@
         "EXPO_PUBLIC_API_URL": "https://api.sanjay019.com.np/api",
         "EXPO_PUBLIC_SOCKET_URL": "https://api.sanjay019.com.np",
         "EXPO_PUBLIC_SUPPORT_PHONE": "+9779766382090",
-        "EXPO_PUBLIC_SUPPORT_EMAIL": "guptagroups09@gmail.com"
+        "EXPO_PUBLIC_SUPPORT_EMAIL": "guptagroups09@gmail.com",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "312301618467-kcoubkk0nn8ck38lek4cg3o0oh9rth4e.apps.googleusercontent.com"
       }
     }
   }

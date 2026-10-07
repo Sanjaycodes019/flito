@@ -23,6 +23,8 @@ All notable changes to FLITO. Format follows [Keep a Changelog](https://keepacha
 - ESLint for backend and frontend, GitHub Actions CI, Dockerfile and docker-compose.
 
 ### Fixed
+- Android camera and photo library: "Take photo" and "Choose photo" could fail with "Attempting to launch an unregistered ActivityResultLauncher" after Android replaced the app's screen. Patched `expo-modules-core` (`frontend/patches/`, applied by `patch-package` on install) to re-register the pickers whenever a new screen instance resumes.
+- Google sign-in in the Android app: it now uses Google's native account picker (Google Play services) instead of the web popup, which Google won't send back to the app. The web keeps the popup. Needs an Android OAuth client for `com.flito.app` in Google Cloud (see README).
 - Hairline seams between the trip map's tiles at half zoom steps.
 - `Card` called hooks conditionally, which could crash when `onPress` toggled.
 - Vulnerable `qs` dependency (`npm audit fix`), and the backend's other high and critical `npm audit` findings.

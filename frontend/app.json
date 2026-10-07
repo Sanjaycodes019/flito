@@ -2,7 +2,7 @@
   "expo": {
     "name": "FLITO",
     "slug": "flito",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "flito",
     "orientation": "portrait",
     "icon": "./assets/icon-full.png",
@@ -17,7 +17,7 @@
     ],
     "android": {
       "package": "com.flito.app",
-      "versionCode": 1,
+      "versionCode": 2,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-foreground.png",

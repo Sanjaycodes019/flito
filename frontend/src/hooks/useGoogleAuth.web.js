@@ -2,14 +2,16 @@ import { useEffect, useMemo } from 'react';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
+import { GOOGLE_CLIENT_ID as CLIENT_ID } from '../utils/constants';
 
 // Required once per app so the browser tab/sheet opened for the OAuth
 // screen actually resolves back to `response` instead of hanging.
 WebBrowser.maybeCompleteAuthSession();
 
-// A Web application OAuth client works for both native (via this redirect)
-// and web. See README for the exact Google Cloud Console setup steps.
-const CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+// The web version: Google's OAuth page in a popup, using the Web
+// application OAuth client. The Android app signs in natively instead (see
+// useGoogleAuth.js), because Google won't redirect a Web client back to the
+// app's flito:// scheme. See README for the Google Cloud Console setup steps.
 
 const GOOGLE_DISCOVERY = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',

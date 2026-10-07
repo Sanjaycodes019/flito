@@ -137,3 +137,8 @@ export const SUPPORT_PHONE = process.env.EXPO_PUBLIC_SUPPORT_PHONE || '';
 // FLITO's support email, shown on the Contact and Help pages. Blank hides it,
 // the same as SUPPORT_PHONE, so the site never shows an address nobody reads.
 export const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || '';
+
+// The Google OAuth Web client ID. The web popup and the Android app's
+// native sign-in both get ID tokens issued to it, which is what the backend
+// checks. Blank turns Google sign-in off (the button explains why).
+export const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '';
