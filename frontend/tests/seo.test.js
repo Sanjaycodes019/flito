@@ -56,6 +56,7 @@ describe('the web build', () => {
     expect(html).toContain('<link rel="alternate" hreflang="ne" href="https://flito.sanjay019.com.np/about" />');
     expect(html).toContain('<link rel="alternate" hreflang="en" href="https://flito.sanjay019.com.np/about?lang=en" />');
     expect(html).toContain('<meta property="og:image" content="https://flito.sanjay019.com.np/og-image.png" />');
+    expect(html).toContain('<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />');
     expect(html).toContain('"@type":"Organization"');
     expect(html).toContain('<meta name="author" content="Sanjay Gupta" />');
     expect(html).toContain('<link rel="author" href="https://guptasanjay.com.np" />');

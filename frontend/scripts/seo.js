@@ -81,6 +81,9 @@ const headTags = (seo, page, meta) => {
     `<link rel="author" href="${seo.AUTHOR.url}" />`,
     ...seo.SEO_LANGUAGES.map((lang) => `<link rel="alternate" hreflang="${lang}" href="${seo.pageUrl(page.path, lang)}" />`),
     `<link rel="alternate" hreflang="x-default" href="${seo.pageUrl(page.path)}" />`,
+    // Expo's favicon.ico stops at 48px; search results and sharp screens want
+    // a larger icon, in a multiple of 48px.
+    '<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />',
     '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
     '<meta property="og:type" content="website" />',
     `<meta property="og:site_name" content="${seo.SITE_NAME}" />`,
