@@ -145,7 +145,7 @@
       ],
       "accept": "Accept",
       "returnFilled": "Return trip filled",
-      "tracking": "In transit · near Mugling"
+      "tracking": "Near Mugling · 90 km left"
     },
     "problem": {
       "eyebrow": "The empty return",
@@ -201,7 +201,7 @@
         {
           "icon": "gps",
           "title": "Live trip tracking",
-          "body": "The driver shares their location during the trip, so you always know where your goods are."
+          "body": "While the driver shares their location, the map shows the truck on its road, when it should arrive and the kilometres left."
         },
         {
           "icon": "signature",
@@ -334,7 +334,7 @@
         {
           "icon": "truckDelivery",
           "title": "Book and track",
-          "body": "Each accepted offer is a booking for that truck. Call the driver in one tap and follow the truck on the map."
+          "body": "Each accepted offer is a booking for that truck. Call the driver in one tap and follow the truck on the map, with the time it should arrive."
         },
         {
           "icon": "signature",
@@ -440,7 +440,7 @@
         {
           "status": "in_transit",
           "title": "In transit",
-          "body": "The goods are loaded and on the road. The driver's location is shared while the trip lasts."
+          "body": "The goods are loaded and on the road. While the driver shares their location, the map shows the truck, when it should arrive and how far it has left."
         },
         {
           "status": "completed",
@@ -663,7 +663,7 @@
       "now": [
         "Posting loads, with offers for one truck or up to ten",
         "Identity and truck verification",
-        "Bookings with live tracking, delivery photos and signatures",
+        "Bookings with a live map and arrival times, delivery photos and signatures",
         "Fleets with drivers on phone-and-PIN login",
         "The full app in Nepali and English, on the web and Android"
       ],
@@ -867,7 +867,7 @@
           },
           {
             "q": "How does tracking work?",
-            "a": "While the booking is in transit, the driver can share their location from the job screen. The shipper and owner see the truck on the map. Sharing stops when the trip ends."
+            "a": "Every booking has a map with the road from pickup to drop-off, how far it is and about how long a loaded truck takes. While the booking is in transit, the driver can share their location from the job screen. The shipper and owner then see the truck on the road, when it should arrive and how far it has left. Times are estimates. Sharing stops when the trip ends."
           },
           {
             "q": "Can I cancel a booking?",
