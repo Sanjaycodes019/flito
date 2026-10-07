@@ -18,6 +18,7 @@
 //                        the marketing navbar and footer
 export const PUBLIC_PAGES = [
   { key: 'howItWorks', route: 'HowItWorks', path: 'how-it-works', icon: 'guide', nav: true },
+  { key: 'gallery', route: 'Gallery', path: 'gallery', icon: 'gallery', nav: true },
   { key: 'safety', route: 'Safety', path: 'safety', icon: 'verified', nav: true },
   { key: 'about', route: 'About', path: 'about', icon: 'flag', nav: true },
   { key: 'mission', route: 'Mission', path: 'mission', icon: 'mission' },
@@ -32,7 +33,7 @@ export const PUBLIC_ROUTES = PUBLIC_PAGES.map((page) => page.route);
 
 // The footer's link columns. `auth` items open a log in page instead.
 export const FOOTER_GROUPS = [
-  { key: 'product', items: ['howItWorks', 'safety', 'help'] },
+  { key: 'product', items: ['howItWorks', 'gallery', 'safety', 'help'] },
   { key: 'company', items: ['about', 'mission', 'contact'] },
   { key: 'legal', items: ['terms', 'privacy'] },
   {
@@ -50,7 +51,7 @@ export const FOOTER_GROUPS = [
 // the app: getting help first, then about FLITO, then the legal pages.
 export const SETTINGS_GROUPS = [
   { key: 'support', items: ['help', 'contact', 'safety'] },
-  { key: 'about', items: ['howItWorks', 'about', 'mission'] },
+  { key: 'about', items: ['howItWorks', 'gallery', 'about', 'mission'] },
   { key: 'legal', items: ['terms', 'privacy'] },
 ];
 

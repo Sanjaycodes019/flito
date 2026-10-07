@@ -5,6 +5,7 @@ All notable changes to FLITO. Format follows [Keep a Changelog](https://keepacha
 ## [Unreleased]
 
 ### Added
+- Gallery page (`/gallery`): 14 real screens of the app, from the live trip map and the PDF invoice to the admin console, grouped by what they show, captioned in English and Nepali, each opening full size. Three of them also sit on the landing page.
 - Live trip map: the road from pickup to drop-off, the truck on it turned to its heading, and when it should arrive with the time and distance left, paced for a loaded truck. Before the trip it shows the road distance; afterwards, "Delivered". A night map in the dark theme, and full screen with the trip in a bottom sheet on phones or a card on wider screens. Free services only (Leaflet, OpenStreetMap, OSRM); route lines are thinned and cached on the server, and the driver's phone sends a fix only after moving or turning.
 - Driver's location card shows whether sharing is on, when the last fix was sent and how good the GPS is.
 - Payment details: truck owners add bank accounts or eSewa and Khalti wallets with their QR codes. The shipper pays the owner directly, records it on the booking, and the owner confirms it arrived. FLITO doesn't move money.
@@ -22,6 +23,7 @@ All notable changes to FLITO. Format follows [Keep a Changelog](https://keepacha
 - ESLint for backend and frontend, GitHub Actions CI, Dockerfile and docker-compose.
 
 ### Fixed
+- Hairline seams between the trip map's tiles at half zoom steps.
 - `Card` called hooks conditionally, which could crash when `onPress` toggled.
 - Vulnerable `qs` dependency (`npm audit fix`), and the backend's other high and critical `npm audit` findings.
 - Stale admin dashboard and profile tests.

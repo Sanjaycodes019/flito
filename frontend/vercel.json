@@ -4,14 +4,14 @@
   "trailingSlash": false,
   "redirects": [
     {
-      "source": "/:page(how-it-works|safety|about|mission|help|contact|terms|privacy).html",
+      "source": "/:page(how-it-works|gallery|safety|about|mission|help|contact|terms|privacy).html",
       "destination": "/:page",
       "permanent": true
     }
   ],
   "rewrites": [
     {
-      "source": "/:page(how-it-works|safety|about|mission|help|contact|terms|privacy)",
+      "source": "/:page(how-it-works|gallery|safety|about|mission|help|contact|terms|privacy)",
       "destination": "/:page.html"
     },
     { "source": "/(.*)", "destination": "/index.html" }

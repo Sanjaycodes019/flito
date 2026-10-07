@@ -65,6 +65,14 @@ export const buildMapHtml = ({
        same tiles are inverted into a night map. */
     .leaflet-tile-pane { filter: saturate(0.55) contrast(0.94) brightness(1.04); }
     body.dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.86) saturate(0.4); }
+    /* At a half zoom step the tiles are scaled and meet at fractions of a
+       pixel, which leaves hairline seams along their edges under the filter
+       above. One pixel wider and taller, each tile overlaps the next; drawn
+       normally (not with Leaflet's plus-lighter blend, which would add the
+       overlap up into a white line), the overlap just covers the seam. */
+    .leaflet-container .leaflet-tile-container img.leaflet-tile {
+      width: 257px !important; height: 257px !important; mix-blend-mode: normal;
+    }
 
     /* Pins: a drop with the stop's symbol, and its name beside it. */
     .flito-pin svg { display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }

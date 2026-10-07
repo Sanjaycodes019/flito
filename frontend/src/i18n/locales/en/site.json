@@ -10,6 +10,11 @@
       "hint": "Step by step for shippers, owners and drivers",
       "description": "How FLITO works for shippers, truck owners and drivers in Nepal: post a load, get offers, book a truck, track the trip and confirm delivery."
     },
+    "gallery": {
+      "label": "Gallery",
+      "hint": "Real screens from the app",
+      "description": "Screens from FLITO: the live trip map with arrival time, the PDF invoice, truck matching, payments, the driver's job screen and the admin console."
+    },
     "safety": {
       "label": "Safety & trust",
       "hint": "Verification, tracking and proof of delivery",
@@ -224,6 +229,12 @@
           "body": "Province, district, municipality, ward and tole: the way people really give directions."
         }
       ]
+    },
+    "gallery": {
+      "eyebrow": "Gallery",
+      "title": "See the app before you join",
+      "lead": "Real screens from FLITO: a truck on the map with its arrival time, the invoice a delivered trip ends with, and the driver's one-button job screen.",
+      "link": "See all the screens"
     },
     "nepal": {
       "eyebrow": "Built for Nepal",
@@ -485,6 +496,122 @@
       "title": "Changing your mind",
       "body": "A shipper or an owner can cancel a booking while it is pending or confirmed, before the goods are loaded. Once a truck is on the road, the trip has to be finished. Drivers cannot cancel a booking; they call the owner."
     }
+  },
+  "gallery": {
+    "hero": {
+      "eyebrow": "Gallery",
+      "title": "See FLITO at work",
+      "lead": "Screens from the app itself, captured on two demo trips: a truck on the road from Kathmandu to Pokhara, and a load of cement from Hetauda that has been delivered and invoiced. Tap any screen to see it full size."
+    },
+    "note": "These are real FLITO screens with demo accounts: Ram Shrestha is the shipper, Thapa Transport owns the truck and Hari Tamang drives it. Names, phone numbers and accounts are made up.",
+    "sections": [
+      {
+        "key": "tracking",
+        "icon": "gps",
+        "eyebrow": "Live trip map",
+        "title": "The truck on the road, and when it arrives",
+        "lead": "While the driver shares their location, the shipper and owner follow the truck along the road from pickup to drop-off. The part already driven is greyed out, and the panel below shows when it should arrive, the time and kilometres left, its speed and how exact the GPS is.",
+        "points": [
+          "Times paced for a loaded truck, not a car",
+          "Full screen, with the trip in a sheet on a phone",
+          "A night map in the dark theme",
+          "Built on free OpenStreetMap and OSRM"
+        ],
+        "shots": [
+          "liveMap",
+          "mapFullscreen",
+          "mapNight",
+          "driverSharing"
+        ]
+      },
+      {
+        "key": "delivered",
+        "icon": "invoice",
+        "eyebrow": "Delivered and paid",
+        "title": "A signed delivery, then the invoice",
+        "lead": "At the drop-off the receiver signs on the driver's phone. The trip gets an invoice number that runs through the Nepali fiscal year, and the shipper and owner can download it as a one-page PDF: route, truck, charges, the amount in words, payments, the balance due and the signature. FLITO never holds the money. The shipper pays the owner's bank or wallet directly and records it, and the owner confirms it arrived.",
+        "points": [
+          "Numbered per fiscal year, like FL/2083-84/00001",
+          "Dates in Bikram Sambat",
+          "Bank, eSewa and Khalti, with their own logos"
+        ],
+        "shots": [
+          "invoice",
+          "deliveredOwner",
+          "payOwner"
+        ]
+      },
+      {
+        "key": "matching",
+        "icon": "truck",
+        "eyebrow": "Finding a truck",
+        "title": "Post a load, choose from trucks that fit",
+        "lead": "Posting a load takes seven short steps, starting with a picture of what is being sent. FLITO then lists the trucks that can carry it and are free that day, each scored out of 100 on how well the load fills it, how near it is to the pickup, the owner's record, the price and whether it is ready to go. A load can need up to 10 trucks.",
+        "points": [
+          "Sort by best match, lowest price, nearest or top rated",
+          "Only verified owners' trucks are suggested",
+          "Ask several owners at once; each who accepts books one truck"
+        ],
+        "shots": [
+          "postLoad",
+          "matches"
+        ]
+      },
+      {
+        "key": "everyone",
+        "icon": "language",
+        "eyebrow": "Simple for everyone",
+        "title": "One big button, and Nepali first",
+        "lead": "A driver logs in with a phone number and PIN and works one job at a time: where to go next, one button for the next step, and the shipper and owner a tap away. Every screen works in Nepali and English, FLITO opens in Nepali the first time, and dates show in Bikram Sambat or AD.",
+        "points": [
+          "Phone number and PIN, no email needed",
+          "Directions to the next stop",
+          "Change language and theme from the top of the app"
+        ],
+        "shots": [
+          "driverJob",
+          "mapNepali",
+          "homeNepali"
+        ]
+      },
+      {
+        "key": "running",
+        "icon": "receipt",
+        "eyebrow": "Fees and the admin console",
+        "title": "Clear fees, and every booking on record",
+        "lead": "Truck owners pay FLITO a small fee on each completed trip, shown before they send an offer and billed once a Nepali month; shippers pay nothing. Admins check identity documents and truck papers, follow every booking from booked to delivered, and every admin action goes into an audit log.",
+        "points": [
+          "No fee on cancelled trips",
+          "Owners pay into FLITO's own bank or wallet and record it",
+          "Fees past due pause new offers until they are paid"
+        ],
+        "shots": [
+          "fees",
+          "adminBooking"
+        ]
+      }
+    ],
+    "shots": {
+      "liveMap": "A trip on the road, as the shipper sees it: Balaju, Kathmandu to Lakeside, Pokhara, with the truck past Mugling",
+      "mapFullscreen": "The map full screen on a phone, with the trip in a sheet at the bottom",
+      "mapNight": "The same trip on the night map, in the dark theme",
+      "driverSharing": "The driver's side: location sharing on, when the last position went out, and how good the GPS is",
+      "invoice": "The PDF invoice for a delivered load of cement from Hetauda to Pokhara: part paid, signed by the receiver",
+      "deliveredOwner": "The owner's view of that trip: the invoice, the payment they confirmed and FLITO's fee",
+      "payOwner": "The shipper's view of a trip in transit: the owner's Nabil Bank and eSewa details to pay into",
+      "postLoad": "Posting a load on a phone, step 1 of 7",
+      "matches": "Trucks for a two-truck load of rice from Butwal, ranked by match score, with the reasons",
+      "driverJob": "The driver's job screen mid-trip: the next stop and one button for it",
+      "mapNepali": "The trip map in Nepali",
+      "homeNepali": "A shipper's home screen in Nepali",
+      "fees": "A truck owner's FLITO fees page: this month's trips, the bill and how to pay",
+      "adminBooking": "The admin console's record of a delivered booking: progress, payment and the parties"
+    },
+    "open": "See full size: {{caption}}",
+    "close": "Close",
+    "previous": "Previous screen",
+    "next": "Next screen",
+    "counter": "{{current}} of {{total}}"
   },
   "safety": {
     "hero": {

@@ -187,6 +187,7 @@ const GLYPHS = {
   flag: 'flag-outline',
   web: 'web',
   devices: 'monitor-cellphone',
+  gallery: 'image-multiple-outline',
   cash: 'cash',
   emptyReturn: 'map-marker-distance',
   checklist: 'clipboard-check-outline',

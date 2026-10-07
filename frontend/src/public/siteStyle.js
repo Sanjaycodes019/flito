@@ -10,6 +10,10 @@ export const landmark = (role) => (Platform.OS === 'web' ? { role } : {});
 export const SITE_WIDTH = 1200;
 // Long reading (legal text, an article) is capped narrower for comfortable lines.
 export const READING_WIDTH = 760;
+// The narrowest window whose navbar fits every page link beside the logo and
+// both ways in, in Nepali too (its labels and buttons run longest). Narrower,
+// the links move into the menu.
+export const NAV_LINKS_WIDTH = 1180;
 
 // The width the page itself has, measured by PublicLayout. Inside the signed-in
 // app a laptop's sidebar takes part of the window, so sizing from the window
@@ -49,7 +53,7 @@ const useSiteStyle = () => {
     isTablet,
     isDesktop,
     // The window, not the page: the navbar spans the whole window.
-    isWideWindow: windowWidth >= breakpoints.desktop,
+    isWideWindow: windowWidth >= NAV_LINKS_WIDTH,
     size,
     gutter: isDesktop ? spacing.huge : isTablet ? spacing.xxxl : spacing.lg,
     sectionSpace: isDesktop ? 96 : isTablet ? 72 : 44,

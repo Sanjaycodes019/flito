@@ -77,7 +77,7 @@ flito/
 │   │   ├── socket/       events, handlers
 │   │   └── server.js / app.js
 │   ├── scripts/          seedDemo, createAdmin, migrations, Nepal data builders
-│   └── tests/            25 suites against an in-memory MongoDB
+│   └── tests/            26 suites against an in-memory MongoDB
 └── frontend/
     ├── src/
     │   ├── public/       landing page and the information pages (about, help, legal), their layout,
@@ -91,7 +91,7 @@ flito/
     │   ├── redux/        store + auth/user/loads/booking slices
     │   ├── services/     api, auth, socket, storage, push, uploads, theme and calendar preferences
     │   └── utils/        colors, constants, helpers, AD/BS calendar, load slots
-    └── tests/            22 suites (Jest + React Native Testing Library)
+    └── tests/            26 suites (Jest + React Native Testing Library)
 ```
 
 Backend and frontend are independent npm projects in one repo, so Render and Vercel each build only their own folder through a "Root Directory" setting.
@@ -126,13 +126,13 @@ Check the backend: `curl http://localhost:5000/api/health` returns `{"status":"o
 cd backend && npm test
 ```
 
-**373 API tests in 25 suites** run against a real in-memory MongoDB (nothing to configure, no external service called). They cover email and password, phone and PIN, Google and admin sign-in; email verification, password reset and the language of emailed codes; PIN lockout; booking permissions and status changes; road distances and multi-day truck availability; ward and tole detection; offers, acceptance races and double-booking protection; loads that need several trucks; fleet drivers; ratings; expiry; file uploads; identity and truck verification; the admin lists, record pages, audit history and account suspension; the notification feed; owners' payment details, booking payments and FLITO's fees (billing by Nepali month, welcome trips, overdue blocking, admin confirmation); CORS origins; security headers and query-operator stripping; and push notifications (Expo's API is mocked, no real push is sent).
+**392 API tests in 26 suites** run against a real in-memory MongoDB (nothing to configure, no external service called). They cover email and password, phone and PIN, Google and admin sign-in; email verification, password reset and the language of emailed codes; PIN lockout; booking permissions and status changes; road distances and multi-day truck availability; ward and tole detection; offers, acceptance races and double-booking protection; loads that need several trucks; fleet drivers; ratings; expiry; file uploads; identity and truck verification; the admin lists, record pages, audit history and account suspension; the notification feed; owners' payment details, booking payments and FLITO's fees (billing by Nepali month, welcome trips, overdue blocking, admin confirmation); CORS origins; security headers and query-operator stripping; and push notifications (Expo's API is mocked, no real push is sent).
 
 ```bash
 cd frontend && npm test
 ```
 
-**194 component tests in 22 suites** cover the sign-in screens (email, phone + PIN, language choice), posting a load, choosing trucks, offers on a load, booking status changes per role, KYC, the fleet page, profile and settings, the AD/BS calendar and date picker, the admin dashboard and record pages, payment details and FLITO's fees, and the public site (landing page, navbar, help search, legal pages, web addresses). Native modules and `services/api` are mocked; see `jest.setup.js`.
+**237 component tests in 26 suites** cover the sign-in screens (email, phone + PIN, language choice), posting a load, choosing trucks, offers on a load, booking status changes per role, KYC, the fleet page, profile and settings, the AD/BS calendar and date picker, the admin dashboard and record pages, payment details and FLITO's fees, and the public site (landing page, navbar, help search, legal pages, the gallery and its viewer, web addresses). Native modules and `services/api` are mocked; see `jest.setup.js`.
 
 ### Code quality
 
@@ -235,8 +235,9 @@ Signed-out web visitors land on a public site instead of a bare log in page. One
 
 | Page | Address | What it covers |
 |---|---|---|
-| Landing | `/` | The empty-return problem, how it works per role, features, routes and border points, example journeys (labelled as examples, not customer stories), trust, common questions |
+| Landing | `/` | The empty-return problem, how it works per role, features, three app screens, routes and border points, example journeys (labelled as examples, not customer stories), trust, common questions |
 | How it works | `/how-it-works` | Each role's steps and what they need, a booking's statuses, how prices are agreed, cancelling |
+| Gallery | `/gallery` | Real screens of the app (the trip map, the invoice, truck matching, payments, the driver's job, fees, the admin console, Nepali), each opening full size |
 | Safety & trust | `/safety` | What is verified, account safety, tips per role, banned goods, Nepal's emergency numbers |
 | About us | `/about` | What FLITO is and isn't, who it's for, values, what works today and what's next |
 | Our mission | `/mission` | Why FLITO exists |
@@ -251,6 +252,8 @@ Signed-out web visitors land on a public site instead of a bare log in page. One
 - **Signed in:** `/` is the dashboard instead. The same pages sit in **Settings → Help & support / About FLITO / Legal**, inside the app's own navigation and without the marketing chrome. `/terms` and the rest keep one address whether you are signed in or not, so a shared link always works.
 - **Android, signed out:** no landing page (the language choice comes first, then Log In); the pages open from the links at the foot of the log in pages.
 - Sign Up's "Terms of Service" and "Privacy Policy" open those pages, and "Join as a truck owner" links (`/signup?role=owner`) arrive with the role chosen. The log in pages and the laptop sidebar carry an About · Help · Terms · Privacy row.
+
+The gallery's screenshots are WebP files in `frontend/public/gallery/`, listed with their sizes in `frontend/src/public/gallery.js`, with captions in `site.json` (`gallery.shots`). They were taken from the real app running on a throwaway local database with demo accounts, never from live data. The web serves them from the site; the Android app loads them from the live site rather than carrying them.
 
 The Terms show a "last updated" date in the reader's calendar, set by `LEGAL_UPDATED` in `frontend/src/public/content.js`. Change it with every edit to the legal text.
 

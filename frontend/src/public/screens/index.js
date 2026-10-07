@@ -4,6 +4,7 @@ import LandingScreen from './LandingScreen';
 import AboutScreen from './AboutScreen';
 import MissionScreen from './MissionScreen';
 import HowItWorksScreen from './HowItWorksScreen';
+import GalleryScreen from './GalleryScreen';
 import SafetyScreen from './SafetyScreen';
 import HelpScreen from './HelpScreen';
 import ContactScreen from './ContactScreen';
@@ -14,6 +15,7 @@ export { LandingScreen };
 
 const SCREENS = {
   HowItWorks: HowItWorksScreen,
+  Gallery: GalleryScreen,
   Safety: SafetyScreen,
   About: AboutScreen,
   Mission: MissionScreen,

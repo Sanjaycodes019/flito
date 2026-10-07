@@ -10,12 +10,14 @@ import SiteButton from '../components/SiteButton';
 import CtaBand from '../components/CtaBand';
 import FaqList from '../components/FaqList';
 import { StepList, SegmentTabs } from '../components/Steps';
+import { ShotRows, ShotViewer } from '../components/ShotGallery';
 import {
   Container, Eyebrow, Section, SectionHeader, FeatureCard, IconTile, SiteCard, CheckList, TextLink, Columns, useTone,
 } from '../components/Blocks';
 import { useContent } from '../content';
 import useOpenPage from '../useOpenPage';
 import useSiteStyle from '../siteStyle';
+import { LANDING_SHOTS } from '../gallery';
 
 const ROLES = [
   { key: 'shipper', icon: 'shipper' },
@@ -140,6 +142,20 @@ const Features = () => {
           <FeatureCard key={item.title} icon={item.icon} tint={index % 3 === 1 ? 'teal' : 'amber'} title={item.title} body={item.body} />
         ))}
       </Columns>
+    </Section>
+  );
+};
+
+// A few real screens of the app, opening full size, and the way to the rest.
+const Gallery = () => {
+  const { t } = useContent();
+  const { pageLink } = useOpenPage();
+  const [open, setOpen] = useState(null);
+  return (
+    <Section tone="surface" eyebrow={t('site:landing.gallery.eyebrow')} eyebrowIcon="gallery" title={t('site:landing.gallery.title')} lead={t('site:landing.gallery.lead')}>
+      <ShotRows keys={LANDING_SHOTS} onOpen={setOpen} />
+      <TextLink label={t('site:landing.gallery.link')} {...pageLink('gallery')} style={styles.sectionLink} />
+      <ShotViewer keys={LANDING_SHOTS} current={open} onChange={setOpen} onClose={() => setOpen(null)} />
     </Section>
   );
 };
@@ -291,6 +307,7 @@ const LandingScreen = () => {
       <Problem />
       <HowItWorks />
       <Features />
+      <Gallery />
       <BuiltForNepal />
       <Stories />
       <Trust />
