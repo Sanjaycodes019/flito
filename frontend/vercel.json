@@ -11,10 +11,20 @@
   ],
   "rewrites": [
     {
-      "source": "/:page(how-it-works|gallery|safety|about|mission|help|contact|terms|privacy)",
-      "destination": "/:page.html"
+      "source": "/",
+      "has": [{ "type": "query", "key": "lang", "value": "en" }],
+      "destination": "/index.en.html"
     },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/:page(how-it-works|gallery|safety|about|mission|help|contact|terms|privacy)",
+      "has": [{ "type": "query", "key": "lang", "value": "en" }],
+      "destination": "/:page.en.html"
+    },
+    {
+      "source": "/:page(how-it-works|gallery|safety|about|mission|help|contact|terms|privacy)",
+      "destination": "/:page.ne.html"
+    },
+    { "source": "/(.*)", "destination": "/index.ne.html" }
   ],
   "headers": [
     {

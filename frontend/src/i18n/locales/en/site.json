@@ -65,6 +65,7 @@
     "about": "FLITO connects people who need goods moved with verified truck owners and drivers across Nepal, so trucks earn on the way back instead of driving home empty.",
     "madeIn": "Made in Nepal, for Nepal's roads",
     "madeBy": "Made by {{name}}",
+    "needsJavaScript": "FLITO needs JavaScript to post loads and book trucks. Please turn it on to use the site.",
     "groups": {
       "product": "Product",
       "company": "Company",

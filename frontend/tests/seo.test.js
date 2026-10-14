@@ -48,10 +48,14 @@ describe('SEO data', () => {
 describe('the web build', () => {
   it('gives each page its own title, description, language links and summary', () => {
     const about = seo.SEO_PAGES.find((page) => page.key === 'about');
-    const html = renderPage(TEMPLATE, seo, about);
+    const html = renderPage(TEMPLATE, seo, about, 'en');
 
-    expect(fileFor(about)).toBe('about.html');
+    expect(fileFor(about, 'en')).toBe('about.en.html');
+    expect(html).toContain('<html lang="en">');
     expect(html).toContain('<title>About us · FLITO</title>');
+    expect(html).toContain('<link rel="canonical" href="https://flito.sanjay019.com.np/about?lang=en" />');
+    expect(html).toContain('<meta property="og:url" content="https://flito.sanjay019.com.np/about?lang=en" />');
+    expect(html).toContain('<meta property="og:locale" content="en_US" />');
     expect(html).toContain(`<meta name="description" content="${siteEn.pages.about.description}" />`);
     expect(html).toContain('<link rel="alternate" hreflang="ne" href="https://flito.sanjay019.com.np/about" />');
     expect(html).toContain('<link rel="alternate" hreflang="en" href="https://flito.sanjay019.com.np/about?lang=en" />');
@@ -61,11 +65,48 @@ describe('the web build', () => {
     expect(html).toContain('<meta name="author" content="Sanjay Gupta" />');
     expect(html).toContain('<link rel="author" href="https://guptasanjay.com.np" />');
     expect(html).toContain('"author":{"@id":"https://guptasanjay.com.np/#person"}');
-    expect(html).toContain('<p>Built by <a href="https://guptasanjay.com.np" rel="author">Sanjay Gupta</a></p>');
-    expect(html).toContain('<a href="/privacy">Privacy Policy</a>');
+    expect(html).toContain('<p>Made by <a href="https://guptasanjay.com.np" rel="author">Sanjay Gupta</a></p>');
+    expect(html).toContain('<a href="/privacy?lang=en">Privacy Policy</a>');
     expect(html).toContain('http-equiv=');
     expect(html).not.toContain('You need to enable JavaScript');
     expect(html).not.toContain('Expo Router');
+  });
+
+  // The plain address is the Nepali page, so its HTML has to be Nepali too:
+  // a crawler that doesn't run the app would otherwise read English text on
+  // a page the language links call Nepali, the same as the ?lang=en page.
+  it('writes the plain address in Nepali, as its own page', () => {
+    const about = seo.SEO_PAGES.find((page) => page.key === 'about');
+    const html = renderPage(TEMPLATE, seo, about, 'ne');
+
+    expect(fileFor(about, 'ne')).toBe('about.ne.html');
+    expect(fileFor(seo.SEO_PAGES[0], 'ne')).toBe('index.ne.html');
+    expect(html).toContain('<html lang="ne">');
+    expect(html).toContain(`<title>${siteNe.pages.about.label} · FLITO</title>`);
+    expect(html).toContain(`<meta name="description" content="${siteNe.pages.about.description}" />`);
+    expect(html).toContain('<link rel="canonical" href="https://flito.sanjay019.com.np/about" />');
+    expect(html).toContain('<meta property="og:locale" content="ne_NP" />');
+    expect(html).toContain('<meta property="og:locale:alternate" content="en_US" />');
+    expect(html).toContain(`<p>${siteNe.footer.needsJavaScript}</p>`);
+    expect(html).toContain('<a href="https://guptasanjay.com.np" rel="author">Sanjay Gupta</a> द्वारा निर्मित');
+    expect(html).toContain(`<a href="/privacy">${siteNe.pages.privacy.label}</a>`);
+    expect(html).not.toContain('About us');
+  });
+
+  it('writes every page in every language and drops the plain index.html', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const { run } = require('../scripts/seo');
+    const dist = fs.mkdtempSync(path.join(os.tmpdir(), 'flito-seo-'));
+    try {
+      fs.writeFileSync(path.join(dist, 'index.html'), TEMPLATE);
+      const files = run(dist);
+      expect(files).toHaveLength(seo.SEO_PAGES.length * seo.SEO_LANGUAGES.length);
+      expect(fs.readdirSync(dist).sort()).toEqual([...files, 'robots.txt', 'sitemap.xml'].sort());
+    } finally {
+      fs.rmSync(dist, { recursive: true, force: true });
+    }
   });
 
   it('lists every page in both languages in the sitemap', () => {
@@ -91,16 +132,25 @@ describe('the web build', () => {
   });
 
   // Vercel can't read the page list, so vercel.json names the pages itself:
-  // /about is rewritten to about.html, and /about.html sent to /about.
-  // (cleanUrls would do it for every page, but it also redirects any .html
-  // address, which breaks the search engines' verification files.)
+  // /about is rewritten to about.ne.html, /about?lang=en to about.en.html, and
+  // the old /about.html sent to /about. (cleanUrls would do some of it for
+  // every page, but it also redirects any .html address, which breaks the
+  // search engines' verification files.)
   it('serves each page\'s HTML at its address on Vercel', () => {
     const vercel = require('../vercel.json');
     const pattern = `:page(${PUBLIC_PAGES.map((page) => page.path).join('|')})`;
+    const [first, ...others] = seo.SEO_LANGUAGES;
+    const asking = (lang) => [{ type: 'query', key: seo.LANG_PARAM, value: lang }];
     expect(vercel.cleanUrls).toBeFalsy();
-    expect(vercel.rewrites[0]).toEqual({ source: `/${pattern}`, destination: '/:page.html' });
+    expect(vercel.rewrites).toEqual([
+      ...others.flatMap((lang) => [
+        { source: '/', has: asking(lang), destination: `/index.${lang}.html` },
+        { source: `/${pattern}`, has: asking(lang), destination: `/:page.${lang}.html` },
+      ]),
+      { source: `/${pattern}`, destination: `/:page.${first}.html` },
+      { source: '/(.*)', destination: `/index.${first}.html` },
+    ]);
     expect(vercel.redirects[0]).toMatchObject({ source: `/${pattern}.html`, destination: '/:page', permanent: true });
-    expect(vercel.rewrites[vercel.rewrites.length - 1]).toEqual({ source: '/(.*)', destination: '/index.html' });
   });
 
   it('keeps crawlers out of accounts and points them to the sitemap', () => {

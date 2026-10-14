@@ -3,21 +3,26 @@
 //
 // The web app is one HTML page that draws itself with JavaScript, so on its own
 // every address serves the same empty index.html titled "FLITO". Search engines
-// that don't run JavaScript, and the link previews chat and social apps show,
-// read only that HTML. This writes, into dist/:
+// that don't run JavaScript (or, like Bing, don't always), and the link
+// previews chat and social apps show, read only that HTML. This writes, into
+// dist/, for each public page in each language:
 //
-//   index.html       the landing page's own title, description, language
-//                    links, link-preview tags, the site's structured data, and
-//                    a plain-HTML summary in <noscript>
-//   <page>.html      the same for each public page (/about is about.html;
-//                    vercel.json rewrites /about to it, and redirects
-//                    /about.html to /about)
-//   sitemap.xml      every public page, in each language
-//   robots.txt       what crawlers may visit, and where the sitemap is
+//   <page>.<lang>.html  the page's own title, description, canonical address,
+//                       language links, link-preview tags, the site's
+//                       structured data, and a plain-HTML summary in
+//                       <noscript>, all in that language. The landing page is
+//                       index.<lang>.html. vercel.json sends /about to
+//                       about.ne.html and /about?lang=en to about.en.html, and
+//                       redirects the old /about.html to /about.
+//   sitemap.xml         every public page, in each language
+//   robots.txt          what crawlers may visit, and where the sitemap is
+//
+// and removes index.html, which Vercel would otherwise serve at / whatever
+// ?lang= asked for (a file at an address beats any rewrite).
 //
 // Pages, addresses and words all come from the app (src/public/seo.js, the
-// English site strings), so nothing here is kept by hand. The app keeps the
-// same tags right after it loads (src/public/pageMeta.js).
+// site strings), so nothing here is kept by hand. The app keeps the same tags
+// right after it loads (src/public/pageMeta.js).
 
 const fs = require('fs');
 const path = require('path');
@@ -52,29 +57,35 @@ const escapeHtml = (value) => String(value)
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
 
-// The English strings, read the way the app's t('site:pages.about.label') does.
-const STRINGS = {
-  site: require(path.join(SRC, 'i18n/locales/en/site.json')),
-  legal: require(path.join(SRC, 'i18n/locales/en/legal.json')),
-};
-const text = (key) => {
-  const [ns, keyPath] = key.split(':');
-  const value = keyPath.split('.').reduce((node, part) => (node == null ? node : node[part]), STRINGS[ns]);
-  if (typeof value !== 'string') throw new Error(`seo: no English string for ${key}`);
-  return value;
+// One language's strings, and a lookup that reads them the way the app's
+// t('site:pages.about.label') does.
+const stringsIn = (lang) => ({
+  site: require(path.join(SRC, `i18n/locales/${lang}/site.json`)),
+  legal: require(path.join(SRC, `i18n/locales/${lang}/legal.json`)),
+});
+const textIn = (lang) => {
+  const strings = stringsIn(lang);
+  return (key) => {
+    const [ns, keyPath] = key.split(':');
+    const value = keyPath.split('.').reduce((node, part) => (node == null ? node : node[part]), strings[ns]);
+    if (typeof value !== 'string') throw new Error(`seo: no ${lang} string for ${key}`);
+    return value;
+  };
 };
 
 // Each page's heading and opening paragraph, for the <noscript> summary.
-const heroOf = (key) => {
-  if (key === 'landing') return STRINGS.site.landing.hero;
-  return STRINGS.legal[key]?.hero || STRINGS.site[key]?.hero;
+const heroOf = (lang, key) => {
+  const strings = stringsIn(lang);
+  if (key === 'landing') return strings.site.landing.hero;
+  return strings.legal[key]?.hero || strings.site[key]?.hero;
 };
 
-// The <head> tags for one page.
-const headTags = (seo, page, meta) => {
+// The <head> tags for one page in one language.
+const headTags = (seo, page, lang, text, meta) => {
   const image = `${seo.SITE_URL}${seo.OG_IMAGE.path}`;
   const tags = [
     `<meta name="description" content="${escapeHtml(meta.description)}" />`,
+    `<link rel="canonical" href="${seo.pageUrl(page.path, lang)}" />`,
     '<meta name="robots" content="index, follow, max-image-preview:large" />',
     '<meta name="theme-color" content="#12161A" />',
     `<meta name="author" content="${escapeHtml(seo.AUTHOR.name)}" />`,
@@ -89,13 +100,13 @@ const headTags = (seo, page, meta) => {
     `<meta property="og:site_name" content="${seo.SITE_NAME}" />`,
     `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
     `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta property="og:url" content="${seo.pageUrl(page.path)}" />`,
+    `<meta property="og:url" content="${seo.pageUrl(page.path, lang)}" />`,
     `<meta property="og:image" content="${image}" />`,
     `<meta property="og:image:width" content="${seo.OG_IMAGE.width}" />`,
     `<meta property="og:image:height" content="${seo.OG_IMAGE.height}" />`,
     `<meta property="og:image:alt" content="${escapeHtml(text('site:pages.landing.title'))}" />`,
-    `<meta property="og:locale" content="${seo.OG_LOCALES.en}" />`,
-    ...seo.SEO_LANGUAGES.filter((lang) => lang !== 'en').map((lang) => `<meta property="og:locale:alternate" content="${seo.OG_LOCALES[lang]}" />`),
+    `<meta property="og:locale" content="${seo.OG_LOCALES[lang]}" />`,
+    ...seo.SEO_LANGUAGES.filter((other) => other !== lang).map((other) => `<meta property="og:locale:alternate" content="${seo.OG_LOCALES[other]}" />`),
     '<meta name="twitter:card" content="summary_large_image" />',
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
@@ -106,33 +117,36 @@ const headTags = (seo, page, meta) => {
 };
 
 // What a browser without JavaScript shows: the page's heading and opening
-// paragraph, links to every public page, and who built the site.
-const noscript = (seo, page) => {
-  const hero = heroOf(page.key);
+// paragraph, links to every public page in the same language, and who built
+// the site.
+const noscript = (seo, page, lang, text) => {
+  const hero = heroOf(lang, page.key);
   const links = seo.SEO_PAGES
-    .map((other) => `<li><a href="${other.path}">${escapeHtml(text(other.key === 'landing' ? 'site:pages.landing.label' : `site:pages.${other.key}.label`))}</a></li>`)
+    .map((other) => `<li><a href="${seo.pageUrl(other.path, lang).slice(seo.SITE_URL.length)}">${escapeHtml(text(`site:pages.${other.key}.label`))}</a></li>`)
     .join('');
+  const [madeBefore, madeAfter] = text('site:footer.madeBy').split('{{name}}');
   return [
     '<noscript>',
     hero ? `<h1>${escapeHtml(hero.title.replace(/\n/g, ' '))}</h1>` : '',
     hero?.lead ? `<p>${escapeHtml(hero.lead)}</p>` : '',
-    '<p>FLITO needs JavaScript to post loads and book trucks. Please turn it on to use the site.</p>',
+    `<p>${escapeHtml(text('site:footer.needsJavaScript'))}</p>`,
     `<nav><ul>${links}</ul></nav>`,
-    `<p>Built by <a href="${seo.AUTHOR.url}" rel="author">${escapeHtml(seo.AUTHOR.name)}</a></p>`,
+    `<p>${escapeHtml(madeBefore)}<a href="${seo.AUTHOR.url}" rel="author">${escapeHtml(seo.AUTHOR.name)}</a>${escapeHtml(madeAfter)}</p>`,
     '</noscript>',
   ].join('\n    ');
 };
 
-// index.html as one page: its title, tags and summary, in English.
-const renderPage = (html, seo, page) => {
+// index.html as one page in one language: its title, tags and summary.
+const renderPage = (html, seo, page, lang) => {
+  const text = textIn(lang);
   const meta = seo.pageMeta(text, page.key);
   return html
-    .replace(/<html lang="[^"]*">/, '<html lang="en">')
+    .replace(/<html lang="[^"]*">/, `<html lang="${lang}">`)
     .replace('httpEquiv=', 'http-equiv=')
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(meta.title)}</title>`)
-    .replace('</head>', `\n${headTags(seo, page, meta)}\n  </head>`)
+    .replace('</head>', `\n${headTags(seo, page, lang, text, meta)}\n  </head>`)
     .replace(/<!-- Use static rendering[\s\S]*?-->\s*/, '')
-    .replace(/<noscript>[\s\S]*?<\/noscript>/, noscript(seo, page));
+    .replace(/<noscript>[\s\S]*?<\/noscript>/, noscript(seo, page, lang, text));
 };
 
 // Bing leans on <lastmod> to decide what to recrawl. Every deploy ships a new
@@ -168,8 +182,9 @@ const renderRobots = (seo) => [
   '',
 ].join('\n');
 
-// The output file for a page: / is index.html, /about is about.html.
-const fileFor = (page) => (page.path === '/' ? 'index.html' : `${page.path.slice(1)}.html`);
+// The output file for a page in a language: / in Nepali is index.ne.html,
+// /about in English is about.en.html.
+const fileFor = (page, lang) => `${page.path === '/' ? 'index' : page.path.slice(1)}.${lang}.html`;
 
 const run = (dist = path.join(ROOT, 'dist')) => {
   const seo = loadFromSrc('public/seo.js');
@@ -180,12 +195,15 @@ const run = (dist = path.join(ROOT, 'dist')) => {
   // page's tags back and add them again.
   if (html.includes('property="og:site_name"')) throw new Error('seo: dist/ was already processed; run expo export again first');
 
-  seo.SEO_PAGES.forEach((page) => {
-    fs.writeFileSync(path.join(dist, fileFor(page)), renderPage(html, seo, page));
-  });
+  const files = seo.SEO_PAGES.flatMap((page) => seo.SEO_LANGUAGES.map((lang) => {
+    const file = fileFor(page, lang);
+    fs.writeFileSync(path.join(dist, file), renderPage(html, seo, page, lang));
+    return file;
+  }));
+  fs.unlinkSync(indexFile);
   fs.writeFileSync(path.join(dist, 'sitemap.xml'), renderSitemap(seo));
   fs.writeFileSync(path.join(dist, 'robots.txt'), renderRobots(seo));
-  return seo.SEO_PAGES.map(fileFor);
+  return files;
 };
 
 if (require.main === module) {
