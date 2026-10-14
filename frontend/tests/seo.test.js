@@ -80,7 +80,7 @@ describe('the web build', () => {
     const html = renderPage(TEMPLATE, seo, about, 'ne');
 
     expect(fileFor(about, 'ne')).toBe('about.ne.html');
-    expect(fileFor(seo.SEO_PAGES[0], 'ne')).toBe('index.ne.html');
+    expect(fileFor(seo.SEO_PAGES[0], 'ne')).toBe('landing.ne.html');
     expect(html).toContain('<html lang="ne">');
     expect(html).toContain(`<title>${siteNe.pages.about.label} · FLITO</title>`);
     expect(html).toContain(`<meta name="description" content="${siteNe.pages.about.description}" />`);
@@ -144,11 +144,11 @@ describe('the web build', () => {
     expect(vercel.cleanUrls).toBeFalsy();
     expect(vercel.rewrites).toEqual([
       ...others.flatMap((lang) => [
-        { source: '/', has: asking(lang), destination: `/index.${lang}.html` },
+        { source: '/', has: asking(lang), destination: `/landing.${lang}.html` },
         { source: `/${pattern}`, has: asking(lang), destination: `/:page.${lang}.html` },
       ]),
       { source: `/${pattern}`, destination: `/:page.${first}.html` },
-      { source: '/(.*)', destination: `/index.${first}.html` },
+      { source: '/(.*)', destination: `/landing.${first}.html` },
     ]);
     expect(vercel.redirects[0]).toMatchObject({ source: `/${pattern}.html`, destination: '/:page', permanent: true });
   });

@@ -11,14 +11,15 @@
 //                       language links, link-preview tags, the site's
 //                       structured data, and a plain-HTML summary in
 //                       <noscript>, all in that language. The landing page is
-//                       index.<lang>.html. vercel.json sends /about to
+//                       landing.<lang>.html. vercel.json sends /about to
 //                       about.ne.html and /about?lang=en to about.en.html, and
 //                       redirects the old /about.html to /about.
 //   sitemap.xml         every public page, in each language
 //   robots.txt          what crawlers may visit, and where the sitemap is
 //
-// and removes index.html, which Vercel would otherwise serve at / whatever
-// ?lang= asked for (a file at an address beats any rewrite).
+// and removes index.html. Vercel serves a file at / ahead of any rewrite, and
+// takes any index.*.html for it too, so / would get one page whatever ?lang=
+// asked for; with no index file there, vercel.json decides.
 //
 // Pages, addresses and words all come from the app (src/public/seo.js, the
 // site strings), so nothing here is kept by hand. The app keeps the same tags
@@ -182,9 +183,9 @@ const renderRobots = (seo) => [
   '',
 ].join('\n');
 
-// The output file for a page in a language: / in Nepali is index.ne.html,
+// The output file for a page in a language: / in Nepali is landing.ne.html,
 // /about in English is about.en.html.
-const fileFor = (page, lang) => `${page.path === '/' ? 'index' : page.path.slice(1)}.${lang}.html`;
+const fileFor = (page, lang) => `${page.path === '/' ? 'landing' : page.path.slice(1)}.${lang}.html`;
 
 const run = (dist = path.join(ROOT, 'dist')) => {
   const seo = loadFromSrc('public/seo.js');

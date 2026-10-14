@@ -13,7 +13,7 @@
     {
       "source": "/",
       "has": [{ "type": "query", "key": "lang", "value": "en" }],
-      "destination": "/index.en.html"
+      "destination": "/landing.en.html"
     },
     {
       "source": "/:page(how-it-works|gallery|safety|about|mission|help|contact|terms|privacy)",
@@ -24,7 +24,7 @@
       "source": "/:page(how-it-works|gallery|safety|about|mission|help|contact|terms|privacy)",
       "destination": "/:page.ne.html"
     },
-    { "source": "/(.*)", "destination": "/index.ne.html" }
+    { "source": "/(.*)", "destination": "/landing.ne.html" }
   ],
   "headers": [
     {
