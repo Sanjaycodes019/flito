@@ -74,6 +74,22 @@ describe('the web build', () => {
     expect(sitemap).toContain('<loc>https://flito.sanjay019.com.np/help?lang=en</loc>');
   });
 
+  it('dates every sitemap entry', () => {
+    const sitemap = renderSitemap(seo, '2026-10-14');
+    expect(sitemap.match(/<lastmod>2026-10-14<\/lastmod>/g)).toHaveLength(seo.SEO_PAGES.length * seo.SEO_LANGUAGES.length);
+  });
+
+  it('tells IndexNow about every sitemap address, with a key the site serves', () => {
+    const { KEY, submission } = require('../scripts/indexnow');
+    const fs = require('fs');
+    const path = require('path');
+    const body = submission(seo);
+    expect(fs.readFileSync(path.join(__dirname, '..', 'public', `${KEY}.txt`), 'utf8').trim()).toBe(KEY);
+    expect(body.host).toBe('flito.sanjay019.com.np');
+    expect(body.keyLocation).toBe(`https://flito.sanjay019.com.np/${KEY}.txt`);
+    expect(body.urlList).toEqual(renderSitemap(seo).match(/<loc>[^<]+<\/loc>/g).map((loc) => loc.slice(5, -6)));
+  });
+
   // Vercel can't read the page list, so vercel.json names the pages itself:
   // /about is rewritten to about.html, and /about.html sent to /about.
   // (cleanUrls would do it for every page, but it also redirects any .html

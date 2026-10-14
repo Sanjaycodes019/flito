@@ -135,7 +135,10 @@ const renderPage = (html, seo, page) => {
     .replace(/<noscript>[\s\S]*?<\/noscript>/, noscript(seo, page));
 };
 
-const renderSitemap = (seo) => {
+// Bing leans on <lastmod> to decide what to recrawl. Every deploy ships a new
+// app bundle, which is what draws each page, so the build date is when the
+// pages last changed.
+const renderSitemap = (seo, lastmod = new Date().toISOString().slice(0, 10)) => {
   const alternates = (page) => [
     ...seo.SEO_LANGUAGES.map((lang) => `    <xhtml:link rel="alternate" hreflang="${lang}" href="${seo.pageUrl(page.path, lang)}" />`),
     `    <xhtml:link rel="alternate" hreflang="x-default" href="${seo.pageUrl(page.path)}" />`,
@@ -143,6 +146,7 @@ const renderSitemap = (seo) => {
   const urls = seo.SEO_PAGES.flatMap((page) => seo.SEO_LANGUAGES.map((lang) => [
     '  <url>',
     `    <loc>${seo.pageUrl(page.path, lang)}</loc>`,
+    `    <lastmod>${lastmod}</lastmod>`,
     alternates(page),
     '  </url>',
   ].join('\n')));
@@ -189,4 +193,4 @@ if (require.main === module) {
   console.log(`seo: wrote ${files.join(', ')}, sitemap.xml and robots.txt`);
 }
 
-module.exports = { run, renderPage, renderSitemap, renderRobots, fileFor };
+module.exports = { run, loadFromSrc, renderPage, renderSitemap, renderRobots, fileFor };
